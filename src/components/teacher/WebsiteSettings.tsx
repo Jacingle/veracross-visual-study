@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { useSchool, type Section, type Website } from "@/lib/school-store";
@@ -12,9 +13,11 @@ export function WebsiteSettings({ c }: { c: Section }) {
   const { update } = useSchool();
   const [w, setW] = useState<Website>(c.website);
   const [crop, setCrop] = useState(false);
+  useEffect(() => { setW(c.website); }, [c.website]);
+  const change = (next: Website) => { setW(next); update((s) => ({ ...s, sections: s.sections.map((x) => x.id === c.id ? { ...x, website: next } : x) })); };
   const save = (next = w) => { update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...x, website: next } : x)) })); toast.success("Class website saved"); };
   const Opt = ({ v, label }: { v: Website["bg"]; label: string }) => (
-    <label className={`flex cursor-pointer items-center gap-2 border px-3 py-2 ${w.bg === v ? "border-vc-link-strong bg-vc-select" : "border-vc-line"}`}><input type="radio" checked={w.bg === v} onChange={() => setW({ ...w, bg: v })} />{label}</label>);
+    <label className={`flex cursor-pointer items-center gap-2 border px-3 py-2 ${w.bg === v ? "border-vc-link-strong bg-vc-select" : "border-vc-line"}`}><input type="radio" checked={w.bg === v} onChange={() => change({ ...w, bg: v })} />{label}</label>);
   return (
     <div className="max-w-[820px] text-[13px]">
       <div className="flex items-center justify-between border-b border-vc-line pb-2">
@@ -25,28 +28,31 @@ export function WebsiteSettings({ c }: { c: Section }) {
       <h3 className="mt-4 font-semibold">Background</h3>
       <div className="mt-2 flex gap-2"><Opt v="none" label="Blank" /><Opt v="color" label="Color" /><Opt v="photo" label="Photo" /></div>
       {w.bg === "color" && <div className="mt-3 flex items-center gap-2">{SWATCHES.map((col) => (
-        <button key={col} aria-label={`Color ${col}`} onClick={() => setW({ ...w, color: col })} className={`size-8 border-2 ${w.color === col ? "border-foreground" : "border-transparent"}`} style={{ background: col }} />))}
-        <input type="color" aria-label="Custom color" value={w.color} onChange={(e) => setW({ ...w, color: e.target.value })} className="h-8 w-10" /></div>}
+        <Button key={col} variant="outline" size="icon" aria-label={`Color ${col}`} onClick={() => change({ ...w, color: col })} className={`size-8 border-2 ${w.color === col ? "border-foreground" : "border-transparent"}`} style={{ background: col }} />))}
+        <input type="color" aria-label="Custom color" value={w.color} onChange={(e) => change({ ...w, color: e.target.value })} className="h-8 w-10" /><input aria-label="Background color code" value={w.color} className="h-8 w-24 border border-vc-line px-2" onChange={(e) => change({ ...w, color: e.target.value })} /></div>}
       {w.bg === "photo" && <div className="mt-3 flex items-end gap-3">
         {w.photo ? <img src={w.photo} alt="Website background" className="h-[110px] w-[196px] border border-vc-line object-cover" /> : <div className="grid h-[110px] w-[196px] place-items-center border border-dashed border-vc-line text-muted-foreground">No photo</div>}
         <button onClick={() => setCrop(true)} className="h-8 border border-vc-line px-3 text-vc-link-strong">{w.photo ? "Replace & crop photo" : "Upload & crop photo"}</button></div>}
       <div className="mt-2 h-[70px] w-[260px] border border-vc-line" style={w.bg === "color" ? { background: w.color } : w.bg === "photo" && w.photo ? { backgroundImage: `url(${w.photo})`, backgroundSize: "cover" } : undefined} title="Preview" />
+      <div className="mt-3 flex flex-wrap gap-4">{([['barColor', 'Heading color'], ['linkColor', 'Link color']] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2">{label}<input type="color" aria-label={label} value={w[key] || w.color} onChange={(e) => change({ ...w, [key]: e.target.value })} /></label>)}</div>
 
       <h3 className="mt-6 font-semibold">Home Page Sections</h3>
       <p className="text-muted-foreground">Shown below the assignment list (for example Course Description, Honors Placement).</p>
       <div className="mt-2 space-y-3">{w.sections.map((sec, i) => (
         <div key={i} className="border border-vc-line p-2">
-          <div className="flex gap-2"><input aria-label="Section title" className="h-8 flex-1 border border-vc-line px-2 font-semibold" maxLength={80} value={sec.title} onChange={(e) => setW({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
+          <div className="flex gap-2"><input aria-label="Section title" className="h-8 flex-1 border border-vc-line px-2 font-semibold" maxLength={80} value={sec.title} onChange={(e) => change({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
             <button aria-label="Remove section" onClick={() => setW({ ...w, sections: w.sections.filter((_, j) => j !== i) })} className="px-2 text-destructive"><Trash2 className="size-4" /></button></div>
-          <textarea aria-label="Section text" className="mt-2 h-24 w-full border border-vc-line p-2" maxLength={4000} value={sec.body} onChange={(e) => setW({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)) })} />
+          <textarea aria-label="Section text" className="mt-2 h-24 w-full border border-vc-line p-2" maxLength={4000} value={sec.body} onChange={(e) => change({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)) })} />
         </div>))}</div>
       <button onClick={() => setW({ ...w, sections: [...w.sections, { title: "Course Description", body: "" }] })} className="mt-2 flex items-center gap-1 text-vc-link-strong"><Plus className="size-4" />Add section</button>
 
       <h3 className="mt-6 font-semibold">Pages</h3>
       <div className="mt-1 space-y-1">{w.pages.map((pg, i) => (
-        <div key={i} className="flex gap-2"><input aria-label="Page name" className="h-8 w-72 border border-vc-line px-2" maxLength={60} value={pg} onChange={(e) => setW({ ...w, pages: w.pages.map((x, j) => (j === i ? e.target.value : x)) })} />
-          <button aria-label="Remove page" onClick={() => setW({ ...w, pages: w.pages.filter((_, j) => j !== i) })} className="px-2 text-destructive"><Trash2 className="size-4" /></button></div>))}</div>
-      <button onClick={() => setW({ ...w, pages: [...w.pages, "New Page"] })} className="mt-2 flex items-center gap-1 text-vc-link-strong"><Plus className="size-4" />Add page</button>
+        <div key={i} className="border-b border-vc-line py-2"><div className="flex gap-2"><input aria-label="Page name" className="h-8 w-72 border border-vc-line px-2" maxLength={60} value={pg} onChange={(e) => change({ ...w, pages: w.pages.map((x, j) => (j === i ? e.target.value : x)), pageContent: { ...w.pageContent, [e.target.value]: w.pageContent?.[pg] ?? { body: '', published: false } } })} />
+          <Button variant="ghost" size="icon" aria-label="Remove page" onClick={() => change({ ...w, pages: w.pages.filter((_, j) => j !== i) })}><Trash2 className="size-4" /></Button></div>
+          <textarea aria-label={`Content for ${pg}`} className="mt-2 h-24 w-full border border-vc-line p-2" value={w.pageContent?.[pg]?.body ?? ''} onChange={(e) => change({ ...w, pageContent: { ...w.pageContent, [pg]: { body: e.target.value, published: w.pageContent?.[pg]?.published ?? false } } })} />
+          <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={w.pageContent?.[pg]?.published ?? false} onChange={(e) => change({ ...w, pageContent: { ...w.pageContent, [pg]: { body: w.pageContent?.[pg]?.body ?? '', published: e.target.checked } } })} />Published</label></div>))}</div>
+      <Button variant="ghost" size="sm" onClick={() => change({ ...w, pages: [...w.pages, `New Page ${w.pages.length + 1}`] })} className="mt-2 text-vc-link-strong"><Plus className="size-4" />Add page</Button>
 
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={16 / 9} outWidth={1600} title="Website Background"
         onSave={(url) => { const next = { ...w, bg: "photo" as const, photo: url }; setW(next); save(next); }} />

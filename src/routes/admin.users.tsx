@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Camera, KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
+import { Camera, KeyRound, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -7,7 +7,8 @@ import { z } from "zod";
 import { AxiomShell } from "@/components/admin/AxiomShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { ROLE_LABEL, validateUser, type Role, type User } from "@/lib/auth-rules";
+import { canImpersonate, homeFor, ROLE_LABEL, validateUser, type Role, type User } from "@/lib/auth-rules";
+import { Button } from "@/components/ui/button";
 import { TEACHERS, studentById, teacher } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -25,7 +26,7 @@ const blank: Draft = { email: "", password: "", role: "student", first: "", last
 function UsersPage() {
   const { q = "", role } = Route.useSearch();
   const nav = useNavigate({ from: "/admin/users" });
-  const { users, user: me, update, photos } = useSchool();
+  const { users, user: me, update, photos, impersonate } = useSchool();
   const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ id?: string; d: Draft } | null>(null);
   const shown = users.filter((u) => (!role || u.role === role) && `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
@@ -58,7 +59,8 @@ function UsersPage() {
               <td className="text-muted-foreground"><span className="flex items-center gap-2">{u.personId && photos[u.personId] && <img src={photos[u.personId]} alt="" className="h-7 w-[21px] object-cover" />}{u.role === "teacher" && u.personId ? `${teacher(u.personId).prefix} ${teacher(u.personId).first} ${teacher(u.personId).last}` : u.role === "student" && studentById(u.personId) ? `${studentById(u.personId)!.first} ${studentById(u.personId)!.last} (Grade ${studentById(u.personId)!.grade})` : "—"}</span></td>
               <td><Switch aria-label={`Active: ${u.email}`} checked={u.active} disabled={u.id === me?.id} onCheckedChange={(on) => { update((s) => ({ ...s, users: s.users.map((x) => (x.id === u.id ? { ...x, active: on } : x)) })); toast(on ? "Account activated" : "Account deactivated — they can no longer log in"); }} /></td>
               <td className="pr-3 text-right">
-                <button aria-label={`Edit ${u.email}`} onClick={() => setEdit({ id: u.id, d: { email: u.email, password: u.password, role: u.role, first: u.first, last: u.last, personId: u.personId, active: u.active } })} className="p-1 text-vc-link-strong"><Pencil className="size-4" /></button>
+                {canImpersonate(me, u) && <Button variant="ghost" size="icon" className="size-7" title="Log in as this user" aria-label={`Impersonate ${u.email}`} onClick={() => { if (impersonate(u.id)) nav({ to: homeFor(u.role) }); }}><UserRound className="size-4" /></Button>}
+                <button aria-label={`Edit ${u.email}`} onClick={() => setEdit({ id: u.id, d: { ...u } })} className="p-1 text-vc-link-strong"><Pencil className="size-4" /></button>
                 {u.personId && <button aria-label={`Photo for ${u.email}`} onClick={() => setPhotoFor(u.personId)} className="p-1 text-vc-link-strong"><Camera className="size-4" /></button>}
                 <button aria-label={`Reset password for ${u.email}`} onClick={() => { update((s) => ({ ...s, users: s.users.map((x) => (x.id === u.id ? { ...x, password: x.email } : x)) })); toast.success("Password reset to the username"); }} className="p-1 text-vc-link-strong"><KeyRound className="size-4" /></button>
                 <button aria-label={`Delete ${u.email}`} disabled={u.id === me?.id} onClick={() => { if (confirm(`Delete ${u.email}?`)) { update((s) => ({ ...s, users: s.users.filter((x) => x.id !== u.id) })); toast("User deleted"); } }} className="p-1 text-destructive disabled:opacity-30"><Trash2 className="size-4" /></button>
@@ -67,12 +69,16 @@ function UsersPage() {
         </table>
       </div>
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
-        <DialogContent className="max-w-[480px] text-[13px]">
+        <DialogContent className="max-h-[90vh] max-w-[580px] overflow-y-auto text-[13px]">
           <DialogHeader><DialogTitle className="text-[17px]">{edit?.id ? "Edit User" : "Add User"}</DialogTitle></DialogHeader>
           {edit && <form onSubmit={save} className="space-y-2.5 text-[12px] text-muted-foreground">
             <div className="grid grid-cols-2 gap-3">
               <label>FIRST NAME<input className={inp} value={edit.d.first} maxLength={40} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, first: e.target.value } })} /></label>
               <label>LAST NAME<input className={inp} value={edit.d.last} maxLength={40} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, last: e.target.value } })} /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {([['prefix', 'PREFIX'], ['suffix', 'SUFFIX'], ['middle', 'MIDDLE NAME'], ['preferred', 'PREFERRED NAME'], ['address', 'STREET ADDRESS'], ['city', 'CITY'], ['state', 'STATE / PROVINCE'], ['postal', 'POSTAL CODE'], ['phone', 'PHONE']] as const).map(([key, label]) => <label key={key}>{label}<input className={inp} value={edit.d[key] ?? ''} maxLength={160} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, [key]: e.target.value } })} /></label>)}
+              {edit.d.role === 'student' && <label>GRADE LEVEL<select className={inp} value={edit.d.grade ?? 9} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, grade: Number(e.target.value) } })}>{Array.from({ length: 13 }, (_, grade) => <option key={grade} value={grade}>{grade === 0 ? 'Kindergarten' : grade}</option>)}</select></label>}
             </div>
             <label className="block">USERNAME (EMAIL)<input className={inp} value={edit.d.email} maxLength={120} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, email: e.target.value } })} /></label>
             <label className="block">PASSWORD<div className="flex gap-2"><input className={inp} value={edit.d.password} maxLength={120} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, password: e.target.value } })} />
