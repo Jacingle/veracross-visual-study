@@ -23,7 +23,8 @@
 - [x] Top header style (Student Portal tab with slanted edge + portal switcher)
 - [x] Assignment pop-up matches reference (category, dates, max score, weight, notes)
 - [x] Scheduling sets: blocks first, rotation length, day meeting times, assign blocks to times; classes choose blocks
-- [ ] Review classes/reports, attendance detail, schedule report vs. references
+- [x] Review classes/reports, attendance detail, schedule report vs. references
 - [x] Markbook overview review for grade rules
 - [x] Category colors chosen on Weights used app-wide; teacher picks which types show in gradebook
-- [ ] Attendance Detail / printable schedule reports to match references
+- [x] Attendance Detail / printable schedule reports to match references
+- [x] Assignment Students tab: bulk edit, select, A→Z sort, photos; gradebook header hover details

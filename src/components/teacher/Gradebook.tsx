@@ -41,7 +41,7 @@ export function Gradebook({ courseId, list: all, roster }: { courseId: string; l
             <th className="sticky left-0 z-10 min-w-[140px] bg-background" />
             <th className="min-w-[84px] rounded-sm bg-vc-sky px-1 align-bottom text-[12px] font-semibold">Calculated Grade</th>
             {list.map((a) => (
-              <th key={a.id} className="min-w-[110px] max-w-[110px] rounded-sm bg-vc-panel p-1.5 text-left align-top font-normal">
+              <th key={a.id} title={(() => { const x = custom.find((y) => y.id === a.id); return `${a.title}\nGrading method: ${x?.method ?? "Points"}\nMax score: ${a.points}\nInclude in calc. grade? ${x?.inCalc === false ? "No" : "Yes"}\nExtra credit? ${x?.extraCredit ? "Yes" : "No"}\nDisplay on portals? ${x && !x.published ? "No" : "Yes"}`; })()} className="min-w-[110px] max-w-[110px] rounded-sm bg-vc-panel p-1.5 text-left align-top font-normal">
                 <span style={chip(a.category)} className="px-1 text-[9px] font-semibold text-primary-foreground">{a.category}</span>
                 <div className="mt-1 h-[32px] overflow-hidden text-[11px] font-semibold uppercase leading-tight" title={a.title}>{a.title}</div>
                 <div className="mt-1 text-[11px] text-muted-foreground">{format(a.due, "MMM dd")} · /{a.points}</div>
