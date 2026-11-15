@@ -32,7 +32,7 @@ export function WebsiteSettings({ c }: { c: Section }) {
         <input type="color" aria-label="Custom color" value={w.color} onChange={(e) => change({ ...w, color: e.target.value })} className="h-8 w-10" /><input aria-label="Background color code" value={w.color} className="h-8 w-24 border border-vc-line px-2" onChange={(e) => change({ ...w, color: e.target.value })} /></div>}
       {w.bg === "photo" && <div className="mt-3 flex items-end gap-3">
         {w.photo ? <img src={w.photo} alt="Website background" className="h-[110px] w-[196px] border border-vc-line object-cover" /> : <div className="grid h-[110px] w-[196px] place-items-center border border-dashed border-vc-line text-muted-foreground">No photo</div>}
-        <button onClick={() => setCrop(true)} className="h-8 border border-vc-line px-3 text-vc-link-strong">{w.photo ? "Replace & crop photo" : "Upload & crop photo"}</button></div>}
+        <Button variant="outline" size="sm" onClick={() => setCrop(true)}>{w.photo ? "Replace photo" : "Upload photo"}</Button></div>}
       <div className="mt-2 h-[70px] w-[260px] border border-vc-line" style={w.bg === "color" ? { background: w.color } : w.bg === "photo" && w.photo ? { backgroundImage: `url(${w.photo})`, backgroundSize: "cover" } : undefined} title="Preview" />
       <div className="mt-3 flex flex-wrap gap-4">{([['barColor', 'Heading color'], ['linkColor', 'Link color']] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2">{label}<input type="color" aria-label={label} value={w[key] || w.color} onChange={(e) => change({ ...w, [key]: e.target.value })} /></label>)}</div>
 
@@ -54,7 +54,7 @@ export function WebsiteSettings({ c }: { c: Section }) {
           <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={w.pageContent?.[pg]?.published ?? false} onChange={(e) => change({ ...w, pageContent: { ...w.pageContent, [pg]: { body: w.pageContent?.[pg]?.body ?? '', published: e.target.checked } } })} />Published</label></div>))}</div>
       <Button variant="ghost" size="sm" onClick={() => change({ ...w, pages: [...w.pages, `New Page ${w.pages.length + 1}`] })} className="mt-2 text-vc-link-strong"><Plus className="size-4" />Add page</Button>
 
-      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={16 / 9} outWidth={1600} title="Website Background"
+      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={16 / 9} outWidth={1600} uncropped title="Website Background"
         onSave={(url) => { const next = { ...w, bg: "photo" as const, photo: url }; setW(next); save(next); }} />
     </div>
   );

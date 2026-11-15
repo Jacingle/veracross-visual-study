@@ -37,7 +37,6 @@ function Login() {
           <img src={crest} alt={`${SCHOOL.name} crest`} width={816} height={816} className="size-[100px] object-contain" />
         </div>
         <h1 className="text-center text-[27px] text-vc-topbar">{SCHOOL.name}</h1>
-        <p className="mt-4 text-center">Welcome to Veracross.</p>
         <p className="mt-3 text-center">{settings.login.message}</p>
         {error && <div role="alert" className="mt-5 bg-vc-note px-3 py-3 text-destructive shadow-sm">{error}</div>}
         {step === 1 ? (
@@ -59,16 +58,7 @@ function Login() {
           </form>
         )}
         <button type="button" onClick={() => toast.info("Contact the school office", { description: "Your administrator can reset your password from Axiom → Users & Security." })} className="mt-5 block text-vc-link hover:underline">Can't access your account?</button>
-        <p className="mt-5"><b>Forgot your password?</b> Click <button type="button" className="text-vc-link underline" onClick={() => toast.info("Ask your administrator to reset it in Users & Security.")}>here</button> or on the "<i>Can't access your account?</i>" link above.</p>
-        <p className="mt-4">If you need additional assistance, please email <a className="text-vc-link underline" href={`mailto:helpdesk@${SCHOOL.domain}`}>helpdesk@{SCHOOL.domain}</a>.</p>
-        <div className="mt-5 text-center text-[11px] text-muted-foreground">Veracross © 2026 • Privacy Policy</div>
       </div>
-      <details className="relative mx-auto mt-4 max-w-[578px] bg-background/90 px-4 py-2 text-[13px] shadow">
-        <summary className="cursor-pointer font-semibold">Demo accounts</summary>
-        <p className="mt-2 text-muted-foreground">Password is the same as the username.</p>
-        <ul className="mt-1 space-y-1">{["administrator@ulls.org", "teacher@ulls.org", "student@ulls.org"].map((u) => (
-          <li key={u}><button type="button" className="text-vc-link-strong hover:underline" onClick={() => { setUsername(u); setStep(2); setError(""); }}>{u}</button></li>))}</ul>
-      </details>
     </div>
   );
 }
