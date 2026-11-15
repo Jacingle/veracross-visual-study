@@ -25,6 +25,7 @@ function Tile({ to, label, icon: Icon, warm }: { to: "/schedule" | "/assignments
 }
 
 function Home() {
+  const COURSES = useMySections().filter((c) => c.status === "current");
   const { read, links, addLink, removeLink } = usePortal();
   const inbox = useInbox();
   const all = useStudentAssignments();

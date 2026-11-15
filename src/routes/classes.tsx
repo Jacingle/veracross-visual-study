@@ -3,7 +3,7 @@ import { BarChart3, Clock, SquareCheck, Sprout } from "lucide-react";
 import { useState } from "react";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
 import { ClassRow } from "@/components/portal/ClassRow";
-import { COURSES } from "@/lib/sis-data";
+import { useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/classes")({
@@ -22,6 +22,7 @@ function Report({ icon: Icon, label, children }: { icon: typeof Clock; label: st
 
 function Overview() {
   const [tab, setTab] = useState<"Active" | "Future" | "Past">("Active");
+  const mine = useMySections().filter((c) => c.status === ({ Active: "current", Future: "future", Past: "past" } as const)[tab]);
   return (
     <PortalShell portal="student">
       <StudentTabs />
@@ -41,7 +42,7 @@ function Overview() {
         ))}</div>
       </div>
       <div className="px-6 pb-8">
-        {tab === "Active" ? COURSES.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)
+        {mine.length ? mine.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)
           : <p className="py-12 text-center text-[14px] text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
       </div>
     </PortalShell>

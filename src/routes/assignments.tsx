@@ -17,6 +17,7 @@ export const Route = createFileRoute("/assignments")({
 });
 
 function Planner() {
+  const COURSES = useMySections().filter((c) => c.status === "current");
   const { start } = Route.useSearch();
   const nav = useNavigate({ from: "/assignments" });
   const { done, toggleDone } = usePortal();

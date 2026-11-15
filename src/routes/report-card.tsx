@@ -11,6 +11,7 @@ export const Route = createFileRoute("/report-card")({
 });
 
 function Report() {
+  const COURSES = useMySections().filter((c) => c.status === "current");
   const { comments, termGrades } = useSchool();
   return (
     <PortalShell portal="student">
