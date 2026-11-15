@@ -63,7 +63,7 @@ function Home() {
           <h2 className="mb-3 text-[21px]">My Portal</h2>
           <Link to="/messages" className="flex items-center gap-3 border border-vc-line px-3 py-4 text-[16px] hover:bg-vc-panel">
             <Mail className="size-8 text-muted-foreground" strokeWidth={1} />
-            <span>Unread messages</span><span className="ml-auto rounded-sm bg-cat-quiz px-2.5 py-1 text-[20px] text-primary-foreground">{unread}</span>
+            <span>Unread messages</span><span className={`ml-auto rounded-sm px-2.5 py-1 text-[20px] ${unread ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-muted-foreground"}`}>{unread}</span>
           </Link>
           <Link to="/assignments" className="mt-2.5 flex h-9 items-center justify-center gap-2 bg-vc-success text-[14px] font-semibold text-primary-foreground hover:opacity-90">
             <CirclePlay className="size-4 fill-current stroke-vc-success" /> Submit Assignments
