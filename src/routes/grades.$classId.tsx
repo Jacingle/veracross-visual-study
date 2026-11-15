@@ -9,7 +9,7 @@ import { useSchool, useStudentAssignments } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/grades/$classId")({
-  validateSearch: (s: Record<string, unknown>): { tab?: "detail" } => (s.tab === "detail" ? { tab: "detail" } : {}),
+  validateSearch: (s: Record<string, unknown>): { tab?: "detail" } => (s["tab"] === "detail" ? { tab: "detail" } : {}),
   loader: ({ params }) => { const c = COURSES.find((x) => x.id === params.classId); if (!c) throw notFound(); return { c }; },
   head: ({ loaderData }) => pageHead(loaderData ? `${courseTitle(loaderData.c)} Grades` : "Grades", "Grade detail and all assignments for this class."),
   component: Grades,
