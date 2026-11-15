@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
 import { BookOpen, ClipboardList, Image, Mail, Palette, Receipt, UserPlus, Users } from "lucide-react";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
-import { ALL_SECTIONS, STUDENTS, TEACHERS } from "@/lib/sis-data";
+import { STUDENTS, TEACHERS } from "@/lib/sis-data";
 import { ROLE_LABEL } from "@/lib/auth-rules";
 import { useSchool } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -25,7 +25,7 @@ function AdminHome() {
   return (
     <AxiomShell title="System Administrator Homepage">
       <div className="grid grid-cols-4 gap-3">
-        {[["Portal Accounts", users.length], ["Students", STUDENTS.length + 1], ["Faculty & Staff", TEACHERS.length], ["Class Sections", ALL_SECTIONS.length]].map(([l, n]) => (
+        {[["Portal Accounts", users.length], ["Students", STUDENTS.length + 1], ["Faculty & Staff", TEACHERS.length], ["Class Sections", sections.length]].map(([l, n]) => (
           <div key={l} className="border border-vc-line bg-background px-3 py-2.5"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="text-[26px] font-light text-ax-top">{n}</div></div>))}
       </div>
       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_340px] gap-3">
