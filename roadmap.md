@@ -17,11 +17,11 @@
 - [x] Expand person details, admin impersonation, website colors and editable published pages
 - [x] Student directories, updates, messages, grade detail: second screenshot pass
 - [x] Remove sample school records, repair all photo upload paths and reload saving; refine supplied screenshots
-- [ ] Class website: solid top strip + gray page, white content card separate from background (teacher sidebar with full photo)
-- [ ] Slightly rounded corners on all photos
-- [ ] Unread messages / class notifications highlighted yellow only when new; normal after read
+- [x] Class website: solid top strip + gray page, white content card separate from background (teacher sidebar with full photo)
+- [x] Slightly rounded corners on all photos
+- [x] Unread messages / class notifications highlighted yellow only when new; normal after read
 - [ ] Top header style (Student Portal tab with slanted edge + portal switcher)
-- [ ] Assignment pop-up matches reference (category, dates, max score, weight, notes)
-- [ ] Scheduling sets: blocks first, rotation length, day meeting times, assign blocks to times; classes choose blocks
+- [x] Assignment pop-up matches reference (category, dates, max score, weight, notes)
+- [x] Scheduling sets: blocks first, rotation length, day meeting times, assign blocks to times; classes choose blocks
 - [ ] Review classes/reports, attendance detail, schedule report vs. references
 - [ ] Markbook overview review for grade rules
