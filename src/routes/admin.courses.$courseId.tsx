@@ -50,7 +50,7 @@ function Editor({ c }: { c: Section }) {
   const save = () => {
     if (!d.teacherIds.length) { toast.error("Assign at least one teacher."); return; }
     if (d.published && (!d.block || !d.room)) { toast.error("Set a block and room before publishing."); return; }
-    update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...d, teacherId: d.teacherIds[0]!, code: d.id } : x)) }));
+    update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...d, studentIds: x.studentIds, website: x.website, teacherId: d.teacherIds[0]!, code: d.id } : x)) }));
     toast.success(d.published ? "Class saved — visible on teacher and student portals" : "Class saved as draft (not on portals)");
   };
   const setRoster = (ids: string[]) => update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...x, studentIds: ids } : x)) }));
