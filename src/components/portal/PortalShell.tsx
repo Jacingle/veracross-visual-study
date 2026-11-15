@@ -98,7 +98,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
       <main className="relative min-h-[calc(100vh-80px)] pb-12 pt-7">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
-          : <div className={`relative mx-auto bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1045px]"}`}>{children}</div>}
+          : <div className={`relative mx-auto bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
     </div>
   );

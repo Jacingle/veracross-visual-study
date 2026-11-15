@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { BookUser, CalendarCheck, ClipboardList, Globe, IdCard, Lightbulb, MessageSquareText, Receipt, Table2 } from "lucide-react";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import campus from "@/assets/campus-bg.jpg";
 import { PortalShell } from "@/components/portal/PortalShell";
-import { NEWS, TEACHER_TIP, TODAY_EVENTS, courseTitle, sectionsFor, teacherRoster, today } from "@/lib/sis-data";
-import { useSchool } from "@/lib/school-store";
+import { TEACHER_TIP, TODAY_EVENTS, sectionsFor, today } from "@/lib/sis-data";
+import { isoDay, useSchool } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/teacher/")({
@@ -11,63 +13,48 @@ export const Route = createFileRoute("/teacher/")({
   component: TeacherHome,
 });
 
+const LINKS = [
+  { label: "Gradebook", tab: "gradebook" }, { label: "Take Attendance", tab: "attendance" }, { label: "Assignments", tab: "assignments" },
+  { label: "Enter Grades & Comments", tab: "grades" }, { label: "Assignment Weights", tab: "weights" }, { label: "Assignment Reports", tab: "reports" },
+] as const;
+
 function TeacherHome() {
   const { user, attDone } = useSchool();
-  const mine = sectionsFor(user?.personId || "t3");
-  const dow = today().getDay();
-  const todays = mine.filter((c) => c.days.includes(dow)).sort((a, b) => a.time.localeCompare(b.time));
-  const day = format(today(), "yyyy-MM-dd");
+  const [q, setQ] = useState("");
+  const mine = sectionsFor(user?.personId || "t3").sort((a, b) => a.time.localeCompare(b.time));
+  const day = isoDay(today());
+  const first = mine[0]?.id ?? "143-1";
   return (
     <PortalShell portal="teacher" area="teacher">
-      <div className="border-b border-vc-line px-4 py-3.5 text-[18px]">Faculty Home · {user?.first} {user?.last}</div>
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_280px] gap-6 px-4 pb-8 pt-4">
-        <section className="min-w-0">
-          <h2 className="mb-2 text-[19px]">Today's Classes</h2>
-          {todays.length === 0 && <p className="border border-vc-line px-3 py-6 text-center text-[13px] text-muted-foreground">No classes meet today.</p>}
-          <ul className="border-t border-vc-line">{todays.map((c) => (
-            <li key={c.id} className="border-b border-vc-line py-2.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="truncate text-[15px] text-vc-link-strong hover:underline">{courseTitle(c)}</Link>
-                <span className="shrink-0 text-[12px] text-muted-foreground">{c.time}</span>
-              </div>
-              <div className="text-[12px] text-muted-foreground">{c.block} · Room {c.room} · {teacherRoster(c.id).length} students</div>
-              <div className="mt-1.5 flex gap-3 text-[12px]">
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "attendance" }} className={attDone.includes(`${c.id}|${day}`) ? "text-vc-success" : "text-vc-link-strong hover:underline"}>{attDone.includes(`${c.id}|${day}`) ? "✓ Attendance taken" : "Take Attendance"}</Link>
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong hover:underline">Gradebook</Link>
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "assignments" }} className="text-vc-link-strong hover:underline">Assignments</Link>
-                <Link to="/class/$classId" params={{ classId: c.id }} className="text-vc-link-strong hover:underline">Website</Link>
-              </div>
-            </li>))}</ul>
-          <h2 className="mb-2 mt-5 text-[19px]">All My Classes</h2>
-          <table className="w-full text-[13px]"><tbody>{mine.map((c) => (
-            <tr key={c.id} className="border-b border-vc-line"><td className="py-1.5"><Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-vc-link-strong hover:underline">{courseTitle(c)}</Link></td><td className="text-muted-foreground">{c.block}</td><td className="text-right text-muted-foreground">{teacherRoster(c.id).length}</td></tr>))}</tbody></table>
-        </section>
-        <section className="min-w-0">
-          <h2 className="mb-2 text-[19px]">Today's Events</h2>
-          <ul className="border-t border-vc-line">{TODAY_EVENTS.map((e) => (
-            <li key={e.title} className="flex gap-3 border-b border-vc-line py-2.5">
-              <div className="w-12 shrink-0 text-right"><div className="text-[15px] font-semibold">{e.time}</div><div className="text-[10px] text-muted-foreground">{e.ampm}</div></div>
-              <div className="min-w-0"><div className="text-[10px] font-semibold tracking-wider text-muted-foreground">{e.kind}</div><div className="text-[14px] text-vc-event">{e.title}</div></div>
-            </li>))}</ul>
-          <h2 className="mb-2 mt-5 text-[19px]">School News</h2>
-          {NEWS.map((n) => <div key={n.title} className="border-b border-vc-line py-2"><Link to="/teacher/news" className="text-[14px] text-vc-link-strong hover:underline">{n.title}</Link><div className="text-[12px] text-muted-foreground">{format(n.date, "MMM d")} · {n.body}</div></div>)}
-        </section>
-        <aside>
-          <h2 className="mb-2 text-[19px]">Class Management</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: "Gradebook", icon: Table2, tab: "gradebook" as const },
-              { label: "Attendance", icon: CalendarCheck, tab: "attendance" as const },
-              { label: "Assignments", icon: ClipboardList, tab: "assignments" as const },
-              { label: "Grades & Comments", icon: MessageSquareText, tab: "grades" as const },
-            ].map(({ label, icon: Icon, tab }) => (
-              <Link key={label} to="/teacher/class/$classId" params={{ classId: (todays[0] ?? mine[0])?.id ?? "143-1" }} search={{ tab }} className="flex h-[74px] flex-col items-center justify-center gap-1.5 bg-vc-tile text-center text-[13px] text-vc-link-strong hover:bg-vc-tile-hover"><Icon className="size-5" />{label}</Link>))}
-            <Link to="/directories" className="flex h-[74px] flex-col items-center justify-center gap-1.5 bg-vc-tile text-[13px] text-vc-link-strong hover:bg-vc-tile-hover"><BookUser className="size-5" />Directories</Link>
-            <Link to="/teacher/purchases" className="flex h-[74px] flex-col items-center justify-center gap-1.5 bg-vc-tile text-[13px] text-vc-link-strong hover:bg-vc-tile-hover"><Receipt className="size-5" />Purchase Requests</Link>
-            <Link to="/class/$classId" params={{ classId: mine[0]?.id ?? "143-1" }} className="flex h-[74px] flex-col items-center justify-center gap-1.5 bg-vc-tile text-[13px] text-vc-link-strong hover:bg-vc-tile-hover"><Globe className="size-5" />Class Websites</Link>
-            <Link to="/directories" search={{ type: "students" }} className="flex h-[74px] flex-col items-center justify-center gap-1.5 bg-vc-tile text-[13px] text-vc-link-strong hover:bg-vc-tile-hover"><IdCard className="size-5" />My Advisees</Link>
+      <div className="border-b border-vc-line px-4 py-3 text-[17px]">Home</div>
+      <div className="px-3 pt-2"><img src={campus} alt="" width={1920} height={1088} className="h-[180px] w-full object-cover" /></div>
+      <div className="grid grid-cols-[minmax(0,1fr)_200px] gap-6 px-3 pb-8 pt-4">
+        <div>
+          <h2 className="text-[19px]">Today's Classes</h2>
+          <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-5">
+            {mine.map((c) => { const done = attDone.includes(`${c.id}|${day}`); return (
+              <div key={c.id} className="border-l-2 border-vc-link pl-3.5">
+                <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[15px] text-vc-link hover:underline"><b>{c.id}</b>: {c.name}</Link>
+                <div className="text-[11px] text-muted-foreground">{c.block}: {c.time}</div>
+                <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "attendance" }} className={`text-[12px] ${done ? "text-vc-success" : "text-destructive"}`}>● {done ? "Attendance taken" : "Attendance"} →</Link>
+              </div>); })}
           </div>
-          <div className="mt-4 bg-vc-note p-3 text-[13px]"><div className="mb-1 flex items-center gap-1.5 font-semibold"><Lightbulb className="size-4" /> Teacher Tip</div>{TEACHER_TIP}</div>
+          <h2 className="mt-8 text-[19px]">Class Management Links</h2>
+          <div className="relative mt-2"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find students, faculty or staff" className="h-9 w-full border border-vc-line pl-9 text-[14px]" /></div>
+          {q && <Link to="/directories" search={{ last: q }} className="mt-1 block text-[13px] text-vc-link-strong">Search directory for “{q}” →</Link>}
+          <ul className="mt-3 grid grid-cols-2 gap-y-1.5 text-[14px]">{LINKS.map((l) => <li key={l.label}><Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: l.tab }} className="text-vc-link hover:underline">{l.label}</Link></li>)}</ul>
+        </div>
+        <aside>
+          <h2 className="text-center text-[19px]">Today's Events</h2>
+          <div className="mt-1 border-t border-vc-line pt-1 text-center"><div className="text-[11px] text-muted-foreground">{format(today(), "EEEE")}</div><div className="text-[15px]">{format(today(), "MMM d")}</div></div>
+          {TODAY_EVENTS.map((e) => (
+            <div key={e.title} className="mt-3 grid grid-cols-[62px_1fr] gap-2">
+              <div className="pt-3 text-right text-[15px]">{e.time} <span className="text-[10px] text-muted-foreground">{e.ampm}</span></div>
+              <div><div className="text-[9px] text-vc-link">{e.kind}</div><div className="text-[14px] leading-tight">{e.title}</div></div>
+            </div>))}
+          <h3 className="mt-6 text-center text-[15px] font-semibold">Teacher Tip of the Week</h3>
+          <p className="mt-1 text-[12px] text-muted-foreground">{TEACHER_TIP}</p>
         </aside>
       </div>
     </PortalShell>
