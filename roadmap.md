@@ -1,9 +1,9 @@
 # Roadmap
-- [ ] Repair bounded square photo crop/drop zone and uncropped website uploads; verify reload
-- [ ] Polish portal switching/impersonation, original branding and simplified login
-- [ ] Align student grade detail, weighting and term report selection
-- [ ] Add scheduling sets with weekly blocks, start/end times and terms; connect class schedules
-- [ ] Improve administrator creation forms and verify central flows
+- [x] Repair bounded square photo crop/drop zone and uncropped website uploads; verify reload
+- [x] Polish portal switching/impersonation, original branding and simplified login
+- [x] Align student grade detail, weighting and term report selection
+- [x] Add scheduling sets with weekly blocks, start/end times and terms; connect class schedules
+- [x] Improve administrator creation forms and verify central flows
 - [x] Login page + demo accounts, role portals (student/teacher/admin)
 - [x] Admin: users, courses, enrollment, portal settings (saved), messages, purchases
 - [x] Teacher home, class left menu, gradebook, attendance matched to screenshots

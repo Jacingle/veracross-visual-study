@@ -47,7 +47,7 @@ export function ImageCropper({ open, onClose, onSave, aspect, outWidth, title = 
       <DialogContent className="max-h-[90dvh] max-w-[480px] overflow-y-auto text-[13px]">
         <DialogHeader><DialogTitle className="text-[17px]">{title}</DialogTitle></DialogHeader>
         <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Choose photo" onChange={(e) => { choose(e.target.files?.[0]); e.target.value = ""; }} />
-        <div className="relative mx-auto max-w-full touch-none overflow-hidden bg-muted" style={{ width: FW, height: `calc(min(420px, 100vw - 5rem) / ${aspect})`, aspectRatio: aspect, cursor: img ? "grab" : "default" }}
+        <div className="relative mx-auto max-w-full touch-none overflow-hidden bg-muted" style={{ width: "min(420px, calc(100vw - 5rem))", height: `calc(min(420px, 100vw - 5rem) / ${aspect})`, aspectRatio: aspect, cursor: img ? "grab" : "default" }}
           onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); choose(e.dataTransfer.files[0]); }}
           onPointerDown={(e) => { if (!img || uncropped) return; e.currentTarget.setPointerCapture(e.pointerId); drag.current = { x: e.clientX, y: e.clientY, ox: pos.x, oy: pos.y }; }}
           onPointerMove={(e) => { const d = drag.current; const scale = FW / e.currentTarget.clientWidth; if (d) setOff(clamp({ x: d.ox + (e.clientX - d.x) * scale, y: d.oy + (e.clientY - d.y) * scale })); }}
