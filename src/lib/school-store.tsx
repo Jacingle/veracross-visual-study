@@ -127,7 +127,7 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
       const actor = s.users.find((u) => u.id === s.sessionId) ?? null;
       const target = s.users.find((u) => u.id === id);
       if (!target || !canImpersonate(actor, target)) return false;
-      setS((x) => ({ ...x, impersonatorId: actor?.id, sessionId: id })); return true;
+      setS((x) => ({ ...x, impersonatorId: actor?.id ?? null, sessionId: id })); return true;
     },
     stopImpersonating: () => setS((x) => ({ ...x, sessionId: x.impersonatorId ?? x.sessionId, impersonatorId: null })),
   }), [s, ready, update]);
