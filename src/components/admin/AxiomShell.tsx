@@ -5,7 +5,7 @@ import crest from "@/assets/crest.png";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ALL_SECTIONS, SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
+import { SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
 
 type Crumb = { label: string; to?: "/admin/courses" | "/admin/users" | "/admin/settings" };
@@ -25,7 +25,7 @@ export function AxiomShell({ title, crumbs = [], actions, children }: { title: s
 }
 
 function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; children: ReactNode }) {
-  const { user, logout, users } = useSchool();
+  const { user, logout, users, sections } = useSchool();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -33,7 +33,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
     const t = q.trim().toLowerCase();
     if (t.length < 2) return [];
     return [
-      ...ALL_SECTIONS.filter((c) => courseTitle(c).toLowerCase().includes(t) || c.id.includes(t)).slice(0, 5).map((c) => ({ kind: "Class", label: courseTitle(c), go: () => nav({ to: "/admin/courses/$courseId", params: { courseId: c.id } }) })),
+      ...sections.filter((c) => courseTitle(c).toLowerCase().includes(t) || c.id.includes(t)).slice(0, 5).map((c) => ({ kind: "Class", label: courseTitle(c), go: () => nav({ to: "/admin/courses/$courseId", params: { courseId: c.id } }) })),
       ...users.filter((u) => `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(t)).slice(0, 4).map((u) => ({ kind: "User", label: `${u.first} ${u.last} (${u.email})`, go: () => nav({ to: "/admin/users", search: { q: u.email } }) })),
       ...TEACHERS.filter((x) => `${x.first} ${x.last}`.toLowerCase().includes(t)).slice(0, 4).map((x) => ({ kind: "Faculty", label: `${x.prefix} ${x.first} ${x.last}`, go: () => nav({ to: "/directories", search: { type: "faculty", last: x.last } }) })),
       ...STUDENTS.filter((x) => `${x.first} ${x.last}`.toLowerCase().includes(t)).slice(0, 5).map((x) => ({ kind: "Student", label: `${x.first} ${x.last} · Grade ${x.grade}`, go: () => nav({ to: "/directories", search: { type: "students", first: x.first, last: x.last } }) })),

@@ -1,41 +1,47 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BarChart3, CalendarCheck, ClipboardList, Globe, MessageSquareText, Scale, Table2, Users } from "lucide-react";
 import { z } from "zod";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Gradebook } from "@/components/teacher/Gradebook";
 import { AssignmentsTab } from "@/components/teacher/AssignmentsTab";
 import { Attendance, GradesComments, Reports, Weights } from "@/components/teacher/ClassTools";
-import { ALL_SECTIONS, courseTitle, sectionsFor, teacherFull, teacherRoster, today } from "@/lib/sis-data";
+import { courseTitle, teacherFull, today } from "@/lib/sis-data";
+import { WebsiteSettings } from "@/components/teacher/WebsiteSettings";
+import { termLabel } from "@/lib/terms";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
-import { isoDay, useSchool, useSectionAssignments } from "@/lib/school-store";
+import { isoDay, rosterOf, useMySections, useSchool, useSectionAssignments, type Section } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 const TABS = [
   { id: "overview", label: "Students", icon: Users }, { id: "attendance", label: "Attendance", icon: CalendarCheck },
   { id: "assignments", label: "Assignments", icon: ClipboardList }, { id: "gradebook", label: "Gradebook", icon: Table2 },
   { id: "grades", label: "Grades & Comments", icon: MessageSquareText }, { id: "weights", label: "Weights", icon: Scale },
-  { id: "reports", label: "Reports", icon: BarChart3 },
+  { id: "reports", label: "Reports", icon: BarChart3 }, { id: "website", label: "Website", icon: Globe },
 ] as const;
 
 export const Route = createFileRoute("/teacher/class/$classId")({
   validateSearch: z.object({
-    tab: z.enum(["overview", "attendance", "assignments", "gradebook", "grades", "weights", "reports"]).optional(),
+    tab: z.enum(["overview", "attendance", "assignments", "gradebook", "grades", "weights", "reports", "website"]).optional(),
     aid: z.string().optional(), sub: z.enum(["details", "students"]).optional(), sid: z.string().optional(), date: z.string().optional(),
   }),
-  loader: ({ params }) => { const c = ALL_SECTIONS.find((x) => x.id === params.classId); if (!c) throw notFound(); return { c }; },
-  head: ({ loaderData }) => pageHead(loaderData ? `${courseTitle(loaderData.c)} · Class Management` : "Class Management", "Attendance, assignments, gradebook and comments for this class."),
+  head: ({ params }) => pageHead(`${params.classId} · Class Management`, "Attendance, assignments, gradebook, comments and website for this class."),
   component: ClassManager,
 });
 
 function ClassManager() {
-  const { c } = Route.useLoaderData();
+  const { classId } = Route.useParams();
+  const mineAll = useMySections();
+  const c = mineAll.find((x) => x.id === classId);
+  if (!c) return <PortalShell portal="teacher" area="teacher"><p className="p-8 text-[14px]">This class isn't available — it may be unpublished or not assigned to you. <Link to="/teacher" className="text-vc-link-strong">Back to faculty home</Link></p></PortalShell>;
+  return <Manager key={c.id} c={c} mine={mineAll} />;
+}
+function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
-  const { user, scores, weights } = useSchool();
+  const { scores, weights } = useSchool();
   const nav = useNavigate();
   const list = useSectionAssignments(c.id);
-  const roster = teacherRoster(c.id);
-  const mine = user?.role === "admin" ? ALL_SECTIONS : sectionsFor(user?.personId || "t3");
+  const roster = rosterOf(c);
   const w = weights[c.id] ?? defaultWeights(list.map((a) => a.category));
   return (
     <PortalShell portal="teacher" area="teacher" wide>
@@ -48,8 +54,7 @@ function ClassManager() {
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }}
             className={`mx-2 flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] ${tab === id ? "bg-vc-select" : "hover:bg-background"}`}><Icon className="size-5 text-foreground/70" strokeWidth={1.5} />{label}</Link>))}
-        <Link to="/class/$classId" params={{ classId: c.id }} className="mx-2 flex items-center gap-3 px-3 py-2.5 text-[14px] hover:bg-background"><Globe className="size-5 text-foreground/70" strokeWidth={1.5} />Website</Link>
-        <div className="mt-4 px-5 text-[11px] text-muted-foreground">{teacherFull(c.teacherId)}<br />{c.block} · Room {c.room} · {roster.length} students</div>
+        <div className="mt-4 px-5 text-[11px] text-muted-foreground">{c.teacherIds.map(teacherFull).join(", ")}<br />{c.block} · Room {c.room} · {roster.length} students<br />{c.terms.map(termLabel).join(", ")}</div>
       </aside>
       <div className="min-w-0">
       <div className="px-4 py-4">
@@ -73,6 +78,7 @@ function ClassManager() {
         {tab === "grades" && <GradesComments c={c} roster={roster} list={list} sid={sid} />}
         {tab === "weights" && <Weights key={c.id} c={c} list={list} />}
         {tab === "reports" && <Reports list={list} roster={roster} />}
+        {tab === "website" && <WebsiteSettings c={c} />}
       </div>
       </div>
       </div>

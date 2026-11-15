@@ -4,8 +4,8 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import campus from "@/assets/campus-bg.jpg";
 import { PortalShell } from "@/components/portal/PortalShell";
-import { TEACHER_TIP, TODAY_EVENTS, sectionsFor, today } from "@/lib/sis-data";
-import { isoDay, useSchool } from "@/lib/school-store";
+import { TEACHER_TIP, TODAY_EVENTS, today } from "@/lib/sis-data";
+import { isoDay, useMySections, useSchool } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/teacher/")({
@@ -19,11 +19,13 @@ const LINKS = [
 ] as const;
 
 function TeacherHome() {
-  const { user, attDone } = useSchool();
+  const { attDone } = useSchool();
+  const all = useMySections();
   const [q, setQ] = useState("");
-  const mine = sectionsFor(user?.personId || "t3").sort((a, b) => a.time.localeCompare(b.time));
+  const mine = all.filter((c) => c.status === "current").sort((a, b) => a.time.localeCompare(b.time));
+  const later = all.filter((c) => c.status !== "current");
   const day = isoDay(today());
-  const first = mine[0]?.id ?? "143-1";
+  const first = mine[0]?.id ?? all[0]?.id ?? "";
   return (
     <PortalShell portal="teacher" area="teacher">
       <div className="border-b border-vc-line px-4 py-3 text-[17px]">Home</div>
@@ -38,12 +40,14 @@ function TeacherHome() {
                 <div className="text-[11px] text-muted-foreground">{c.block}: {c.time}</div>
                 <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "attendance" }} className={`text-[12px] ${done ? "text-vc-success" : "text-destructive"}`}>● {done ? "Attendance taken" : "Attendance"} →</Link>
               </div>); })}
+            {!mine.length && <p className="col-span-2 text-[13px] text-muted-foreground">No published classes this term. Classes appear here once the school office schedules and publishes them.</p>}
           </div>
+          {later.length > 0 && <div className="mt-5 text-[12px] text-muted-foreground">Other terms: {later.map((c, i) => <span key={c.id}>{i > 0 && " · "}<Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-vc-link hover:underline">{c.id}: {c.name}</Link> ({c.status})</span>)}</div>}
           <h2 className="mt-8 text-[19px]">Class Management Links</h2>
           <div className="relative mt-2"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find students, faculty or staff" className="h-9 w-full border border-vc-line pl-9 text-[14px]" /></div>
           {q && <Link to="/directories" search={{ last: q }} className="mt-1 block text-[13px] text-vc-link-strong">Search directory for “{q}” →</Link>}
-          <ul className="mt-3 grid grid-cols-2 gap-y-1.5 text-[14px]">{LINKS.map((l) => <li key={l.label}><Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: l.tab }} className="text-vc-link hover:underline">{l.label}</Link></li>)}</ul>
+          <ul className="mt-3 grid grid-cols-2 gap-y-1.5 text-[14px]">{first && LINKS.map((l) => <li key={l.label}><Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: l.tab }} className="text-vc-link hover:underline">{l.label}</Link></li>)}</ul>
         </div>
         <aside>
           <h2 className="text-center text-[19px]">Today's Events</h2>

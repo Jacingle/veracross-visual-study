@@ -1,23 +1,25 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
-import { ALL_SECTIONS, courseTitle, teacherFull, teacherRoster } from "@/lib/sis-data";
+import { courseTitle, studentById, teacherFull } from "@/lib/sis-data";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
-import { useSchool, useSectionAssignments } from "@/lib/school-store";
+import { useSchool, useSection, useSectionAssignments, type Section } from "@/lib/school-store";
+import type { Student } from "@/lib/sis-data";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/enrollment/$courseId/$studentId")({
-  loader: ({ params }) => {
-    const c = ALL_SECTIONS.find((x) => x.id === params.courseId); const s = c && teacherRoster(c.id).find((x) => x.id === params.studentId);
-    if (!c || !s) throw notFound(); return { c, s };
-  },
-  head: ({ loaderData }) => pageHead(loaderData ? `Axiom · ${loaderData.s.first} ${loaderData.s.last} in ${loaderData.c.name}` : "Axiom · Enrollment", "Class enrollment record with attendance totals and grade detail."),
+  head: ({ params }) => pageHead(`Axiom · Enrollment ${params.courseId}`, "Class enrollment record with attendance totals and grade detail."),
   component: Enrollment,
 });
 
 function Enrollment() {
-  const { c, s } = Route.useLoaderData();
+  const p = Route.useParams();
+  const c = useSection(p.courseId); const s = studentById(p.studentId);
+  if (!c || !s || !c.studentIds.includes(s.id)) return <AxiomShell title="Enrollment not found" crumbs={[{ label: "Courses & Enrollment", to: "/admin/courses" }]}><p>This student is not enrolled in that class.</p></AxiomShell>;
+  return <Record c={c} s={s} />;
+}
+function Record({ c, s }: { c: Section; s: Student }) {
   const { scores, weights, attendance, termGrades, comments } = useSchool();
   const list = useSectionAssignments(c.id);
   const w = weights[c.id] ?? defaultWeights(list.map((a) => a.category));

@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ClassRow } from "@/components/portal/ClassRow";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { COURSES, events, fmtDay, today } from "@/lib/sis-data";
+import { events, fmtDay, today } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
-import { useInbox, useStudentAssignments } from "@/lib/school-store";
+import { useInbox, useStudentAssignments , useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/student")({
@@ -25,6 +25,7 @@ function Tile({ to, label, icon: Icon, warm }: { to: "/schedule" | "/assignments
 }
 
 function Home() {
+  const COURSES = useMySections().filter((c) => c.status === "current");
   const { read, links, addLink, removeLink } = usePortal();
   const inbox = useInbox();
   const all = useStudentAssignments();

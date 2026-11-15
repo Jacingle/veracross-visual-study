@@ -1,9 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { type Course, courseTitle, teacherShort, today } from "@/lib/sis-data";
+import { letterFor } from "@/lib/grading";
+import { useClassAverage } from "@/lib/school-store";
 
 export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overview" }) {
   const meets = c.days.includes(today().getDay());
+  const av = useClassAverage(c.id);
   return (
     <div className="flex justify-between border-b border-vc-line py-5 last:border-b-0">
       <div className="min-w-0">
@@ -26,7 +29,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
       </div>
       <div className="flex shrink-0 flex-col items-end">
         <Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: "detail" }} className="flex gap-4 text-[22px] font-light text-foreground/85 hover:text-vc-link">
-          <span>{c.letter}</span><span>{c.pct.toFixed(2)}%</span>
+          {av !== null ? <><span>{letterFor(av)}</span><span>{av.toFixed(2)}%</span></> : <span className="text-[15px] text-muted-foreground">No grades yet</span>}
         </Link>
         <div className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
           <span className="rounded-sm bg-vc-line px-1 text-[12px] font-semibold text-foreground">0</span> new updates

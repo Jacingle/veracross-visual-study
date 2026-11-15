@@ -1,27 +1,28 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, isSameWeek, startOfWeek } from "date-fns";
 import { useMemo, useState } from "react";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { CATEGORY_CHIP, COURSES, courseTitle, teacherFull, today, type Assignment } from "@/lib/sis-data";
+import { CATEGORY_CHIP, courseTitle, teacherFull, today, type Assignment } from "@/lib/sis-data";
 import { categoryStats, defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { usePortal } from "@/lib/portal-store";
-import { useSchool, useStudentAssignments } from "@/lib/school-store";
+import { useMySections, useSchool, useStudentAssignments } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/grades/$classId")({
   validateSearch: (s: Record<string, unknown>): { tab?: "detail" } => (s["tab"] === "detail" ? { tab: "detail" } : {}),
-  loader: ({ params }) => { const c = COURSES.find((x) => x.id === params.classId); if (!c) throw notFound(); return { c }; },
-  head: ({ loaderData }) => pageHead(loaderData ? `${courseTitle(loaderData.c)} Grades` : "Grades", "Grade detail and all assignments for this class."),
+  head: ({ params }) => pageHead(`Class ${params.classId} · Grades`, "Grade detail and all assignments for this class."),
   component: Grades,
 });
 
 const pct = (a: Assignment) => (a.score !== undefined ? (a.score / a.points) * 100 : null);
 
 function Grades() {
-  const { c } = Route.useLoaderData();
+  const { classId } = Route.useParams();
   const { tab } = Route.useSearch();
   const all = useStudentAssignments();
-  const list = useMemo(() => all.filter((a) => a.courseId === c.id).sort((a, b) => +b.due - +a.due), [all, c.id]);
+  const c = useMySections().find((x) => x.id === classId);
+  const list = useMemo(() => all.filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due), [all, classId]);
+  if (!c) return <PortalShell portal="student"><StudentTabs /><p className="p-8 text-[14px]">You're not enrolled in this class. <Link to="/classes" className="text-vc-link-strong">See your classes</Link></p></PortalShell>;
   return (
     <PortalShell portal="student">
       <StudentTabs />
