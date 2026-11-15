@@ -6,17 +6,19 @@ import { toast } from "sonner";
 import { type Assignment, type Course, type Student } from "@/lib/sis-data";
 import { categoryStats, defaultWeights, letterFor, weightedAverage, weightsTotal, weightsValid, type Weight } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
-import { useSchool } from "@/lib/school-store";
+import { useSchool, type Section } from "@/lib/school-store";
+import { gradingPeriods, termLabel, termOn } from "@/lib/terms";
 
 const ATT = ["Present", "Tardy", "Absent - Excused", "Absent - Unexcused", "Dismissed", "Field Trip"];
 
-export function Attendance({ c, roster, date }: { c: Course; roster: Student[]; date: string }) {
+export function Attendance({ c, roster, date }: { c: Section; roster: Student[]; date: string }) {
   const { attendance, attNotes, attDone, update } = useSchool();
   const nav = useNavigate();
   const key = (sid: string) => `${c.id}|${date}|${sid}`;
   const done = attDone.includes(`${c.id}|${date}`);
   const setDate = (d: string) => nav({ to: "/teacher/class/$classId", params: { classId: c.id }, search: { tab: "attendance", date: d } });
   const go = (n: number) => { const d = parseISO(date); d.setDate(d.getDate() + n); setDate(format(d, "yyyy-MM-dd")); };
+  const term = termOn(c.terms, parseISO(date));
   const counts = ATT.map((st) => [st, roster.filter((s) => (attendance[key(s.id)] ?? "Present") === st).length] as const).filter(([, n]) => n > 0);
   return (
     <div>
@@ -32,7 +34,7 @@ export function Attendance({ c, roster, date }: { c: Course; roster: Student[]; 
         </div>
         <span className="flex h-8 w-[200px] items-center border border-vc-line px-2 text-muted-foreground">{c.block}</span>
       </div>
-      <div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
+      {!term ? <p className="my-6 border border-vc-line bg-vc-panel p-4 text-[13px]">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <><div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
       <table className="w-full text-[13px]">
         <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Status</th><th>Class Attendance Notes</th></tr></thead>
         <tbody>{roster.map((s) => { const v = attendance[key(s.id)] ?? "Present"; return (
