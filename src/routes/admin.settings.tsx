@@ -76,7 +76,7 @@ function SettingsPage() {
         <ThemeEditor name="Student Portal" t={d.student} fallback={["#0f2b4f", "#1b4373"]} set={(student) => setD({ ...d, student })} />
         <ThemeEditor name="Faculty Portal" t={d.teacher} fallback={["#215a2c", "#2f7a3c"]} set={(teacher) => setD({ ...d, teacher })} />
         <div className="grid grid-cols-2 gap-3">
-          <Panel title="Class Websites"><BgPicker value={d.classSite.bg} onChange={(bg) => setD({ ...d, classSite: { bg } })} /></Panel>
+          <Panel title="Class Websites"><p className="text-muted-foreground">Each teacher sets their own class website background (blank, a color, or a photo) from the class's Website page.</p></Panel>
           <Panel title="Login Page">
             <BgPicker value={d.login.bg} onChange={(bg) => setD({ ...d, login: { ...d.login, bg } })} />
             <label className="mt-2 block text-[11px] font-semibold uppercase text-muted-foreground">Login instructions

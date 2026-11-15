@@ -35,7 +35,7 @@ const SEED_SECTIONS: Section[] = ALL_SECTIONS.map((c) => ({
   ...c, courseNo: c.id.split("-")[0]!, teacherIds: [c.teacherId], published: true,
   terms: c.id === "210-1" ? [`${Y}-S2`] : FY, // Honors Biology starts next semester (shows under Future)
   studentIds: teacherRoster(c.id).map((s) => s.id),
-  website: c.id === "122-1" ? { ...BLANK_SITE, bg: "photo", photo: "", sections: [{ title: "Course Description", body: "This course studies the global processes and interactions that have shaped our world, using primary and secondary sources." }], pages: ["Reading Resources"] } : { ...BLANK_SITE },
+  website: c.id === "122-1" ? { ...BLANK_SITE, bg: "photo", photo: painting, sections: [{ title: "Course Description", body: "This course studies the global processes and interactions that have shaped our world, using primary and secondary sources." }], pages: ["Reading Resources"] } : { ...BLANK_SITE },
 }));
 export const yearLabel = (id: string) => makeYear(Number(id)).label;
 
