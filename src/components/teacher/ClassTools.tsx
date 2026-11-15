@@ -24,7 +24,7 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
     <div>
       <div className="flex items-center justify-between">
         <h2 className="text-[22px]">Class Attendance <span className={`ml-1 px-1.5 py-0.5 align-middle text-[13px] ${done ? "bg-vc-tile text-vc-success" : "bg-vc-line"}`}>{done ? "Complete" : "Not Taken"}</span></h2>
-        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} className="h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
+        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!term} className="disabled:opacity-40 h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
       </div>
       <div className="mt-2 flex items-center gap-3 text-[13px]">
         <div className="flex h-8 items-center border border-vc-line">
@@ -47,17 +47,18 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
       <div className="mt-3 flex justify-end gap-2">
         <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className="h-8 border border-vc-line px-3 text-[13px]">Mark All Present</button>
       </div>
+      </>}
     </div>
   );
 }
 
-const TERMS = [{ id: "MS1", label: "Mid-Semester 1" }, { id: "S1", label: "Semester 1" }];
 const LETTERS = ["", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F", "P", "I"];
 
-export function GradesComments({ c, roster, list, sid }: { c: Course; roster: Student[]; list: Assignment[]; sid: string | undefined }) {
+export function GradesComments({ c, roster, list, sid }: { c: Section; roster: Student[]; list: Assignment[]; sid: string | undefined }) {
   const { scores, weights, comments, termGrades, update } = useSchool();
   const nav = useNavigate();
-  const [term, setTerm] = useState("MS1");
+  const TERMS = gradingPeriods(c.terms);
+  const [term, setTerm] = useState(TERMS[0]?.id ?? "");
   const s = roster.find((x) => x.id === sid) ?? roster[0];
   const w = weights[c.id] ?? defaultWeights(list.map((a) => a.category));
   if (!s) return <p className="text-[13px] text-muted-foreground">No students enrolled.</p>;
