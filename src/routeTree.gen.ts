@@ -23,6 +23,9 @@ import { Route as StudentRouteImport } from './routes/student'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as ClassClassIdRouteImport } from './routes/class.$classId'
 import { Route as GradesClassIdRouteImport } from './routes/grades.$classId'
+import { Route as TeacherIndexRouteImport } from './routes/teacher.index'
+import { Route as TeacherNewsRouteImport } from './routes/teacher.news'
+import { Route as TeacherPurchasesRouteImport } from './routes/teacher.purchases'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +97,21 @@ const GradesClassIdRoute = GradesClassIdRouteImport.update({
   path: '/grades/$classId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeacherIndexRoute = TeacherIndexRouteImport.update({
+  id: '/teacher/',
+  path: '/teacher/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeacherNewsRoute = TeacherNewsRouteImport.update({
+  id: '/teacher/news',
+  path: '/teacher/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeacherPurchasesRoute = TeacherPurchasesRouteImport.update({
+  id: '/teacher/purchases',
+  path: '/teacher/purchases',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +128,9 @@ export interface FileRoutesByFullPath {
   '/updates': typeof UpdatesRoute
   '/class/$classId': typeof ClassClassIdRoute
   '/grades/$classId': typeof GradesClassIdRoute
+  '/teacher/news': typeof TeacherNewsRoute
+  '/teacher/purchases': typeof TeacherPurchasesRoute
+  '/teacher/': typeof TeacherIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +147,9 @@ export interface FileRoutesByTo {
   '/updates': typeof UpdatesRoute
   '/class/$classId': typeof ClassClassIdRoute
   '/grades/$classId': typeof GradesClassIdRoute
+  '/teacher/news': typeof TeacherNewsRoute
+  '/teacher/purchases': typeof TeacherPurchasesRoute
+  '/teacher': typeof TeacherIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +167,9 @@ export interface FileRoutesById {
   '/updates': typeof UpdatesRoute
   '/class/$classId': typeof ClassClassIdRoute
   '/grades/$classId': typeof GradesClassIdRoute
+  '/teacher/news': typeof TeacherNewsRoute
+  '/teacher/purchases': typeof TeacherPurchasesRoute
+  '/teacher/': typeof TeacherIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +188,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/class/$classId'
     | '/grades/$classId'
+    | '/teacher/news'
+    | '/teacher/purchases'
+    | '/teacher/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +207,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/class/$classId'
     | '/grades/$classId'
+    | '/teacher/news'
+    | '/teacher/purchases'
+    | '/teacher'
   id:
     | '__root__'
     | '/'
@@ -193,6 +226,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/class/$classId'
     | '/grades/$classId'
+    | '/teacher/news'
+    | '/teacher/purchases'
+    | '/teacher/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +246,9 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   ClassClassIdRoute: typeof ClassClassIdRoute
   GradesClassIdRoute: typeof GradesClassIdRoute
+  TeacherNewsRoute: typeof TeacherNewsRoute
+  TeacherPurchasesRoute: typeof TeacherPurchasesRoute
+  TeacherIndexRoute: typeof TeacherIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +351,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GradesClassIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/teacher/': {
+      id: '/teacher/'
+      path: '/teacher'
+      fullPath: '/teacher/'
+      preLoaderRoute: typeof TeacherIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/teacher/news': {
+      id: '/teacher/news'
+      path: '/teacher/news'
+      fullPath: '/teacher/news'
+      preLoaderRoute: typeof TeacherNewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/teacher/purchases': {
+      id: '/teacher/purchases'
+      path: '/teacher/purchases'
+      fullPath: '/teacher/purchases'
+      preLoaderRoute: typeof TeacherPurchasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,6 +390,9 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   ClassClassIdRoute: ClassClassIdRoute,
   GradesClassIdRoute: GradesClassIdRoute,
+  TeacherNewsRoute: TeacherNewsRoute,
+  TeacherPurchasesRoute: TeacherPurchasesRoute,
+  TeacherIndexRoute: TeacherIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

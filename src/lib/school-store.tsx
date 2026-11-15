@@ -90,13 +90,19 @@ export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment
 }
 /** Student view: built-in assignments plus teacher-created ones marked "Display on portals". */
 export function useStudentAssignments(): Assignment[] {
-  const { custom } = useSchool();
+  const { custom, scores, pub } = useSchool();
   return useMemo(() => {
     const byId = new Map(custom.map((c) => [c.id, c]));
     const base = ASSIGNMENTS.filter((a) => !byId.has(a.id));
     const mine = custom.filter((c) => c.published && COURSES.some((x) => x.id === c.courseId)).map((c) => toAssignment(c, ASSIGNMENTS.find((a) => a.id === c.id)));
-    return [...base, ...mine];
-  }, [custom]);
+    // Teacher-entered scores for the demo student show up only while "publish to portal" is on.
+    return [...base, ...mine].map((a) => {
+      const k = `${a.id}|me`;
+      if (pub[k] === false) return { ...a, score: undefined };
+      if (k in scores) { const v = scores[k]; return { ...a, score: v === "" || v === undefined || Number.isNaN(Number(v)) ? undefined : Number(v) }; }
+      return a;
+    });
+  }, [custom, scores, pub]);
 }
 /** Teacher view: every assignment for one section, newest last. */
 export function useSectionAssignments(courseId: string): Assignment[] {
