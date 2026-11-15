@@ -12,7 +12,8 @@ export const Route = createFileRoute("/report-card")({
 
 function Report() {
   const COURSES = useMySections().filter((c) => c.status === "current");
-  const { comments, termGrades } = useSchool();
+  const { comments, termGrades, user } = useSchool();
+  const sid = user?.personId || "me";
   return (
     <PortalShell portal="student">
       <StudentTabs />
@@ -22,8 +23,8 @@ function Report() {
           <button onClick={() => window.print()} className="flex h-8 items-center gap-2 border border-vc-line px-3 text-[13px] text-vc-link-strong"><Printer className="size-4" />Print / Save PDF</button>
         </div>
         {COURSES.map((c) => (
-          <div key={c.id} className="border-b border-vc-line py-4"><div className="flex justify-between"><div className="text-[16px]">{courseTitle(c)} <span className="text-[13px] text-muted-foreground">· {teacherFull(c.teacherId)}</span></div><div className="text-[18px]">{termGrades[`${c.id}|me|MS1`] || c.letter}</div></div>
-            <p className="mt-1.5 whitespace-pre-line text-[14px] text-foreground/80">{comments[`${c.id}|me|MS1`] || `${ME.first} has been an engaged participant this term, demonstrating steady growth and thoughtful preparation for class discussions.`}</p></div>
+          <div key={c.id} className="border-b border-vc-line py-4"><div className="flex justify-between"><div className="text-[16px]">{courseTitle(c)} <span className="text-[13px] text-muted-foreground">· {teacherFull(c.teacherId)}</span></div><div className="text-[18px]">{termGrades[`${c.id}|${sid}|${c.terms[0]}-M`] || "—"}</div></div>
+            <p className="mt-1.5 whitespace-pre-line text-[14px] text-foreground/80">{comments[`${c.id}|${sid}|${c.terms[0]}-M`] || <span className="text-muted-foreground">No comment has been published yet.</span>}</p></div>
         ))}
       </div>
     </PortalShell>

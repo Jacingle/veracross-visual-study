@@ -9,9 +9,9 @@ export const Route = createFileRoute("/attendance")({
   component: Att,
 });
 
-const COLS = ["Present", "Tardy", "Excused Absence", "Unexcused Absence"];
+const COLS = ["Present", "Tardy", "Absent - Excused", "Absent - Unexcused"];
 function Att() {
-  const { attendance, user } = useSchool();
+  const { attendance, attDone, user } = useSchool();
   const mine = useMySections().filter((c) => c.status === "current");
   const sid = user?.personId || "me";
   return (
@@ -22,7 +22,10 @@ function Att() {
         <table className="w-full text-[13px]"><thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Class</th>{COLS.map((h) => <th key={h} className="text-right">{h}</th>)}</tr></thead>
           <tbody>{mine.map((c) => {
             const vals = Object.entries(attendance).filter(([k]) => k.startsWith(`${c.id}|`) && k.endsWith(`|${sid}`)).map(([, v]) => v);
-            return <tr key={c.id} className="border-b border-vc-line"><td className="py-2">{courseTitle(c)}</td>{COLS.map((h) => <td key={h} className="text-right">{vals.filter((v) => v === h).length}</td>)}</tr>;
+            // Days marked complete count as Present unless the teacher recorded something else.
+            const days = attDone.filter((k) => k.startsWith(`${c.id}|`)).map((k) => k.split("|")[1]);
+            const count = (h: string) => h === "Present" ? days.filter((d) => (attendance[`${c.id}|${d}|${sid}`] ?? "Present") === "Present").length : vals.filter((v) => v === h).length;
+            return <tr key={c.id} className="border-b border-vc-line"><td className="py-2">{courseTitle(c)}</td>{COLS.map((h) => <td key={h} className="text-right">{count(h)}</td>)}</tr>;
           })}</tbody></table>
         <p className="mt-3 text-[12px] text-muted-foreground">Counts update as teachers take attendance in each class.</p>
       </div>
