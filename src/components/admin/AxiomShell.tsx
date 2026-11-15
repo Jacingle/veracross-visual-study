@@ -7,6 +7,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
+import { PortalChooser } from '@/components/portal/PortalChooser';
+import { Button } from '@/components/ui/button';
 
 type Crumb = { label: string; to?: "/admin/courses" | "/admin/users" | "/admin/settings" };
 
@@ -28,6 +30,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
   const { user, logout, users, sections } = useSchool();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
+  const [chooser, setChooser] = useState(false);
   const [q, setQ] = useState("");
   const results = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -58,7 +61,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
           <Link to="/teacher" className="hidden whitespace-nowrap hover:underline md:inline">Faculty Portal</Link>
           <Link to="/student" className="hidden whitespace-nowrap hover:underline md:inline">Student Portal</Link>
           <DropdownMenu>
-            <DropdownMenuTrigger aria-label="Account menu" className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-foreground/25 text-[12px] outline-none">{user?.first[0]}{user?.last[0]}</DropdownMenuTrigger>
+            <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none">{user?.first[0]}{user?.last[0]}</Button>
             <DropdownMenuContent align="end" className="text-[13px]">
               <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · Administrator</div></DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -74,6 +77,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
         </div>
       </header>
       <main className="p-4">{children}</main>
+      <PortalChooser open={chooser} onClose={() => setChooser(false)} />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0 text-[13px]">
           <SheetHeader className="bg-ax-top px-4 py-3"><SheetTitle className="text-primary-foreground">Launchpad</SheetTitle></SheetHeader>
