@@ -81,9 +81,9 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
             <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Homepages</div>
             {AXIOM_LINKS.map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}
             <div className="px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Favorites</div>
-            {[{ to: "/admin/users", l: "Add a User" }, { to: "/admin/settings", l: "Backgrounds & Colors" }] as const.map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Star className="size-4 text-vc-tile-warm-fg" />{f.l}</Link>)}
+            {([{ to: "/admin/users", l: "Add a User" }, { to: "/admin/settings", l: "Backgrounds & Colors" }] as const).map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Star className="size-4 text-vc-tile-warm-fg" />{f.l}</Link>)}
             <div className="px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Portals</div>
-            {[{ to: "/teacher", l: "Faculty Portal" }, { to: "/student", l: "Student Portal" }] as const.map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Clock className="size-4 text-muted-foreground" />{f.l}</Link>)}
+            {([{ to: "/teacher", l: "Faculty Portal" }, { to: "/student", l: "Student Portal" }] as const).map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Clock className="size-4 text-muted-foreground" />{f.l}</Link>)}
           </div>
         </SheetContent>
       </Sheet>
