@@ -22,7 +22,7 @@ export const TEACHERS: Teacher[] = [
   { id: "t6", prefix: "Ms.", first: "Sarah", last: "Jarvis", dept: "Humanities", title: "Roundtable Coordinator" },
   { id: "t7", prefix: "Mr.", first: "Daniel", last: "Urbano", dept: "Fine Arts", title: "Director of Orchestra" },
   { id: "t8", prefix: "Ms.", first: "Paula", last: "Tobin", dept: "Library", title: "Upper School Librarian" },
-].map((t) => ({ ...t, email: `${t.first[0].toLowerCase()}${t.last.toLowerCase()}@cedarridge.edu` }));
+].map((t) => ({ ...t, email: `${t.first.charAt(0).toLowerCase()}${t.last.toLowerCase()}@cedarridge.edu` }));
 
 export const teacher = (id: string) => TEACHERS.find((t) => t.id === id)!;
 export const teacherShort = (id: string) => { const t = teacher(id); return `${t.prefix} ${t.last}`; };
@@ -44,7 +44,7 @@ export const courseTitle = (c: Course) => `${c.name} - ${c.section}`;
 export const ME = { first: "Jack", last: "Ingle", email: "jingle@cedarridge.edu", grade: 9, advisorId: "t3" };
 
 export type Category = "HOMEWORK" | "QUIZ" | "TEST" | "COLLABORATION" | "CLASSWORK/HOMEWORK" | "VOCABULARY" | "WRITING" | "READING";
-export type Assignment = { id: string; courseId: string; category: Category; title: string; due: Date; short: string; points: number; score?: number };
+export type Assignment = { id: string; courseId: string; category: Category; title: string; due: Date; short: string; points: number; score?: number | undefined };
 
 const PLAN: Record<string, { cat: Category; title: string; short: string }[]> = {
   "101-1": [{ cat: "VOCABULARY", title: "Vocabulary Unit 6", short: "Vocab" }, { cat: "CLASSWORK/HOMEWORK", title: "Annotate \"Story of Your Life\"", short: "CwHw" }, { cat: "WRITING", title: "Personal Narrative Draft", short: "Wr" }],
@@ -143,7 +143,7 @@ export const STUDENTS: Student[] = Array.from({ length: 96 }, (_, i) => {
     homePhone: ph(i),
     parents: [
       { name: `${pf} ${last}`, mobile: ph(i + 11), email: `${pf.toLowerCase()}.${last.toLowerCase()}@example.com` },
-      { name: `${pm} ${last}`, mobile: ph(i + 23), email: `${pm.toLowerCase()}${last[0].toLowerCase()}@example.com` },
+      { name: `${pm} ${last}`, mobile: ph(i + 23), email: `${pm.toLowerCase()}${last.charAt(0).toLowerCase()}@example.com` },
     ],
   };
 }).sort((a, b) => a.last.localeCompare(b.last));

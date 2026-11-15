@@ -88,7 +88,7 @@ export function StudentTabs() {
   return (
     <div className="flex justify-end border-b border-vc-line bg-vc-panel">
       {TABS.map((t, i) => {
-        const Icon = TAB_ICONS[i];
+        const Icon = TAB_ICONS[i]!;
         return (
           <Link key={t.to} to={t.to} className="flex w-[163px] flex-col items-center gap-2 border-l border-vc-line py-5 text-[15px] text-muted-foreground hover:bg-background"
             activeProps={{ className: "!bg-background !text-vc-link -mb-px" }}>
