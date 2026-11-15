@@ -5,9 +5,9 @@ import { useState } from "react";
 import { z } from "zod";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CATEGORY_TOKEN, COURSES, courseTitle, teacherFull, today } from "@/lib/sis-data";
+import { CATEGORY_TOKEN, courseTitle, teacherFull, today } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
-import { useStudentAssignments } from "@/lib/school-store";
+import { useStudentAssignments , useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/assignments")({

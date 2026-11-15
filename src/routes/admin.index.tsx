@@ -20,7 +20,7 @@ const TILES = [
 ] as const;
 
 function AdminHome() {
-  const { users, purchases, sent } = useSchool();
+  const { users, purchases, sent, sections } = useSchool();
   const pending = purchases.filter((p) => p.status === "Pending").length;
   return (
     <AxiomShell title="System Administrator Homepage">

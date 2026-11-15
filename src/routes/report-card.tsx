@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Printer } from "lucide-react";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { COURSES, ME, SCHOOL, courseTitle, teacherFull } from "@/lib/sis-data";
-import { useSchool } from "@/lib/school-store";
+import { ME, SCHOOL, courseTitle, teacherFull } from "@/lib/sis-data";
+import { useSchool , useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/report-card")({

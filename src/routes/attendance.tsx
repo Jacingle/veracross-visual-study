@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { COURSES, courseTitle } from "@/lib/sis-data";
+import { courseTitle } from "@/lib/sis-data";
+import { useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/attendance")({
