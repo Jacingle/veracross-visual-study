@@ -59,6 +59,10 @@ function PortalFlag({ id }: { id: string }) {
   return c && !c.published ? <span className="text-muted-foreground">Hidden</span> : <span className="text-vc-success">Shown</span>;
 }
 
+function L({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span>{children}</label>;
+}
+
 function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assignment | undefined; onSaved: (id: string) => void; onDeleted: () => void }) {
   const { custom, update } = useSchool();
   const existing = a ? custom.find((x) => x.id === a.id) : undefined;
@@ -74,8 +78,7 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
     update((s) => ({ ...s, custom: [...s.custom.filter((x) => x.id !== f.id), { ...f, title: f.title.trim() }] }));
     toast.success("Assignment saved"); onSaved(f.id);
   };
-  const L = ({ label, children }: { label: string; children: React.ReactNode }) => <label className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span>{children}</label>;
-  const Sw = ({ label, k }: { label: string; k: "published" | "inCalc" | "extraCredit" | "allSections" }) => (
+  const sw = (label: string, k: "published" | "inCalc" | "extraCredit" | "allSections") => (
     <div className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span><Switch checked={f[k]} onCheckedChange={(v) => setF({ ...f, [k]: v })} aria-label={label} /></div>);
   return (
     <form onSubmit={save} className="grid grid-cols-2 gap-x-8 border border-vc-line p-4">
@@ -88,10 +91,10 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
         <L label="Max Score"><input className={inp} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></L>
       </div>
       <div>
-        <Sw label="Display on Portals" k="published" />
-        <Sw label="Include in Calculations" k="inCalc" />
-        <Sw label="Extra Credit" k="extraCredit" />
-        <Sw label="Apply to All My Sections" k="allSections" />
+        {sw("Display on Portals", "published")}
+        {sw("Include in Calculations", "inCalc")}
+        {sw("Extra Credit", "extraCredit")}
+        {sw("Apply to All My Sections", "allSections")}
         <L label="Notes (portal)"><textarea className="h-16 w-full border border-vc-line p-2 text-[13px]" maxLength={1000} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></L>
         <L label="Homework Details"><textarea className="h-16 w-full border border-vc-line p-2 text-[13px]" maxLength={2000} value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} /></L>
       </div>
