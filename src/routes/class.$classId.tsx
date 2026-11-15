@@ -39,12 +39,12 @@ function ClassSite() {
       </div>
       <div className="relative mx-auto flex max-w-[1254px] gap-3.5 pb-16">
         <div className="w-[940px]">
-          <h1 className="py-6 text-[38px] font-light text-primary-foreground drop-shadow">{c.code}: {courseTitle(c)}</h1>
+          <h1 className="py-6 text-[38px] font-light text-primary-foreground [text-shadow:0_2px_8px_rgb(0_0_0_/0.6)]">{c.code}: {courseTitle(c)}</h1>
           <div className="min-h-[796px] bg-background">
             <div className="flex bg-vc-panel px-7">{TABS.map(({ id, label, icon: Icon }) => (
               <Link key={id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
                 className={`flex w-[111px] flex-col items-center gap-1 border-b-2 pb-2 pt-3 text-[17px] ${tab === id ? "border-vc-link-strong bg-background text-vc-link-strong" : "border-transparent"}`}>
-                <Icon className="size-7 fill-current" strokeWidth={1.5} />{label}</Link>))}</div>
+                <Icon className="size-7" strokeWidth={2} />{label}</Link>))}</div>
             <div className="px-5 py-5"><Body tab={tab} c={c} upcoming={upcoming} /></div>
           </div>
         </div>

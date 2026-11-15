@@ -135,7 +135,7 @@ const PARENT_M = ["Tamika","Jeannette","Laura","Angela","Monica","Rachel"];
 const ph = (n: number) => `${["313","586","248"][n % 3]}-${String(200 + (n * 37) % 799).padStart(3, "0")}-${String(1000 + (n * 431) % 8999)}`;
 
 export const STUDENTS: Student[] = Array.from({ length: 96 }, (_, i) => {
-  const first = FIRST[i % FIRST.length]!; const last = LAST[(i * 5) % LAST.length]!;
+  const first = FIRST[i % FIRST.length]!; const last = LAST[(i * 7 + Math.floor(i / 24) * 5) % LAST.length]!;
   const pf = PARENT_F[i % 6]!, pm = PARENT_M[(i + 2) % 6]!;
   return {
     id: `s${i + 1}`, first, last, grade: 9 + (i % 4),
