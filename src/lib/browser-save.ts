@@ -11,14 +11,14 @@ export async function readSchool(): Promise<string | null> {
     return await new Promise<string | null>((resolve, reject) => {
       const tx = db.transaction("state", "readonly");
       const request = tx.objectStore("state").get("school");
-      request.onsuccess = () => resolve(request.result ?? localStorage.getItem("cra-school-v2"));
+      request.onsuccess = () => resolve(localStorage.getItem("cra-school-v2") ?? request.result ?? null);
       request.onerror = () => reject(request.error);
       tx.oncomplete = () => db.close();
     });
   } catch { return localStorage.getItem("cra-school-v2"); }
 }
 export async function saveSchool(value: string) {
-  try { localStorage.setItem("cra-school-v2", value); } catch { /* IndexedDB handles larger photos. */ }
+  try { localStorage.setItem("cra-school-v2", value); } catch { localStorage.removeItem("cra-school-v2"); }
   const db = await open();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction("state", "readwrite");

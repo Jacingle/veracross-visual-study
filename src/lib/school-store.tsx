@@ -109,7 +109,11 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
   useEffect(() => { if (ready) void saveSchool(JSON.stringify(s)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); }, [s, ready]);
-  const update = useCallback((fn: (s: State) => State) => setS(fn), []);
+  const update = useCallback((fn: (s: State) => State) => setS((current) => {
+    const next = fn(current);
+    void saveSchool(JSON.stringify(next)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again."));
+    return next;
+  }), []);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
     EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId.startsWith("p-")).map((u) => ({ id: u.personId, prefix: "", first: u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
