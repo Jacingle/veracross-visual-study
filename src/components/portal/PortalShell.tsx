@@ -72,7 +72,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             </DropdownMenu>
           </div>
           <div className="ml-auto flex items-center gap-5">
-            <Link to="/messages" search={{ id: undefined }} className="flex items-center gap-1.5 hover:underline">
+            <Link to="/messages" className="flex items-center gap-1.5 hover:underline">
               <Mail className="size-5" /> Messages{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
             </Link>
             <Link to="/calendar" className="flex items-center gap-1.5 hover:underline"><CalendarDays className="size-5" /> My Calendar</Link>
