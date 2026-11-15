@@ -13,6 +13,7 @@ import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
 import { readSchool, saveSchool } from "./browser-save";
 import { toast } from "sonner";
+import type { SchedulingSet } from './scheduling';
 
 export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
   { key: "graduation", label: "Graduation", src: graduation },
@@ -28,7 +29,7 @@ export type Website = { bg: "none" | "color" | "photo"; color: string; photo: st
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
-export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website };
+export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string; scheduleBlockId?: string };
 
 const Y = String(yearStartFor(new Date()));
 const FY = [`${Y}-S1`, `${Y}-S2`];
@@ -69,11 +70,12 @@ type State = {
   courses: CourseDef[]; sections: Section[]; photos: Record<string, string>;
   sampleCleared?: boolean;
   impersonatorId?: string | null;
+  schedulingSets: SchedulingSet[];
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
   scores: {}, aStatus: {}, pub: {}, attendance: {}, attNotes: {}, attDone: [], comments: {}, termGrades: {},
-  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {},
+  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, schedulingSets: [],
 };
 const KEY = "cra-school-v2";
 
