@@ -78,6 +78,22 @@
   --color-vc-line: var(--vc-line);
   --color-vc-badge: var(--vc-badge);
   --color-vc-weekend: var(--vc-weekend);
+  --color-vc-resource: var(--vc-resource);
+  --color-vc-resource-edge: var(--vc-resource-edge);
+  --color-vc-sky: var(--vc-sky);
+  --color-vc-attn: var(--vc-attn);
+  --color-vc-select: var(--vc-select);
+  --color-vc-note: var(--vc-note);
+  --color-vc-danger-soft: var(--vc-danger-soft);
+  --color-ax-top: var(--ax-top);
+  --color-ax-bar: var(--ax-bar);
+  --color-ax-search: var(--ax-search);
+  --color-ax-side: var(--ax-side);
+  --color-ax-go: var(--ax-go);
+  --color-ax-head: var(--ax-head);
+  --color-cat-paper: oklch(0.58 0.15 35);
+  --color-cat-blue: oklch(0.6 0.13 245);
+  --color-cat-portfolio: oklch(0.27 0.07 260);
   --color-cat-homework: oklch(0.58 0.17 145);
   --color-cat-quiz: oklch(0.75 0.16 65);
   --color-cat-test: oklch(0.55 0.2 30);
@@ -111,6 +127,19 @@
   --vc-line: oklch(0.9 0.004 250);
   --vc-badge: oklch(0.52 0.09 262);
   --vc-weekend: oklch(0.96 0.05 90);
+  --vc-resource: oklch(0.33 0.1 255);
+  --vc-resource-edge: oklch(0.5 0.2 22);
+  --vc-sky: oklch(0.95 0.025 240);
+  --vc-attn: oklch(0.95 0.08 95);
+  --vc-select: oklch(0.9 0.04 240);
+  --vc-note: oklch(0.97 0.04 90);
+  --vc-danger-soft: oklch(0.88 0.06 15);
+  --ax-top: oklch(0.47 0.07 252);
+  --ax-bar: oklch(0.56 0.06 252);
+  --ax-search: oklch(0.7 0.05 252);
+  --ax-side: oklch(0.955 0.004 250);
+  --ax-go: oklch(0.65 0.16 145);
+  --ax-head: oklch(0.94 0.004 250);
   --background: oklch(1 0 0);
   --foreground: oklch(0.22 0.01 250);
   --card: oklch(1 0 0);
@@ -194,4 +223,10 @@
 @layer base {
   body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   a { cursor: pointer; }
+}
+
+/* Faculty portal palette: same tokens, green defaults (admin can override in Portal Settings). */
+.portal-faculty {
+  --vc-topbar: oklch(0.43 0.1 145);
+  --vc-navbar: oklch(0.53 0.12 145);
 }
