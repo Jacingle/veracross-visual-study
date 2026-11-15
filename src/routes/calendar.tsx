@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart3, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, FileText, PieChart } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { course, courseTitle, events, today, type Assignment } from "@/lib/sis-data";
+import { course, courseTitle, events, teacherShort, today, type Assignment } from "@/lib/sis-data";
 import { useSchool, useStudentAssignments } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
@@ -45,17 +46,20 @@ function Cal() {
         ))}
       </div>
       <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
-        <DialogContent className="max-w-[560px] gap-0 p-0 text-[13px]">
+        <DialogContent className="max-w-[840px] gap-0 overflow-hidden rounded-sm p-0 text-[13px]">
           {sel && <>
-            <DialogHeader className="border-b border-vc-line px-5 py-3"><DialogTitle className="text-[17px] font-normal">{sel.title}</DialogTitle>
-              <div className="text-[12px] text-muted-foreground">{sections.find((c) => c.id === sel.courseId)?.name ?? sel.courseId}</div></DialogHeader>
-            <dl className="grid grid-cols-[140px_1fr] gap-y-2.5 px-5 py-4">
-              <dt className="text-muted-foreground">Category</dt><dd>{sel.category}</dd>
-              <dt className="text-muted-foreground">Assignment Date</dt><dd>{format(sel.assigned, "EEEE, MMMM d, yyyy")}</dd>
-              <dt className="text-muted-foreground">Due Date</dt><dd>{format(sel.due, "EEEE, MMMM d, yyyy")}</dd>
-              <dt className="text-muted-foreground">Score / Weight</dt><dd>{sel.score !== undefined ? `${sel.score} out of ${sel.points}` : `Not graded · out of ${sel.points}`}</dd>
-              <dt className="text-muted-foreground">Notes</dt><dd className="whitespace-pre-line">{sel.notes}</dd>
-            </dl>
+            <DialogHeader className="flex-row items-start justify-between space-y-0 bg-vc-panel px-6 py-4 text-left"><div><DialogTitle className="text-[20px] font-light"><strong className="font-semibold">{sel.courseId}:</strong> {sections.find((c) => c.id === sel.courseId)?.name ?? ""}</DialogTitle>
+              <div className="text-[14px] text-muted-foreground">{teacherShort(sections.find((c) => c.id === sel.courseId)?.teacherId ?? "")}</div></div><span className="mr-6 text-[14px] font-semibold tracking-wide text-muted-foreground">ASSIGNMENT</span></DialogHeader>
+            <div className="px-6 py-8">
+              <div className="text-[14px] font-semibold uppercase text-vc-link">{sel.category}</div>
+              <h2 className="text-[30px] font-semibold">{sel.title}</h2>
+              <div className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+                {([[CalendarPlus, "Date Assigned", format(sel.assigned, "EEEE, MMM dd")], [CalendarDays, "Due Date", format(sel.due, "EEEE, MMM dd")], [BarChart3, "Max Score", String(sel.points)], [PieChart, "Weight", String(sel.points)]] as const).map(([Icon, label, value]) => (
+                  <div key={label} className="flex items-center gap-4"><Icon className="size-8 shrink-0" strokeWidth={1.3} /><div className="border-l border-vc-line pl-3"><div className="text-[14px] text-muted-foreground">{label}</div><div className="text-[20px] font-semibold">{value}</div></div></div>))}
+              </div>
+              <div className="mt-8 flex gap-4"><FileText className="size-8 shrink-0" strokeWidth={1.3} /><div className="border-l border-vc-line pl-3"><div className="text-[14px] text-muted-foreground">Notes</div><p className="mt-3 whitespace-pre-line text-[15px]">{sel.notes || "-"}</p></div></div>
+            </div>
+            <div className="flex justify-end bg-vc-panel px-4 py-3"><Button variant="outline" onClick={() => setSel(null)}>Close</Button></div>
           </>}
         </DialogContent>
       </Dialog>
