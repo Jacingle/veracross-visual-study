@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- All school data comes from `src/lib/sis-data.ts` (single shared dataset) so every page shows the same records; replace with Lovable Cloud tables later without changing page structure.
+- Pages wrap content in `PortalShell` (portal) or the class-site layout; colors come only from `--vc-*` / `cat-*` tokens in `src/styles.css`.
