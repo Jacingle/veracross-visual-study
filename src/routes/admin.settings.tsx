@@ -41,7 +41,7 @@ function ColorRow({ label, value, fallback, onChange }: { label: string; value: 
       <span>{label}</span>
       <span className="flex items-center gap-2">
         <input type="color" aria-label={label} value={value || fallback} onChange={(e) => onChange(e.target.value)} className="h-7 w-12 cursor-pointer border border-vc-line" />
-        <button type="button" onClick={() => onChange("")} className="text-[11px] text-vc-link-strong">Default</button>
+        <button type="button" onClick={() => onChange("")} className="text-[11px] text-vc-link-strong">Clear</button>
       </span>
     </label>
   );
@@ -74,20 +74,21 @@ function SettingsPage() {
   const { settings, update } = useSchool();
   const [d, setD] = useState<Settings>(settings);
   useEffect(() => { setD(settings); }, [settings]);
+  const change = (next: Settings) => { setD(next); update((s) => ({ ...s, settings: next })); };
   const save = () => { update((s) => ({ ...s, settings: d })); toast.success("Portal settings saved — open a portal to see them"); };
   return (
     <AxiomShell title="Portal Settings" actions={<>
-      <button onClick={() => setD(DEFAULT_SETTINGS)} className="h-7 border border-vc-line px-3">Restore Defaults</button>
+      <button onClick={() => change(DEFAULT_SETTINGS)} className="h-7 border border-vc-line px-3">Clear Appearance</button>
       <button onClick={save} className="h-7 bg-ax-go px-4 font-semibold text-primary-foreground">Save</button></>}>
       <div className="space-y-3">
-        <ThemeEditor name="Student Portal" t={d.student} fallback={["#0f2b4f", "#1b4373"]} set={(student) => setD({ ...d, student })} />
-        <ThemeEditor name="Faculty Portal" t={d.teacher} fallback={["#215a2c", "#2f7a3c"]} set={(teacher) => setD({ ...d, teacher })} />
+        <ThemeEditor name="Student Portal" t={d.student} fallback={["#0f2b4f", "#1b4373"]} set={(student) => change({ ...d, student })} />
+        <ThemeEditor name="Faculty Portal" t={d.teacher} fallback={["#215a2c", "#2f7a3c"]} set={(teacher) => change({ ...d, teacher })} />
         <div className="grid grid-cols-2 gap-3">
           <Panel title="Class Websites"><p className="text-muted-foreground">Each teacher sets their own class website background (blank, a color, or a photo) from the class's Website page.</p></Panel>
           <Panel title="Login Page">
-            <BgPicker value={d.login.bg} onChange={(bg) => setD({ ...d, login: { ...d.login, bg } })} />
+            <BgPicker value={d.login.bg} onChange={(bg) => change({ ...d, login: { ...d.login, bg } })} />
             <label className="mt-2 block text-[11px] font-semibold uppercase text-muted-foreground">Login instructions
-              <textarea value={d.login.message} maxLength={300} onChange={(e) => setD({ ...d, login: { ...d.login, message: e.target.value } })} className="mt-1 h-14 w-full border border-vc-line p-2 text-[13px] font-normal normal-case text-foreground" /></label>
+              <textarea value={d.login.message} maxLength={300} onChange={(e) => change({ ...d, login: { ...d.login, message: e.target.value } })} className="mt-1 h-14 w-full border border-vc-line p-2 text-[13px] font-normal normal-case text-foreground" /></label>
           </Panel>
         </div>
       </div>
