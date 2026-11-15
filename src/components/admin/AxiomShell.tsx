@@ -8,6 +8,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ALL_SECTIONS, SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
 
+type Crumb = { label: string; to?: "/admin/courses" | "/admin/users" | "/admin/settings" };
+
 export const AXIOM_LINKS = [
   { to: "/admin", label: "System Administrator Homepage", icon: Home },
   { to: "/admin/users", label: "Users & Security", icon: Users },
@@ -18,11 +20,11 @@ export const AXIOM_LINKS = [
 ] as const;
 
 /** Axiom (admin) frame: Launchpad, global search, breadcrumb bar, grey workspace. */
-export function AxiomShell({ title, crumbs = [], actions, children }: { title: string; crumbs?: { label: string; to?: string }[]; actions?: ReactNode; children: ReactNode }) {
+export function AxiomShell({ title, crumbs = [], actions, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; children: ReactNode }) {
   return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={actions}>{children}</Frame></RoleGate>;
 }
 
-function Frame({ title, crumbs, actions, children }: { title: string; crumbs: { label: string; to?: string }[]; actions: ReactNode; children: ReactNode }) {
+function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; children: ReactNode }) {
   const { user, logout, users } = useSchool();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
@@ -79,9 +81,9 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: { 
             <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Homepages</div>
             {AXIOM_LINKS.map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}
             <div className="px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Favorites</div>
-            {[{ to: "/admin/users", l: "Add a User" }, { to: "/admin/settings", l: "Backgrounds & Colors" }].map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Star className="size-4 text-vc-tile-warm-fg" />{f.l}</Link>)}
+            {[{ to: "/admin/users", l: "Add a User" }, { to: "/admin/settings", l: "Backgrounds & Colors" }] as const.map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Star className="size-4 text-vc-tile-warm-fg" />{f.l}</Link>)}
             <div className="px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Portals</div>
-            {[{ to: "/teacher", l: "Faculty Portal" }, { to: "/student", l: "Student Portal" }].map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Clock className="size-4 text-muted-foreground" />{f.l}</Link>)}
+            {[{ to: "/teacher", l: "Faculty Portal" }, { to: "/student", l: "Student Portal" }] as const.map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Clock className="size-4 text-muted-foreground" />{f.l}</Link>)}
           </div>
         </SheetContent>
       </Sheet>
