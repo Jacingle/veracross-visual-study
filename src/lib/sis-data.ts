@@ -69,7 +69,7 @@ export function buildAssignments(): Assignment[] {
       const plan = PLAN[c.id];
       if (!plan || !c.days.includes(dow)) return;
       if ((i + ci) % 2 !== 0) return;
-      const p = plan[(i + ci) % plan.length];
+      const p = plan[(i + ci) % plan.length]!;
       const id = `${c.id}-${format(d, "yyyyMMdd")}`;
       const past = d < today();
       out.push({ id, courseId: c.id, category: p.cat, title: p.title, short: p.short, due: d, points: p.cat === "TEST" ? 100 : p.cat === "QUIZ" ? 20 : 10,
@@ -91,7 +91,7 @@ export function scheduleFor(date: Date): Period[] {
   if (dow === 0 || dow === 6) return [];
   const slots = ["8:00 am", "9:10 am", "10:15 am", "10:35 am", "11:45 am", "12:50 pm", "1:40 pm", "2:45 pm"];
   const rot = COURSES.filter((c) => c.days.includes(dow) && c.type !== "ADVISORY");
-  const pick = (i: number) => rot[(i + dow) % rot.length];
+  const pick = (i: number) => rot[(i + dow) % rot.length]!;
   const cls = (i: number): Period => { const c = pick(i); return { time: "", title: courseTitle(c), detail: `${teacher(c.teacherId).last} • ${c.block} • ${c.room}`, kind: "class", courseId: c.id }; };
   const list: Period[] = [
     cls(0), { ...cls(1) },
@@ -104,8 +104,8 @@ export function scheduleFor(date: Date): Period[] {
   // de-duplicate repeated classes into Study Hall
   const seen = new Set<string>();
   return list.map((p, i) => {
-    if (p.courseId) { if (seen.has(p.courseId)) return { time: slots[i], title: "Study Hall - 2", detail: "Tobin • US Block B • USLib", kind: "class" as const }; seen.add(p.courseId); }
-    return { ...p, time: slots[i] };
+    if (p.courseId) { if (seen.has(p.courseId)) return { time: slots[i]!, title: "Study Hall - 2", detail: "Tobin • US Block B • USLib", kind: "class" as const }; seen.add(p.courseId); }
+    return { ...p, time: slots[i]! };
   });
 }
 
@@ -135,8 +135,8 @@ const PARENT_M = ["Tamika","Jeannette","Laura","Angela","Monica","Rachel"];
 const ph = (n: number) => `${["313","586","248"][n % 3]}-${String(200 + (n * 37) % 799).padStart(3, "0")}-${String(1000 + (n * 431) % 8999)}`;
 
 export const STUDENTS: Student[] = Array.from({ length: 96 }, (_, i) => {
-  const first = FIRST[i % FIRST.length]; const last = LAST[(i * 5) % LAST.length];
-  const pf = PARENT_F[i % 6], pm = PARENT_M[(i + 2) % 6];
+  const first = FIRST[i % FIRST.length]!; const last = LAST[(i * 5) % LAST.length]!;
+  const pf = PARENT_F[i % 6]!, pm = PARENT_M[(i + 2) % 6]!;
   return {
     id: `s${i + 1}`, first, last, grade: 9 + (i % 4),
     address: `${100 + ((i * 97) % 9800)} ${STREETS[i % STREETS.length]}, ${TOWNS[i % TOWNS.length]}`,
