@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
 import { Switch } from "@/components/ui/switch";
@@ -73,6 +73,7 @@ function ThemeEditor({ name, t, fallback, set }: { name: string; t: PortalTheme;
 function SettingsPage() {
   const { settings, update } = useSchool();
   const [d, setD] = useState<Settings>(settings);
+  useEffect(() => { setD(settings); }, [settings]);
   const save = () => { update((s) => ({ ...s, settings: d })); toast.success("Portal settings saved — open a portal to see them"); };
   return (
     <AxiomShell title="Portal Settings" actions={<>
