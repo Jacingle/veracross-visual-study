@@ -1,9 +1,9 @@
 // Demo app state shared by every portal (accounts, session, portal settings, teacher edits).
 // Browser-local only: a stand-in until the school moves to Lovable Cloud accounts.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { addDays, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { findLogin, type User } from "./auth-rules";
-import { ALL_ASSIGNMENTS, ASSIGNMENTS, COURSES, SEED_USERS, type Assignment, type Category } from "./sis-data";
+import { ALL_ASSIGNMENTS, ASSIGNMENTS, COURSES, MESSAGES, SEED_USERS, type Assignment, type Category } from "./sis-data";
 import campus from "@/assets/campus-bg.jpg";
 import blossoms from "@/assets/faculty-bg.jpg";
 import graduation from "@/assets/portal-bg.jpg";
@@ -97,4 +97,14 @@ export function useSectionAssignments(courseId: string): Assignment[] {
   const { custom } = useSchool();
   return useMemo(() => [...ALL_ASSIGNMENTS.filter((a) => a.courseId === courseId), ...custom.filter((c) => c.courseId === courseId).map(toAssignment)].sort((a, b) => +a.due - +b.due), [custom, courseId]);
 }
-export const isoDay = (d: Date) => addDays(d, 0).toISOString().slice(0, 10);
+export const isoDay = (d: Date) => format(d, "yyyy-MM-dd");
+
+/** Inbox for the signed-in person: school messages plus admin announcements sent to their audience. */
+export function useInbox() {
+  const { sent, user } = useSchool();
+  return useMemo(() => {
+    const aud = user?.role === "student" ? "students" : "faculty";
+    const extra = sent.filter((m) => m.audience === "everyone" || m.audience === aud).map((m) => ({ id: m.id, from: m.from, list: m.list, subject: m.subject, body: m.body, date: parseISO(m.date) }));
+    return [...extra, ...MESSAGES].sort((a, b) => +b.date - +a.date);
+  }, [sent, user]);
+}
