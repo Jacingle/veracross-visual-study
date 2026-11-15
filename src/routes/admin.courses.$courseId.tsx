@@ -7,7 +7,7 @@ import { scoreOf } from "@/lib/gradebook";
 import { useSchool, useSectionAssignments } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
-export const FLAGS = [
+const FLAGS = [
   ["gpa", "Include in GPA", true], ["report", "Show on Report Card", true], ["transcript", "Show on Transcript", true],
   ["portal", "Display Grades on Portals", true], ["website", "Enable Class Website", true], ["dropbox", "Allow Assignment Dropbox", true],
   ["attendance", "Take Attendance", true], ["honors", "Honors Weighting", false],

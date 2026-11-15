@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { PortalStoreProvider } from "../lib/portal-store";
+import { SchoolStoreProvider } from "../lib/school-store";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -95,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" },
@@ -127,10 +128,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <PortalStoreProvider>
-        <Outlet />
-        <Toaster />
-      </PortalStoreProvider>
+      <SchoolStoreProvider>
+        <PortalStoreProvider>
+          <Outlet />
+          <Toaster />
+        </PortalStoreProvider>
+      </SchoolStoreProvider>
     </QueryClientProvider>
   );
 }
