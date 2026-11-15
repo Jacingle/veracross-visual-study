@@ -8,6 +8,7 @@ import { StudentCard } from "@/components/portal/StudentCard";
 import { courseTitle, teacher, today, type Assignment } from "@/lib/sis-data";
 import { rosterOf, useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
+import type { CSSProperties } from "react";
 
 const TABS = [
   { id: "home", label: "Home", icon: Home }, { id: "posts", label: "Posts", icon: Megaphone }, { id: "timeline", label: "Timeline", icon: Clock },
@@ -17,7 +18,7 @@ const TABS = [
 type Tab = (typeof TABS)[number]["id"];
 
 export const Route = createFileRoute("/class/$classId")({
-  validateSearch: z.object({ tab: z.enum(["home", "posts", "timeline", "calendar", "resources", "photos", "discussions", "directory"]).optional() }),
+  validateSearch: z.object({ tab: z.enum(["home", "posts", "timeline", "calendar", "resources", "photos", "discussions", "directory"]).optional(), page: z.string().optional() }),
   head: ({ params }) => pageHead(`Class Website · ${params.classId}`, "Class website with assignments, resources and directory."),
   component: () => <RoleGate area="shared"><ClassSite /></RoleGate>,
 });
@@ -30,7 +31,7 @@ function ClassSite() {
   return <Site c={c} options={options} />;
 }
 function Site({ c, options }: { c: Section; options: Section[] }) {
-  const { tab = "home" } = Route.useSearch();
+  const { tab = "home", page } = Route.useSearch();
   const nav = useNavigate();
   const { user, logout, photos } = useSchool();
   const t = teacher(c.teacherIds[0] ?? c.teacherId);
@@ -40,7 +41,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
   const upcoming = all.filter((a) => !isAfter(today(), a.due)).slice(0, 5);
   const ws = c.website;
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen" style={{ ...(ws.barColor ? { '--vc-classbar': ws.barColor } : {}), ...(ws.linkColor ? { '--vc-link-strong': ws.linkColor } : {}) } as CSSProperties}>
       {ws.bg === "photo" && ws.photo ? <img src={ws.photo} alt="" width={1600} height={900} className="fixed inset-0 h-full w-full object-cover" />
         : <div className="fixed inset-0 bg-vc-panel" style={ws.bg === "color" ? { background: ws.color } : undefined} />}
       <div className="relative flex h-8 items-center justify-between border-b border-primary-foreground/20 bg-vc-classbar px-6 text-primary-foreground">
@@ -57,7 +58,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
               <Link key={id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
                 className={`flex w-[88px] flex-col items-center gap-1 border-b-2 pb-1.5 pt-2.5 text-[13px] ${tab === id ? "border-vc-link-strong bg-background text-vc-link-strong" : "border-transparent"}`}>
                 <Icon className="size-5" strokeWidth={2} />{label}</Link>))}</div>
-            <div className="px-4 py-4"><Body tab={tab} c={c} upcoming={upcoming} /></div>
+            <div className="px-4 py-4">{page && ws.pages.includes(page) && (user?.role !== 'student' || ws.pageContent?.[page]?.published) ? <section><h2 className="text-[24px] font-semibold">{page}</h2><p className="mt-4 whitespace-pre-wrap text-[14px] leading-6">{ws.pageContent?.[page]?.body ?? ''}</p></section> : <Body tab={tab} c={c} upcoming={upcoming} />}</div>
           </div>
         </div>
         <aside className="mt-[94px] w-[250px] shrink-0 space-y-3 text-[13px]">
@@ -69,7 +70,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
           </div>
           <div className="bg-background p-3">
             <Link to="/class/$classId" params={{ classId: c.id }} search={{ tab: "resources" }} className="flex items-center gap-1 text-[16px]">All Pages <ArrowRight className="size-4 text-vc-link-strong" /></Link>
-            {ws.pages.length ? ws.pages.map((pg) => <button key={pg} onClick={() => toast(pg)} className="mt-3 block text-left text-vc-link-strong">{pg}</button>)
+            {ws.pages.length ? ws.pages.filter((pg) => user?.role !== 'student' || ws.pageContent?.[pg]?.published).map((pg) => <Link key={pg} to="/class/$classId" params={{ classId: c.id }} search={{ page: pg }} className="mt-3 block text-left text-vc-link-strong">{pg}</Link>)
               : <p className="mt-2 text-muted-foreground">No pages yet.</p>}
           </div>
         </aside>

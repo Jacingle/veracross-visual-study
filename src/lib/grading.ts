@@ -24,11 +24,17 @@ export function categoryStats(items: Scored[], drop = false) {
 
 /** Weighted average: categories with no graded work are left out and the remaining weights re-scale. */
 export function weightedAverage(items: Scored[], weights: Weight[]): number | null {
+  if (!weights.length) return categoryStats(items).pct;
   let sum = 0, w = 0;
   for (const wt of weights) {
     const st = categoryStats(items.filter((a) => a.category === wt.cat), wt.drop);
     if (st.pct === null || wt.weight <= 0) continue;
     sum += st.pct * wt.weight; w += wt.weight;
+  }
+  for (const cat of new Set(items.map((a) => a.category))) {
+    if (weights.some((wt) => wt.cat === cat)) continue;
+    const st = categoryStats(items.filter((a) => a.category === cat));
+    if (st.pct !== null) { sum += st.pct; w += 1; }
   }
   return w ? sum / w : null;
 }

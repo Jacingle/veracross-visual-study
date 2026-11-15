@@ -1,101 +1,47 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { addDays, format, isSameWeek, startOfWeek } from "date-fns";
-import { useMemo, useState } from "react";
-import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { CATEGORY_CHIP, courseTitle, teacherFull, today, type Assignment } from "@/lib/sis-data";
-import { categoryStats, defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
-import { usePortal } from "@/lib/portal-store";
-import { useMySections, useSchool, useStudentAssignments } from "@/lib/school-store";
-import { pageHead } from "@/lib/head";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { addDays, format, isSameWeek, startOfWeek } from 'date-fns';
+import { useState } from 'react';
+import { Printer, ChevronDown, MessageCircle } from 'lucide-react';
+import { PortalShell } from '@/components/portal/PortalShell';
+import { Button } from '@/components/ui/button';
+import { CATEGORY_CHIP, courseTitle, teacherFull, today, type Assignment } from '@/lib/sis-data';
+import { categoryStats, defaultWeights, letterFor, weightedAverage } from '@/lib/grading';
+import { useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
+import { termById, termOn } from '@/lib/terms';
+import { pageHead } from '@/lib/head';
 
-export const Route = createFileRoute("/grades/$classId")({
-  validateSearch: (s: Record<string, unknown>): { tab?: "detail" } => (s["tab"] === "detail" ? { tab: "detail" } : {}),
-  head: ({ params }) => pageHead(`Class ${params.classId} · Grades`, "Grade detail and all assignments for this class."),
+export const Route = createFileRoute('/grades/$classId')({
+  validateSearch: (s: Record<string, unknown>): { tab?: 'detail' } => s['tab'] === 'detail' ? { tab: 'detail' } : {},
+  head: ({ params }) => pageHead(`Class ${params.classId} · Grades`, 'Published assignment scores, feedback and term grade details.'),
   component: Grades,
 });
-
-const pct = (a: Assignment) => (a.score !== undefined ? (a.score / a.points) * 100 : null);
-
+const pct = (a: Assignment) => a.score !== undefined && a.points > 0 ? a.score / a.points * 100 : null;
+const category = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 function Grades() {
-  const { classId } = Route.useParams();
-  const { tab } = Route.useSearch();
-  const all = useStudentAssignments();
+  const { classId } = Route.useParams(); const { tab } = Route.useSearch();
   const c = useMySections().find((x) => x.id === classId);
-  const list = useMemo(() => all.filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due), [all, classId]);
-  if (!c) return <PortalShell portal="student"><StudentTabs /><p className="p-8 text-[14px]">You're not enrolled in this class. <Link to="/classes" className="text-vc-link-strong">See your classes</Link></p></PortalShell>;
-  return (
-    <PortalShell portal="student">
-      <div className="px-6 py-5">
-        <div className="flex items-end justify-between border-b border-vc-line pb-3">
-          <div><h2 className="text-[24px] font-light">{courseTitle(c)}</h2><div className="text-[13px] italic text-muted-foreground">{teacherFull(c.teacherId)} · {c.block} · {c.room}</div></div>
-          <div className="flex text-[13px]">
-            <Link to="/grades/$classId" params={{ classId: c.id }} className={`border border-vc-line px-3 py-1.5 ${!tab ? "bg-vc-link text-primary-foreground" : ""}`}>All Assignments</Link>
-            <Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: "detail" }} className={`border border-l-0 border-vc-line px-3 py-1.5 ${tab ? "bg-vc-link text-primary-foreground" : ""}`}>Grade Detail</Link>
-          </div>
-        </div>
-        {tab === "detail" ? <Detail list={list} courseId={c.id} /> : <AllAssignments list={list} />}
-      </div>
-    </PortalShell>
-  );
+  const list = useStudentAssignments().filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due);
+  return <PortalShell portal="student">{c ? <><div className="flex flex-wrap items-center justify-between gap-2 px-7 py-5"><h1 className="text-[25px] font-light"><strong className="font-semibold">{c.id}:</strong> {courseTitle(c)} <span className="ml-2 text-[13px] italic text-muted-foreground">{teacherFull(c.teacherId)}</span></h1><Link to="/class/$classId" params={{ classId }} className="text-[12px] text-vc-link-strong">View Class Website →</Link></div><div className="flex px-6 text-[13px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-4 py-3 ${Boolean(tab) === Boolean(v) ? 'bg-vc-panel font-semibold' : 'text-muted-foreground'}`}>{label}</Link>)}</div>{tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
 }
-
 function AllAssignments({ list }: { list: Assignment[] }) {
-  const { done } = usePortal();
-  const [filter, setFilter] = useState<"all" | "upcoming" | "graded">("all");
-  const shown = list.filter((a) => filter === "all" || (filter === "upcoming" ? a.due >= today() : a.score !== undefined));
-  const weeks: { start: Date; items: Assignment[] }[] = [];
-  for (const a of shown) { const w = weeks.find((x) => isSameWeek(x.start, a.due)); if (w) w.items.push(a); else weeks.push({ start: startOfWeek(a.due), items: [a] }); }
-  return (
-    <>
-      <div className="mt-3 flex gap-1 text-[13px]">{(["all", "upcoming", "graded"] as const).map((f) => (
-        <button key={f} onClick={() => setFilter(f)} className={`border px-2.5 py-1 capitalize ${filter === f ? "border-vc-link bg-vc-sky text-vc-link-strong" : "border-vc-line"}`}>{f}</button>))}</div>
-      {weeks.map((w) => (
-        <div key={+w.start} className="mt-4">
-          <div className="border-b border-vc-line pb-2 pt-2 text-[17px]">{format(w.start, "MMMM d")} – {format(addDays(w.start, 6), "MMMM d")} <span className="text-[11px]">({w.items.length} assignments)</span></div>
-          {w.items.map((a) => {
-            const p = pct(a);
-            return (
-              <div key={a.id} className="grid grid-cols-[110px_minmax(0,1fr)_80px_90px_70px] items-center gap-2 border-b border-vc-line py-2 text-[13px]">
-                <span><span className={`inline-block px-1.5 py-px text-[10px] font-semibold text-primary-foreground ${CATEGORY_CHIP[a.category]}`}>{a.category}</span></span>
-                <span className="text-[14px]">{a.title}</span>
-                <span className="text-muted-foreground">Due {format(a.due, "M/d")}</span>
-                <span className={a.score !== undefined ? "text-vc-success" : a.due < today() && !done.includes(a.id) ? "text-destructive" : "text-muted-foreground"}>
-                  {a.score !== undefined ? "Graded" : done.includes(a.id) ? "Completed" : a.due < today() ? "Missing" : "Not Due Yet"}</span>
-                <span className="text-right font-semibold">{p !== null ? `${a.score}/${a.points}` : "—"}</span>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-      {weeks.length === 0 && <p className="py-10 text-center text-[13px] text-muted-foreground">No assignments.</p>}
-      <Link to="/classes" className="mt-5 inline-block text-[13px] text-vc-link-strong hover:underline">← Back to Classes & Reports</Link>
-    </>
-  );
+  const { comments, aStatus, user } = useSchool();
+  const [filter, setFilter] = useState('all'); const [sort, setSort] = useState('date'); const [expanded, setExpanded] = useState<string | null>(null);
+  const feedback = (a: Assignment) => comments[`a|${a.id}|${user?.personId}`] ?? '';
+  const status = (a: Assignment) => aStatus[`${a.id}|${user?.personId}`] ?? '';
+  const shown = list.filter((a) => filter === 'all' || (filter === 'feedback' ? Boolean(feedback(a)) : filter === 'problems' ? ['Missing', 'Incomplete', 'Late'].includes(status(a)) : a.score === undefined && a.due >= today()));
+  const groups: { key: string; label: string; items: Assignment[] }[] = [];
+  for (const a of shown) { const start = startOfWeek(a.due); const key = sort === 'type' ? a.category : String(+start); let group = groups.find((g) => g.key === key); if (!group) { group = { key, label: sort === 'type' ? category(a.category) : `${format(start, 'MMMM d')} - ${format(addDays(start, 6), 'MMMM d')}`, items: [] }; groups.push(group); } group.items.push(a); }
+  return <><div className="flex flex-wrap items-center justify-between gap-2 bg-vc-panel px-6 py-1 text-[12px]"><div className="flex gap-1">{[['all', 'All Assignments'], ['notifications', 'Notifications'], ['feedback', 'Feedback'], ['problems', 'Problems']].map(([v, label]) => <Button key={v} size="sm" variant="ghost" onClick={() => setFilter(v ?? 'all')} className={`h-6 px-2 text-[12px] ${filter === v ? 'bg-foreground text-background' : v === 'problems' ? 'text-destructive' : v === 'notifications' ? 'text-vc-tile-warm-fg' : 'text-vc-link-strong'}`}>{label}</Button>)}</div><div className="flex items-center gap-1"><span className="text-muted-foreground">sort by:</span>{[['date', 'Due Date'], ['type', 'Assignment Type']].map(([v, label]) => <Button key={v} size="sm" variant="ghost" onClick={() => setSort(v ?? 'date')} className={`h-6 px-2 text-[12px] ${sort === v ? 'bg-foreground text-background' : ''}`}>{label}</Button>)}</div></div>{groups.map((g) => <section key={g.key}><h2 className="border-b border-vc-line px-8 pb-2 pt-6 text-[18px]">{g.label} <span className="text-[11px]">({g.items.length} assignments)</span></h2>{g.items.map((a) => <div key={a.id}><Button variant="ghost" onClick={() => setExpanded(expanded === a.id ? null : a.id)} className={`grid h-auto min-h-11 w-full grid-cols-[90px_minmax(0,1fr)_65px] gap-2 rounded-none border-b border-vc-line px-8 py-2 text-left text-[13px] ${expanded === a.id ? 'bg-vc-panel' : ''}`}><span className="flex gap-2 text-[12px] font-semibold">{format(a.due, 'MMM d')} {format(a.due, 'EEE')}</span><span className="min-w-0 whitespace-normal font-normal"><span className={`mr-2 border-l-2 border-current px-1 font-semibold ${CATEGORY_CHIP[a.category]} text-primary-foreground`}>{category(a.category)}</span>{a.title}{feedback(a) && <MessageCircle className="ml-2 inline size-3 text-vc-link-strong" />}</span><span className="flex justify-end gap-1"><strong>{a.score ?? '-'}</strong><span className="bg-vc-line px-1 text-muted-foreground">{a.points}</span></span></Button>{expanded === a.id && <div className="grid gap-6 bg-vc-panel/50 px-8 py-5 text-[13px] md:grid-cols-2"><div><div className="flex gap-8"><div><div className="text-[11px] text-muted-foreground">DATE ASSIGNED</div><b>{format(a.assigned, 'EEE, MMM dd')}</b></div><div><div className="text-[11px] text-muted-foreground">DUE DATE</div><b>{format(a.due, 'EEE, MMM dd')}</b></div></div><p className="mt-4 whitespace-pre-wrap">{a.notes || '-'}</p></div><div><h3 className="text-[12px] font-semibold">ASSIGNMENT FEEDBACK</h3><p className="mt-3 whitespace-pre-wrap">{feedback(a) || '-'}</p>{status(a) && <div className="mt-3">{status(a)}</div>}</div></div>}</div>)}</section>)}{!shown.length && <p className="px-8 py-10 text-[13px] text-muted-foreground">No assignments.</p>}</>;
 }
-
-function Detail({ list, courseId }: { list: Assignment[]; courseId: string }) {
-  const { weights } = useSchool();
-  const w = weights[courseId] ?? defaultWeights(list.map((a) => a.category));
-  const avg = weightedAverage(list, w);
-  return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between bg-vc-panel px-4 py-3">
-        <div className="text-[18px]">Semester 1</div>
-        <div className="text-right"><div className="text-[11px] text-muted-foreground">GRADE AVERAGE</div>
-          <div className="text-[24px] font-light">{avg !== null ? <>{letterFor(avg)} <span className="ml-2">{avg.toFixed(2)}%</span></> : "—"}</div></div>
-      </div>
-      <table className="mt-4 w-full text-[13px]">
-        <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="py-1.5">Category</th><th className="text-right">Weight</th><th className="text-right">Assignments</th><th className="text-right">Points</th><th className="text-right">Average</th></tr></thead>
-        <tbody>{w.map((x) => { const st = categoryStats(list.filter((a) => a.category === x.cat), x.drop); return (
-          <tr key={x.cat} className="border-b border-vc-line"><td className="py-2">{x.cat}{x.drop && <span className="ml-1 text-muted-foreground">(drop lowest)</span>}</td><td className="text-right">{x.weight}%</td><td className="text-right">{st.count}</td><td className="text-right">{st.earned} / {st.possible}</td><td className="text-right font-semibold">{st.pct !== null ? `${st.pct.toFixed(2)}%` : "—"}</td></tr>); })}</tbody>
-      </table>
-      <table className="mt-6 w-full text-[13px]">
-        <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="py-1.5">Due</th><th>Assignment</th><th>Type</th><th className="text-right">Score</th><th className="text-right">%</th></tr></thead>
-        <tbody>{list.map((a) => { const p = pct(a); return (
-          <tr key={a.id} className="border-b border-vc-line"><td className="py-2">{format(a.due, "EEE, MMM d")}</td><td>{a.title}</td><td className="text-[11px]">{a.category}</td>
-            <td className="text-right">{a.score !== undefined ? `${a.score} / ${a.points}` : <span className="text-muted-foreground">—</span>}</td>
-            <td className="text-right font-semibold">{p !== null ? `${p.toFixed(1)}%` : ""}</td></tr>); })}</tbody>
-      </table>
-    </div>
-  );
+function Detail({ list, c }: { list: Assignment[]; c: Section }) {
+  const { weights, user, termGrades, custom } = useSchool();
+  const terms = c.terms.map(termById).filter((t) => t !== undefined);
+  const [selected, setSelected] = useState(termOn(c.terms, today())?.id ?? c.terms[0] ?? '');
+  const term = terms.find((t) => t.id === selected);
+  const items = list.filter((a) => !term || (a.due >= term.start && +a.due <= +term.end + 86399999));
+  const calc = items.filter((a) => custom.find((x) => x.id === a.id)?.inCalc !== false);
+  const w = weights[c.id] ?? []; const avg = weightedAverage(calc, w);
+  const summaryWeights = w.length ? w : defaultWeights(calc.map((a) => a.category));
+  const posted = termGrades[`${c.id}|${user?.personId}|${selected}`];
+  return <><div className="flex flex-wrap items-center gap-1 bg-vc-panel px-6 py-1 text-[12px]"><span className="text-muted-foreground">view:</span>{terms.map((t) => <Button key={t.id} variant="ghost" size="sm" className={`h-6 px-2 text-[12px] ${selected === t.id ? 'bg-foreground text-background' : ''}`} onClick={() => setSelected(t.id)}>{t.label}</Button>)}</div><div className="bg-vc-panel px-4 py-5 md:px-14"><article className="border border-vc-line bg-background shadow-lg"><div className="flex justify-end bg-foreground px-5 py-1 text-background"><Button variant="ghost" size="sm" className="h-7" onClick={() => window.print()}><Printer className="size-4" />Print to PDF</Button></div><div className="p-5"><h2 className="text-[30px] font-bold">Grade Detail - {term?.label ?? 'Grades'}</h2><div className="mt-4 flex items-center justify-between gap-2"><div className="text-[16px] leading-5"><b>{user?.first} {user?.last}</b><span className="text-[12px] text-muted-foreground"> - Grade {user?.grade ?? 9}</span><br /><b>{courseTitle(c)}</b> - {teacherFull(c.teacherId)}<br /><span className="text-[14px]">Weighting by {weights[c.id] ? 'Assignment Type' : 'Assignment Points'}</span></div><div className="flex shrink-0 bg-vc-panel text-[30px]"><span className="border-r border-vc-line px-3 py-1">{avg === null ? '-' : avg.toFixed(2)}</span><span className="px-3 py-1">{posted || (avg === null ? '-' : letterFor(avg))}</span></div></div><h3 className="mb-3 mt-6 text-[24px] font-bold">Summary</h3><div className="overflow-x-auto"><table className="w-full text-[14px]"><thead className="bg-vc-panel"><tr><th className="p-2 text-left">Assignment Type</th><th className="p-2 text-right">Points Earned</th><th className="p-2 text-right">Points Possible</th><th className="p-2 text-right">Average</th></tr></thead><tbody>{summaryWeights.map((x) => { const st = categoryStats(calc.filter((a) => a.category === x.cat), x.drop); return <tr key={x.cat}><td className="py-1"><b>{category(x.cat)}</b> <span className="text-[11px] text-muted-foreground">({st.count} assignments)</span></td><td className="text-right">{st.pct === null ? '-' : st.earned.toFixed(2)}</td><td className="text-right">{st.pct === null ? '-' : st.possible.toFixed(2)}</td><td className="text-right">{st.pct === null ? '-' : st.pct.toFixed(2)}</td></tr>; })}</tbody></table></div><h3 className="mb-3 mt-5 text-[24px] font-bold">Assignments</h3><div className="overflow-x-auto"><table className="w-full text-[13px]"><thead className="bg-vc-panel"><tr><th className="p-1 text-left">Due Date</th><th className="p-1 text-left">Assignment</th><th className="p-1 text-right">Score</th><th className="p-1 text-right">Grade</th><th className="p-1 text-right">Points Earned</th><th className="p-1 text-right">Points Possible</th></tr></thead><tbody>{items.map((a) => <tr key={a.id} className="border-b border-vc-line"><td className="whitespace-nowrap py-2">{format(a.due, 'MMM d')}</td><td className="px-2 py-2"><b>{category(a.category)}</b><br />{a.title}</td><td className="whitespace-nowrap text-right">{a.score === undefined ? '-' : `${a.score} / ${a.points}`}</td><td className="text-right">{pct(a) === null ? '-' : `${pct(a)?.toFixed(2)}%`}</td><td className="text-right">{a.score ?? '-'}</td><td className="text-right">{a.points}</td></tr>)}</tbody></table></div></div></article></div></>;
 }

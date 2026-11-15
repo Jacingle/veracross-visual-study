@@ -9,6 +9,8 @@ import { ROLE_LABEL, type Area } from "@/lib/auth-rules";
 import { SCHOOL } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
 import { bgSrc, useInbox, useSchool } from "@/lib/school-store";
+import { PortalChooser } from './PortalChooser';
+import { Button } from '@/components/ui/button';
 
 export type Portal = "student" | "teacher";
 
@@ -39,7 +41,8 @@ export function PortalShell({ children, portal, area, wide = false, bare = false
 }
 
 function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: Portal | undefined; wide: boolean; bare: boolean }) {
-  const { user, settings, logout, photos, update, sections } = useSchool();
+  const { user, settings, logout, photos, update, sections, impersonatorId, stopImpersonating } = useSchool();
+  const [chooser, setChooser] = useState(false);
   const [crop, setCrop] = useState(false);
   const firstClass = sections.find((c) => c.published && (c.teacherIds.includes(user?.personId ?? "") || c.studentIds.includes(user?.personId ?? "")));
   const { read } = usePortal();
@@ -56,31 +59,22 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
     <div className={`min-h-screen bg-vc-panel ${p === "teacher" ? "portal-faculty" : ""}`} style={style}>
       <header className="sticky top-0 z-30">
         <div className="relative flex h-9 items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
-          <span className="truncate">{SCHOOL.name}</span>
+          <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
           <div className="absolute left-1/2 top-0 flex h-9 -translate-x-1/2 items-stretch">
             <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-6 text-[16px] font-semibold [clip-path:polygon(5%_0,100%_0,100%_100%,0_100%)]">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger aria-label="Switch portal" className="my-1 ml-1 flex items-center gap-1 border border-primary-foreground/30 bg-vc-navbar/50 px-3 outline-none [clip-path:polygon(10%_0,100%_0,90%_100%,0_100%)]">
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="my-1 ml-1 flex h-7 items-center gap-1 border border-primary-foreground/30 bg-vc-navbar/50 px-3 outline-none [clip-path:polygon(10%_0,100%_0,90%_100%,0_100%)]">
                 <VcLogo className="h-4 w-5" /><ChevronDown className="size-3" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="text-[13px]">
-                <DropdownMenuLabel>Switch Portal</DropdownMenuLabel>
-                {user?.role === "admin" && <DropdownMenuItem asChild><Link to="/admin">Axiom (Administration)</Link></DropdownMenuItem>}
-                {user?.role !== "student" && <DropdownMenuItem asChild><Link to="/teacher">Faculty Portal</Link></DropdownMenuItem>}
-                {user?.role !== "teacher" && <DropdownMenuItem asChild><Link to="/student">Student Portal</Link></DropdownMenuItem>}
-                {firstClass && <DropdownMenuItem asChild><Link to="/class/$classId" params={{ classId: firstClass.id }}>Class Website</Link></DropdownMenuItem>}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </Button>
           </div>
           <div className="ml-auto flex items-center gap-5">
             <Link to="/messages" className="flex items-center gap-1.5 hover:underline">
-              <Mail className="size-5" /> Messages{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
+              <Mail className="size-5" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
             </Link>
-            <Link to="/calendar" className="flex items-center gap-1.5 hover:underline"><CalendarDays className="size-5" /> My Calendar</Link>
+            <Link to="/calendar" className="flex items-center gap-1.5 hover:underline"><CalendarDays className="size-5" /><span className="hidden md:inline">My Calendar</span></Link>
             <DropdownMenu>
-              <DropdownMenuTrigger aria-label="Account menu" className="grid size-7 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 text-[12px] outline-none">{user?.personId && photos[user.personId] ? <img src={photos[user.personId]} alt="Profile" className="size-7 object-cover" /> : initials}</DropdownMenuTrigger>
+              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none">{user?.personId && photos[user.personId] ? <img src={photos[user.personId]} alt="Profile" className="size-7 object-cover" /> : initials}</Button>
               <DropdownMenuContent align="end" className="text-[13px]">
                 <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · {user ? ROLE_LABEL[user.role] : ""}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -99,12 +93,14 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
           ))}
         </nav>
       </header>
+      {impersonatorId && <div className="relative z-20 flex items-center justify-center gap-4 bg-vc-note py-2 text-[13px]">Viewing as {user?.first} {user?.last}<Button variant="outline" size="sm" onClick={() => { stopImpersonating(); nav({ to: '/admin/users' }); }}>End Impersonation</Button></div>}
       <main className="relative min-h-[calc(100vh-80px)] pb-12 pt-7">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
           : <div className={`relative mx-auto bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={3 / 4} outWidth={300} title="Profile Photo" onSave={(photo) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo } })); }} />
+      <PortalChooser open={chooser} onClose={() => setChooser(false)} />
     </div>
   );
 }

@@ -8,11 +8,12 @@ import { categoryStats, defaultWeights, letterFor, weightedAverage, weightsTotal
 import { scoreOf } from "@/lib/gradebook";
 import { useSchool, type Section } from "@/lib/school-store";
 import { gradingPeriods, termLabel, termOn } from "@/lib/terms";
+import { Button } from '@/components/ui/button';
 
 const ATT = ["Present", "Tardy", "Absent - Excused", "Absent - Unexcused", "Dismissed", "Field Trip"];
 
 export function Attendance({ c, roster, date }: { c: Section; roster: Student[]; date: string }) {
-  const { attendance, attNotes, attDone, update } = useSchool();
+  const { attendance, attNotes, attDone, update, photos } = useSchool();
   const nav = useNavigate();
   const key = (sid: string) => `${c.id}|${date}|${sid}`;
   const done = attDone.includes(`${c.id}|${date}`);
@@ -23,7 +24,7 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h2 className="text-[22px]">Class Attendance <span className={`ml-1 px-1.5 py-0.5 align-middle text-[13px] ${done ? "bg-vc-tile text-vc-success" : "bg-vc-line"}`}>{done ? "Complete" : "Not Taken"}</span></h2>
+        <h2 className="text-[22px] font-light">Class Attendance <span className={`ml-1 px-1.5 py-0.5 align-middle text-[12px] ${done ? "bg-vc-tile text-vc-success" : "bg-vc-line"}`}>{done ? "Complete" : "Not Taken"}</span></h2>
         <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!term} className="disabled:opacity-40 h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
       </div>
       <div className="mt-2 flex items-center gap-3 text-[13px]">
@@ -32,18 +33,18 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
           <input type="date" className="h-full border-x border-vc-line px-2" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}>›</button>
         </div>
-        <span className="flex h-8 w-[200px] items-center border border-vc-line px-2 text-muted-foreground">{c.block}</span>
+        <select aria-label="Attendance block" className="h-8 w-[200px] border border-vc-line bg-background px-2"><option>{c.block} · {c.time}</option></select>
       </div>
       {!term ? <p className="my-6 border border-vc-line bg-vc-panel p-4 text-[13px]">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <><div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
-      <table className="w-full text-[13px]">
+      <div className="overflow-x-auto"><table className="w-full text-[13px]">
         <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Status</th><th>Class Attendance Notes</th></tr></thead>
         <tbody>{roster.map((s) => { const v = attendance[key(s.id)] ?? "Present"; return (
           <tr key={s.id} className="border-b border-vc-line">
-            <td className="py-2.5"><div className="flex items-center gap-2.5"><span className="grid size-10 place-items-center rounded-full bg-vc-tile text-[13px] text-vc-link-strong">{s.first[0]}{s.last[0]}</span><span className="text-[15px] leading-tight">{s.first}<br />{s.last}</span></div></td>
+            <td className="py-2"><div className="flex items-center gap-2.5">{photos[s.id] ? <img src={photos[s.id]} alt="" className="h-10 w-8 object-cover" /> : <span className="grid h-10 w-8 place-items-center bg-vc-tile text-[13px] text-vc-link-strong">{s.first[0]}{s.last[0]}</span>}<span className="text-[14px] leading-tight">{s.first}<br />{s.last}</span></div></td>
             <td><select aria-label={`Attendance for ${s.first}`} className={`h-8 w-[190px] rounded-sm border border-vc-line bg-background px-2 ${v === "Present" ? "text-vc-success" : "text-destructive"}`} value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select></td>
             <td><input aria-label={`Note for ${s.first}`} className="h-7 w-full border border-vc-line bg-background px-1.5" maxLength={200} value={attNotes[key(s.id)] ?? ""} onChange={(e) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [key(s.id)]: e.target.value } }))} /></td>
           </tr>); })}</tbody>
-      </table>
+      </table></div>
       <div className="mt-3 flex justify-end gap-2">
         <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className="h-8 border border-vc-line px-3 text-[13px]">Mark All Present</button>
       </div>

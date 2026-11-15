@@ -117,7 +117,7 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
           <td className="py-1">{s.last}, {s.first}</td>
           <td><input aria-label={`Score for ${s.first}`} className="h-7 w-14 border border-vc-line text-center" value={v} onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /> <span className="text-muted-foreground">/ {a.points}</span></td>
           <td><select aria-label={`Completion for ${s.first}`} className="h-7 border border-vc-line px-1" value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></td>
-          <td className="text-[12px] text-muted-foreground">{(i + a.id.length) % 3 === 0 ? "No submission" : "1 file submitted"}</td>
+          <td className="text-[12px] text-muted-foreground">-</td>
           <td><input aria-label={`Comment for ${s.first}`} className="h-7 w-full border border-vc-line px-1.5" maxLength={300} value={comments[`a|${k}`] ?? ""} onChange={(e) => set("comments", `a|${k}`, e.target.value)} /></td>
           <td className="text-right"><Switch aria-label={`Publish for ${s.first}`} checked={pub[k] !== false} onCheckedChange={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></td>
         </tr>); })}</tbody>
