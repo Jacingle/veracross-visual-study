@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { format, isSameWeek, startOfWeek } from "date-fns";
+import { addDays, format, isSameWeek, startOfWeek } from "date-fns";
 import { useMemo, useState } from "react";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
 import { CATEGORY_CHIP, courseTitle, teacherFull, today, type Assignment } from "@/lib/sis-data";
@@ -25,10 +25,9 @@ function Grades() {
   if (!c) return <PortalShell portal="student"><StudentTabs /><p className="p-8 text-[14px]">You're not enrolled in this class. <Link to="/classes" className="text-vc-link-strong">See your classes</Link></p></PortalShell>;
   return (
     <PortalShell portal="student">
-      <StudentTabs />
       <div className="px-6 py-5">
         <div className="flex items-end justify-between border-b border-vc-line pb-3">
-          <div><h2 className="text-[24px] font-light">{courseTitle(c)}</h2><div className="text-[13px] text-muted-foreground">{teacherFull(c.teacherId)} · {c.block} · {c.room}</div></div>
+          <div><h2 className="text-[24px] font-light">{courseTitle(c)}</h2><div className="text-[13px] italic text-muted-foreground">{teacherFull(c.teacherId)} · {c.block} · {c.room}</div></div>
           <div className="flex text-[13px]">
             <Link to="/grades/$classId" params={{ classId: c.id }} className={`border border-vc-line px-3 py-1.5 ${!tab ? "bg-vc-link text-primary-foreground" : ""}`}>All Assignments</Link>
             <Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: "detail" }} className={`border border-l-0 border-vc-line px-3 py-1.5 ${tab ? "bg-vc-link text-primary-foreground" : ""}`}>Grade Detail</Link>
@@ -52,13 +51,13 @@ function AllAssignments({ list }: { list: Assignment[] }) {
         <button key={f} onClick={() => setFilter(f)} className={`border px-2.5 py-1 capitalize ${filter === f ? "border-vc-link bg-vc-sky text-vc-link-strong" : "border-vc-line"}`}>{f}</button>))}</div>
       {weeks.map((w) => (
         <div key={+w.start} className="mt-4">
-          <div className="border-b border-foreground/60 pb-1 text-[13px] font-semibold text-foreground/70">Week of {format(w.start, "MMM d")}</div>
+          <div className="border-b border-vc-line pb-2 pt-2 text-[17px]">{format(w.start, "MMMM d")} – {format(addDays(w.start, 6), "MMMM d")} <span className="text-[11px]">({w.items.length} assignments)</span></div>
           {w.items.map((a) => {
             const p = pct(a);
             return (
-              <div key={a.id} className="grid grid-cols-[150px_minmax(0,1fr)_110px_110px_90px] items-center border-b border-vc-line py-2 text-[13px]">
+              <div key={a.id} className="grid grid-cols-[110px_minmax(0,1fr)_80px_90px_70px] items-center gap-2 border-b border-vc-line py-2 text-[13px]">
                 <span><span className={`inline-block px-1.5 py-px text-[10px] font-semibold text-primary-foreground ${CATEGORY_CHIP[a.category]}`}>{a.category}</span></span>
-                <span className="truncate text-[14px] text-vc-link-strong">{a.title}</span>
+                <span className="text-[14px]">{a.title}</span>
                 <span className="text-muted-foreground">Due {format(a.due, "M/d")}</span>
                 <span className={a.score !== undefined ? "text-vc-success" : a.due < today() && !done.includes(a.id) ? "text-destructive" : "text-muted-foreground"}>
                   {a.score !== undefined ? "Graded" : done.includes(a.id) ? "Completed" : a.due < today() ? "Missing" : "Not Due Yet"}</span>

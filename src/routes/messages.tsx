@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { differenceInCalendarDays, format } from "date-fns";
-import { ArrowLeft, Mail, MailOpen } from "lucide-react";
+import { ArrowLeft, Mail, MailOpen, Clock, Users, Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { today } from "@/lib/sis-data";
@@ -45,23 +46,24 @@ function Messages() {
   for (const x of inbox) { const k = keyOf(x); const g = groups.find((y) => y.label === k); if (g) g.items.push(x); else groups.push({ label: k, items: [x] }); }
   return (
     <PortalShell>
-      <div className="flex items-center justify-between border-b border-vc-line px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-vc-line bg-vc-panel pl-5">
         <span className="text-[18px]">Messages</span>
         <div className="flex items-center gap-4 text-[13px]">
           <div className="flex">{(["recent", "people", "categories"] as const).map((v) => (
-            <button key={v} onClick={() => nav({ search: { view: v } })} className={`border border-vc-line px-3 py-1 capitalize first:rounded-l-sm last:rounded-r-sm ${view === v ? "bg-vc-link text-primary-foreground" : ""}`}>{v}</button>))}</div>
-          <button onClick={() => inbox.forEach((x) => markRead(x.id))} className="text-vc-link-strong hover:underline">Mark All Read</button>
+            <Button variant="ghost" key={v} onClick={() => nav({ search: { view: v } })} className={`h-16 w-24 flex-col gap-1 rounded-none border-l border-vc-line text-[12px] capitalize ${view === v ? "bg-background text-vc-link" : "text-muted-foreground"}`}>{v === "recent" ? <Clock /> : v === "people" ? <Users /> : <Tag />}{v}</Button>))}</div>
         </div>
       </div>
-      <div className="px-4 pb-6">
+      <div className="px-7 pb-6 pt-4 sm:px-12">
+        <Button variant="outline" size="sm" onClick={() => inbox.forEach((x) => markRead(x.id))}><MailOpen />Mark All Read</Button>
+        {!inbox.length && <p className="py-12 text-center text-muted-foreground">No messages.</p>}
         {groups.map((g) => (
           <div key={g.label}>
-            <div className="mt-4 border-b border-foreground/50 pb-1 text-[13px] font-semibold text-foreground/70">{g.label}</div>
+            <div className="mt-5 border-b border-vc-line pb-3 text-center text-[18px] font-semibold text-foreground/70">{g.label}</div>
             {g.items.map((x) => { const isRead = read.includes(x.id); return (
-              <button key={x.id} onClick={() => { markRead(x.id); nav({ search: { id: x.id } }); }} className="grid w-full grid-cols-[22px_200px_minmax(0,1fr)_90px] items-center gap-3 border-b border-vc-line px-1 py-2 text-left text-[13px] hover:bg-vc-panel">
-                {isRead ? <MailOpen className="size-4 text-muted-foreground" /> : <Mail className="size-4 text-vc-link-strong" />}
-                <span className={`truncate ${isRead ? "" : "font-semibold"}`}>{x.from}<span className="block text-[11px] font-normal text-muted-foreground">{x.list}</span></span>
-                <span className={`truncate ${isRead ? "text-foreground/80" : "font-semibold text-vc-link-strong"}`}>{x.subject}</span>
+              <button key={x.id} onClick={() => { markRead(x.id); nav({ search: { id: x.id } }); }} className="grid w-full grid-cols-[8px_24%_minmax(0,1fr)_80px] items-center gap-3 border-b border-vc-line px-1 py-3 text-left text-[13px] hover:bg-vc-panel">
+                <span className={`size-2 rounded-full ${isRead ? "" : "bg-vc-link"}`} />
+                <span className="truncate"><span className="block text-[10px]">From</span>{x.from}</span>
+                <span className={`min-w-0 ${isRead ? "text-foreground/80" : "font-semibold"}`}><span className="block text-[12px] font-normal text-muted-foreground">{x.list}</span>{x.subject}</span>
                 <span className="text-right text-[12px] text-muted-foreground">{format(x.date, "MMM d")}</span>
               </button>); })}
           </div>
