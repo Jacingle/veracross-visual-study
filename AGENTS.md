@@ -32,3 +32,5 @@ use the editor.
 ## Project rules
 - All school data comes from `src/lib/sis-data.ts` (single shared dataset) so every page shows the same records; replace with Lovable Cloud tables later without changing page structure.
 - Pages wrap content in `PortalShell` (portal) or the class-site layout; colors come only from `--vc-*` / `cat-*` tokens in `src/styles.css`.
+- Classes (sections) live in the school store (`sections`), seeded from `sis-data`; pages read them via `useMySections`/`useSection`, never static `COURSES`/`ALL_SECTIONS`, so admin-created classes work everywhere.
+- School years/terms are generated in `src/lib/terms.ts`; a class's `terms` decide current/future/past, attendance dates and grading periods.
