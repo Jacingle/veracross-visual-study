@@ -27,7 +27,6 @@ function Login() {
     e.preventDefault();
     const u = login(username, password);
     if (!u) { setError(userExists(users, username) ? "The password you entered is incorrect." : "We couldn't find an account with that username."); setPassword(""); return; }
-    nav({ to: homeFor(u.role), replace: true });
   };
 
   return (
