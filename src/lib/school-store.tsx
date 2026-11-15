@@ -169,11 +169,11 @@ export function useStudentAssignments(): Assignment[] {
 /** The signed-in student's running average in one class (weighted by the teacher's category weights). */
 export function useClassAverage(courseId: string): number | null {
   const all = useStudentAssignments();
-  const { weights } = useSchool();
+  const { weights, custom } = useSchool();
   return useMemo(() => {
-    const list = all.filter((a) => a.courseId === courseId);
-    return weightedAverage(list, weights[courseId] ?? defaultWeights(list.map((a) => a.category)));
-  }, [all, weights, courseId]);
+    const list = all.filter((a) => a.courseId === courseId && custom.find((x) => x.id === a.id)?.inCalc !== false);
+    return weightedAverage(list, weights[courseId] ?? []);
+  }, [all, weights, custom, courseId]);
 }
 /** Teacher view: every assignment for one section, newest last. */
 export function useSectionAssignments(courseId: string): Assignment[] {

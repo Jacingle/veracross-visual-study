@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { defaultWeights, letterFor, weightedAverage, weightsValid } from "./grading";
 
 describe("grade math", () => {
+  it('no grades yields no average', () => {
+    expect(weightedAverage([{ category: 'QUIZ', points: 10 }], [])).toBeNull();
+  });
+  it('without chosen weights uses assignment points', () => {
+    expect(weightedAverage([{ category: 'QUIZ', points: 10, score: 10 }, { category: 'TEST', points: 90, score: 70 }], [])).toBe(80);
+  });
   it("default weights always total 100", () => {
     expect(defaultWeights(["HOMEWORK", "QUIZ", "TEST"]).reduce((s, w) => s + w.weight, 0)).toBe(100);
   });
