@@ -8,15 +8,15 @@ import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
 import { useSchool } from "@/lib/school-store";
 
 export function Gradebook({ courseId, list, roster }: { courseId: string; list: Assignment[]; roster: Student[] }) {
-  const { scores, weights, update } = useSchool();
-  const w = weights[courseId] ?? defaultWeights(list.map((a) => a.category));
+  const { scores, weights, update, custom } = useSchool();
+  const w = weights[courseId] ?? [];
   const set = (aid: string, sid: string, v: string) => update((s) => ({ ...s, scores: { ...s.scores, [scoreKey(aid, sid)]: v } }));
-  const avgFor = (sid: string) => weightedAverage(list.map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, sid) })), w);
+  const avgFor = (sid: string) => weightedAverage(list.filter((a) => custom.find((x) => x.id === a.id)?.inCalc !== false).map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, sid) })), w);
   const colAvg = (a: Assignment) => { const v = roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined); return v.length ? (v.reduce((x, y) => x + y, 0) / v.length / a.points) * 100 : null; };
   const avgs = roster.map((s) => avgFor(s.id)).filter((x): x is number => x !== null);
   const classAvg = avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : null;
   const nums = (a: Assignment) => roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined);
-  const median = (v: number[]) => { if (!v.length) return null; const t = [...v].sort((x, y) => x - y); const m = Math.floor(t.length / 2); return t.length % 2 ? t[m]! : (t[m - 1]! + t[m]!) / 2; };
+  const median = (v: number[]) => { if (!v.length) return null; const t = [...v].sort((x, y) => x - y); const m = Math.floor(t.length / 2); return t.length % 2 ? t[m] ?? null : ((t[m - 1] ?? 0) + (t[m] ?? 0)) / 2; };
   const sd = (v: number[]) => { if (v.length < 2) return null; const m = v.reduce((x, y) => x + y, 0) / v.length; return Math.sqrt(v.reduce((x, y) => x + (y - m) ** 2, 0) / v.length); };
   const avgList = roster.map((s) => avgFor(s.id)).filter((x): x is number => x !== null);
   const cell = "h-10 rounded-sm bg-vc-panel text-center text-[13px]";
@@ -27,7 +27,7 @@ export function Gradebook({ courseId, list, roster }: { courseId: string; list: 
       <div className="mb-3 flex items-center gap-2">
         <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "assignments", aid: "new" }} className="flex h-8 items-center gap-1.5 rounded-sm bg-vc-success px-3 text-[13px] text-primary-foreground"><Plus className="size-4" />Add Assignment</Link>
         <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "weights" }} className="flex h-8 items-center gap-1.5 rounded-sm bg-vc-link px-3 text-[13px] text-primary-foreground"><Scale className="size-4" />Weighting</Link>
-        <span className="ml-auto text-[12px] text-muted-foreground">Date Order · Semester 1 · {list.length} assignments</span>
+        <span className="ml-auto text-[12px] text-muted-foreground">Date Order · {list.length} assignments</span>
       </div>
       <div className="overflow-x-auto pb-2">
         <table className="border-separate border-spacing-1">
@@ -46,7 +46,7 @@ export function Gradebook({ courseId, list, roster }: { courseId: string; list: 
               <tr key={s.id}>
                 <td className="sticky left-0 z-10 bg-background pr-2 text-[13px] leading-tight"><b className="font-semibold">{s.first}</b><br />{s.last}</td>
                 <td className={blue}>{av !== null ? av.toFixed(2) : "—"}</td>
-                {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; return (
+                {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k] ?? "" : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; return (
                   <td key={a.id} className="p-0">
                     <input aria-label={`${s.first} ${s.last} – ${a.title}`} value={v} inputMode="decimal"
                       onChange={(e) => { if (isScoreInput(e.target.value)) set(a.id, s.id, e.target.value); else toast.error("Scores must be numbers"); }}
