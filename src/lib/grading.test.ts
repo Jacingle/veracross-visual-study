@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultWeights, letterFor, weightedAverage } from "./grading";
+import { defaultWeights, letterFor, weightedAverage, weightsValid } from "./grading";
 
 describe("grade math", () => {
   it("default weights always total 100", () => {
@@ -19,5 +19,9 @@ describe("grade math", () => {
   });
   it("letter scale cut-offs", () => {
     expect(letterFor(93)).toBe("A"); expect(letterFor(89.9)).toBe("B+"); expect(letterFor(59)).toBe("F");
+  });
+  it("weights must total exactly 100% to save", () => {
+    expect(weightsValid([{ cat: "HW", weight: 40, drop: false }, { cat: "TEST", weight: 50, drop: false }])).toBe(false);
+    expect(weightsValid([{ cat: "HW", weight: 40, drop: false }, { cat: "TEST", weight: 60, drop: false }])).toBe(true);
   });
 });

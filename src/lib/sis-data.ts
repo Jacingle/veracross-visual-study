@@ -186,6 +186,13 @@ export const rosterFor = (courseId: string) => {
   return STUDENTS.filter((s, i) => s.grade === 9 && (i + seed) % 2 === 0).slice(0, 14);
 };
 
+export const ME_STUDENT: Student = {
+  id: "me", first: ME.first, last: ME.last, grade: ME.grade, address: "1842 Trailwood Lane, Birmingham, MI 48009", homePhone: "248-555-0142",
+  parents: [{ name: "David Ingle", mobile: "248-555-0188", email: "david.ingle@example.com" }, { name: "Laura Ingle", mobile: "248-555-0179", email: "laurai@example.com" }],
+};
+/** Teacher-facing roster: the demo student is enrolled in all of their own classes. */
+export const teacherRoster = (courseId: string) => (COURSES.some((c) => c.id === courseId) ? [ME_STUDENT, ...rosterFor(courseId)] : rosterFor(courseId));
+
 export type Message = { id: string; from: string; list: string; subject: string; body: string; date: Date; email?: string };
 export const MESSAGES: Message[] = [
   { id: "m1", from: "Paula Tobin", list: "Group Distribution List", subject: "Re: Lost & Found and other items in the hallway", body: "Hi all,\n\nA reminder that unclaimed items in the Upper School hallway will be donated on Friday. Please check the tables outside the library.\n\nThank you,", date: addDays(today(), -1), email: "ptobin@cedarridge.edu" },

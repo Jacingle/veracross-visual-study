@@ -85,18 +85,28 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
 export function useSchool() { const c = useContext(C); if (!c) throw new Error("SchoolStoreProvider missing"); return c; }
 
 const short: Record<string, string> = { HOMEWORK: "HW", QUIZ: "QZ", TEST: "Test", COLLABORATION: "Col", "CLASSWORK/HOMEWORK": "CwHw", VOCABULARY: "Vocab", WRITING: "Wr", READING: "Rd" };
-export function toAssignment(c: CustomAssignment): Assignment {
-  return { id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: c.notes || c.details, custom: true };
+export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment {
+  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: c.notes || c.details, custom: true };
 }
 /** Student view: built-in assignments plus teacher-created ones marked "Display on portals". */
 export function useStudentAssignments(): Assignment[] {
   const { custom } = useSchool();
-  return useMemo(() => [...ASSIGNMENTS, ...custom.filter((c) => c.published && COURSES.some((x) => x.id === c.courseId)).map(toAssignment)], [custom]);
+  return useMemo(() => {
+    const byId = new Map(custom.map((c) => [c.id, c]));
+    const base = ASSIGNMENTS.filter((a) => !byId.has(a.id));
+    const mine = custom.filter((c) => c.published && COURSES.some((x) => x.id === c.courseId)).map((c) => toAssignment(c, ASSIGNMENTS.find((a) => a.id === c.id)));
+    return [...base, ...mine];
+  }, [custom]);
 }
 /** Teacher view: every assignment for one section, newest last. */
 export function useSectionAssignments(courseId: string): Assignment[] {
   const { custom } = useSchool();
-  return useMemo(() => [...ALL_ASSIGNMENTS.filter((a) => a.courseId === courseId), ...custom.filter((c) => c.courseId === courseId).map(toAssignment)].sort((a, b) => +a.due - +b.due), [custom, courseId]);
+  return useMemo(() => {
+    const byId = new Map(custom.map((c) => [c.id, c]));
+    const base = ALL_ASSIGNMENTS.filter((a) => a.courseId === courseId);
+    const own = custom.filter((c) => c.courseId === courseId).map((c) => toAssignment(c, base.find((a) => a.id === c.id)));
+    return [...base.filter((a) => !byId.has(a.id)), ...own].sort((a, b) => +a.due - +b.due);
+  }, [custom, courseId]);
 }
 export const isoDay = (d: Date) => format(d, "yyyy-MM-dd");
 

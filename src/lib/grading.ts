@@ -35,3 +35,7 @@ export function weightedAverage(items: Scored[], weights: Weight[]): number | nu
 
 const SCALE: [number, string][] = [[97, "A+"], [93, "A"], [90, "A-"], [87, "B+"], [83, "B"], [80, "B-"], [77, "C+"], [73, "C"], [70, "C-"], [60, "D"]];
 export const letterFor = (pct: number) => SCALE.find(([min]) => pct >= min)?.[1] ?? "F";
+
+/** Category weights can only be saved when they add up to exactly 100%. */
+export const weightsTotal = (w: Weight[]) => w.reduce((s, x) => s + (Number.isFinite(x.weight) ? x.weight : 0), 0);
+export const weightsValid = (w: Weight[]) => w.length > 0 && w.every((x) => x.weight >= 0) && weightsTotal(w) === 100;

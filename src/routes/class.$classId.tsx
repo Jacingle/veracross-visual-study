@@ -6,7 +6,7 @@ import { z } from "zod";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { StudentCard } from "@/components/portal/StudentCard";
 import { ALL_SECTIONS, COURSES, courseTitle, rosterFor, sectionsFor, teacher, today, type Assignment, type Course } from "@/lib/sis-data";
-import { bgSrc, useSchool, useSectionAssignments } from "@/lib/school-store";
+import { bgSrc, useSchool, useSectionAssignments, useStudentAssignments } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 const TABS = [
@@ -29,7 +29,9 @@ function ClassSite() {
   const nav = useNavigate();
   const { user, settings, logout } = useSchool();
   const t = teacher(c.teacherId);
-  const all = useSectionAssignments(c.id);
+  const sect = useSectionAssignments(c.id);
+  const mine = useStudentAssignments();
+  const all = user?.role === "student" ? mine.filter((a) => a.courseId === c.id) : sect;
   const upcoming = all.filter((a) => !isAfter(today(), a.due)).slice(0, 5);
   const options = user?.role === "teacher" ? sectionsFor(user.personId) : user?.role === "admin" ? ALL_SECTIONS : COURSES;
   const src = bgSrc(settings.classSite.bg);
