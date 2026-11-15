@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { addDays, format, isSameWeek, startOfWeek } from 'date-fns';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePortal } from '@/lib/portal-store';
+import { updateKey } from '@/components/portal/ClassRow';
 import { Printer, ChevronDown, MessageCircle } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,9 @@ function Grades() {
   const { classId } = Route.useParams(); const { tab } = Route.useSearch();
   const c = useMySections().find((x) => x.id === classId);
   const list = useStudentAssignments().filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due);
+  const { read, markRead } = usePortal();
+  const unseen = list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => updateKey(a.id, a.score)).join(',');
+  useEffect(() => { if (unseen) unseen.split(',').forEach(markRead); }, [unseen, markRead]);
   return <PortalShell portal="student">{c ? <><div className="flex flex-wrap items-center justify-between gap-2 px-7 py-5"><h1 className="text-[25px] font-light"><strong className="font-semibold">{c.id}:</strong> {courseTitle(c)} <span className="ml-2 text-[13px] italic text-muted-foreground">{teacherFull(c.teacherId)}</span></h1><Link to="/class/$classId" params={{ classId }} className="text-[12px] text-vc-link-strong">View Class Website →</Link></div><div className="flex px-6 text-[13px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-4 py-3 ${Boolean(tab) === Boolean(v) ? 'bg-vc-panel font-semibold' : 'text-muted-foreground'}`}>{label}</Link>)}</div>{tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
 }
 function AllAssignments({ list }: { list: Assignment[] }) {
