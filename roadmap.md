@@ -7,5 +7,8 @@
 - [x] Teacher-owned class website (blank/color/cropped photo, sections, pages); photo upload + crop for users
 - [x] Vary assignment titles; trim sample data
 - [ ] Teacher assignment editor/student list/weights/reports: closer screenshot match
+- [ ] Repair uploads and durable reload saving, blank backgrounds, visible student grades
+- [ ] Match assignment/grade detail and portal chooser references; refine attendance
+- [ ] Expand person details, admin impersonation, website colors and editable published pages
 - [x] Student directories, updates, messages, grade detail: second screenshot pass
 - [x] Remove sample school records, repair all photo upload paths and reload saving; refine supplied screenshots
