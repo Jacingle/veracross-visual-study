@@ -38,3 +38,5 @@ use the editor.
 - Serialize school writes and read IndexedDB first; localStorage is only a fallback so large photos cannot revive stale settings.
 - Website page bodies and publishing flags share the section's website settings; portal views render only published pages for students.
 - Demo impersonation retains the original administrator session and filters records as the target; never impersonate administrators.
+- Use PersonPhoto for all portraits and ImageCropper for bounded square crop or full-image uploads; one shared photo per person prevents inconsistent portraits.
+- Scheduling sets live in the school store and meetingsOn resolves weekly blocks inside both class and scheduling-set terms; all daily schedules and attendance share this rule.
