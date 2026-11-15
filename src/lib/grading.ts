@@ -1,5 +1,6 @@
 // Pure grade math shared by the student grade detail and the teacher gradebook.
-export type Weight = { cat: string; weight: number; drop: boolean };
+/** `color` is the category's color everywhere in the class; `show: false` hides that type from the gradebook grid. */
+export type Weight = { cat: string; weight: number; drop: boolean; color?: string | undefined; show?: boolean | undefined };
 export type Scored = { category: string; points: number; score?: number | undefined };
 
 /** Equal weights across the categories a class uses; remainder goes to the first so the total is 100. */
