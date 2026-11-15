@@ -38,7 +38,7 @@ function ClassManager() {
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
-  const { user, scores, weights } = useSchool();
+  const { scores, weights } = useSchool();
   const nav = useNavigate();
   const list = useSectionAssignments(c.id);
   const roster = rosterOf(c);

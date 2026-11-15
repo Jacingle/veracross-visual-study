@@ -4,8 +4,8 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import campus from "@/assets/campus-bg.jpg";
 import { PortalShell } from "@/components/portal/PortalShell";
-import { TEACHER_TIP, TODAY_EVENTS, sectionsFor, today } from "@/lib/sis-data";
-import { isoDay, useSchool } from "@/lib/school-store";
+import { TEACHER_TIP, TODAY_EVENTS, today } from "@/lib/sis-data";
+import { isoDay, useMySections, useSchool } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/teacher/")({
@@ -19,11 +19,13 @@ const LINKS = [
 ] as const;
 
 function TeacherHome() {
-  const { user, attDone } = useSchool();
+  const { attDone } = useSchool();
+  const all = useMySections();
   const [q, setQ] = useState("");
-  const mine = sectionsFor(user?.personId || "t3").sort((a, b) => a.time.localeCompare(b.time));
+  const mine = all.filter((c) => c.status === "current").sort((a, b) => a.time.localeCompare(b.time));
+  const later = all.filter((c) => c.status !== "current");
   const day = isoDay(today());
-  const first = mine[0]?.id ?? "143-1";
+  const first = mine[0]?.id ?? all[0]?.id ?? "";
   return (
     <PortalShell portal="teacher" area="teacher">
       <div className="border-b border-vc-line px-4 py-3 text-[17px]">Home</div>
