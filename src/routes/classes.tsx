@@ -13,9 +13,9 @@ export const Route = createFileRoute("/classes")({
 
 function Report({ icon: Icon, label, children }: { icon: typeof Clock; label: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-5">
-      <div className="grid size-12 place-items-center border-2 border-muted-foreground/40 text-muted-foreground/70"><Icon className="size-6" strokeWidth={1.25} /></div>
-      <div><div className="text-[16px] text-foreground/70">{label}</div><div className="mt-2 text-[17px] text-vc-link">{children}</div></div>
+    <div className="flex gap-4">
+      <div className="grid size-10 place-items-center border-2 border-muted-foreground/40 text-muted-foreground/70"><Icon className="size-5" strokeWidth={1.25} /></div>
+      <div><div className="text-[13px] text-foreground/70">{label}</div><div className="mt-1.5 text-[14px] text-vc-link">{children}</div></div>
     </div>
   );
 }
@@ -23,26 +23,26 @@ function Report({ icon: Icon, label, children }: { icon: typeof Clock; label: st
 function Overview() {
   const [tab, setTab] = useState<"Active" | "Future" | "Past">("Active");
   return (
-    <PortalShell>
+    <PortalShell portal="student">
       <StudentTabs />
-      <div className="px-7 pt-8">
-        <h2 className="text-[30px] font-light text-foreground/80">Reports</h2>
-        <div className="grid grid-cols-2 gap-y-10 px-4 py-8">
+      <div className="px-6 pt-6">
+        <h2 className="text-[24px] font-light text-foreground/80">Reports</h2>
+        <div className="grid grid-cols-2 gap-y-8 px-3 py-6">
           <Report icon={BarChart3} label="PROGRESS REPORT"><Link to="/report-card" className="hover:underline">Mid-Semester 1</Link></Report>
           <Report icon={Clock} label="SCHEDULE"><Link to="/schedule" className="hover:underline">Current Class Schedule</Link></Report>
           <Report icon={Sprout} label="NWEA MAP GROWTH"><Link to="/report-card" className="hover:underline">NWEA MAP Growth Fall 2026</Link></Report>
-          <Report icon={SquareCheck} label="ATTENDANCE"><Link to="/attendance" className="hover:underline">Semester 1</Link><span className="mx-3 text-muted-foreground/60">•</span><span className="text-muted-foreground/60">Semester 2</span></Report>
+          <Report icon={SquareCheck} label="ATTENDANCE"><Link to="/attendance" className="hover:underline">Semester 1</Link><span className="mx-2.5 text-muted-foreground/60">•</span><span className="text-muted-foreground/60">Semester 2</span></Report>
         </div>
       </div>
-      <div className="mt-4 flex items-end justify-between border-b border-vc-line pl-7">
-        <h2 className="pb-2 text-[30px] font-light text-foreground/80">Classes</h2>
+      <div className="mt-2 flex items-end justify-between border-b border-vc-line pl-6">
+        <h2 className="pb-2 text-[24px] font-light text-foreground/80">Classes</h2>
         <div className="flex">{(["Active", "Future", "Past"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`w-[118px] py-4 text-[17px] ${tab === t ? "-mb-px border border-b-background border-vc-line text-vc-link-strong" : "text-foreground/75"}`}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} className={`w-[96px] py-3 text-[14px] ${tab === t ? "-mb-px border border-vc-line border-b-background text-vc-link-strong" : "text-foreground/75"}`}>{t}</button>
         ))}</div>
       </div>
-      <div className="px-8 pb-10">
+      <div className="px-6 pb-8">
         {tab === "Active" ? COURSES.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)
-          : <p className="py-16 text-center text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
+          : <p className="py-12 text-center text-[14px] text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
       </div>
     </PortalShell>
   );
