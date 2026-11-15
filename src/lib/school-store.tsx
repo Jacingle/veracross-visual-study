@@ -2,7 +2,7 @@
 // Browser-local only: a stand-in until the school moves to Lovable Cloud accounts.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
-import { findLogin, type User } from "./auth-rules";
+import { canImpersonate, findLogin, type User } from "./auth-rules";
 import { ALL_ASSIGNMENTS, ALL_SECTIONS, EXTRA, MESSAGES, SEED_USERS, studentById, teacherRoster, today, type Assignment, type Category, type Course, type Student } from "./sis-data";
 import { classStatus, makeYear, yearStartFor, type ClassStatus } from "./terms";
 import { scoreOf } from "./gradebook";
@@ -24,7 +24,7 @@ export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
 export const bgSrc = (v: string) => (v === "none" ? null : BACKGROUNDS.find((b) => b.key === v)?.src ?? (/^(https?:\/\/|data:image\/)/.test(v) ? v : null));
 
 /** Class website look, set by the class's teacher: blank, a solid color, or an uploaded (cropped) photo. */
-export type Website = { bg: "none" | "color" | "photo"; color: string; photo: string; sections: { title: string; body: string }[]; pages: string[] };
+export type Website = { bg: "none" | "color" | "photo"; color: string; photo: string; sections: { title: string; body: string }[]; pages: string[]; pageContent?: Record<string, { body: string; published: boolean }>; barColor?: string; linkColor?: string };
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
@@ -44,9 +44,9 @@ export const yearLabel = (id: string) => makeYear(Number(id)).label;
 export type PortalTheme = { bg: string; topbar: string; navbar: string; blur: boolean };
 export type Settings = { student: PortalTheme; teacher: PortalTheme; login: { bg: string; message: string } };
 export const DEFAULT_SETTINGS: Settings = {
-  student: { bg: "graduation", topbar: "", navbar: "", blur: true },
-  teacher: { bg: "blossoms", topbar: "", navbar: "", blur: false },
-  login: { bg: "campus", message: "Please log in using your Cedar Ridge username and password." },
+  student: { bg: "none", topbar: "", navbar: "", blur: false },
+  teacher: { bg: "none", topbar: "", navbar: "", blur: false },
+  login: { bg: "none", message: "Please log in using your Cedar Ridge username and password." },
 };
 
 export type CustomAssignment = {
@@ -68,6 +68,7 @@ type State = {
   courseFlags: Record<string, Record<string, boolean>>;
   courses: CourseDef[]; sections: Section[]; photos: Record<string, string>;
   sampleCleared?: boolean;
+  impersonatorId?: string | null;
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
@@ -81,6 +82,8 @@ type Ctx = State & {
   update: (fn: (s: State) => State) => void;
   login: (username: string, password: string) => User | null;
   logout: () => void;
+  impersonate: (id: string) => boolean;
+  stopImpersonating: () => void;
 };
 const C = createContext<Ctx | null>(null);
 
@@ -109,21 +112,24 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
   useEffect(() => { if (ready) void saveSchool(JSON.stringify(s)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); }, [s, ready]);
-  const update = useCallback((fn: (s: State) => State) => setS((current) => {
-    const next = fn(current);
-    void saveSchool(JSON.stringify(next)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again."));
-    return next;
-  }), []);
+  const update = useCallback((fn: (s: State) => State) => setS(fn), []);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
-    EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId.startsWith("p-")).map((u) => ({ id: u.personId, prefix: "", first: u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
-    EXTRA.students = s.users.filter((u) => u.role === "student" && u.personId.startsWith("p-")).map((u) => ({ id: u.personId, first: u.first, last: u.last, grade: 9, address: "", homePhone: "", parents: [] }));
+    EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
+    EXTRA.students = s.users.filter((u) => u.role === "student" && u.personId).map((u) => ({ id: u.personId, first: u.preferred || u.first, last: u.last, grade: u.grade ?? 9, address: [u.address, u.city, u.state, u.postal].filter(Boolean).join(", "), homePhone: u.phone ?? "", parents: [] }));
   }, [s.users]);
   const value = useMemo<Ctx>(() => ({
     ...s, ready, update,
     user: s.users.find((u) => u.id === s.sessionId && u.active) ?? null,
     login: (username, password) => { const u = findLogin(s.users, username, password); if (u) setS((x) => ({ ...x, sessionId: u.id })); return u; },
-    logout: () => setS((x) => ({ ...x, sessionId: null })),
+    logout: () => setS((x) => ({ ...x, sessionId: null, impersonatorId: null })),
+    impersonate: (id) => {
+      const actor = s.users.find((u) => u.id === s.sessionId) ?? null;
+      const target = s.users.find((u) => u.id === id);
+      if (!target || !canImpersonate(actor, target)) return false;
+      setS((x) => ({ ...x, impersonatorId: actor?.id, sessionId: id })); return true;
+    },
+    stopImpersonating: () => setS((x) => ({ ...x, sessionId: x.impersonatorId ?? x.sessionId, impersonatorId: null })),
   }), [s, ready, update]);
   return <C.Provider value={value}>{children}</C.Provider>;
 }
