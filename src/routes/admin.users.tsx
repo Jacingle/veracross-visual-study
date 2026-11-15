@@ -1,3 +1,4 @@
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Camera, KeyRound, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { ImageCropper } from "@/components/common/ImageCropper";
@@ -33,7 +34,7 @@ function UsersPage() {
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     if (!edit) return;
-    const d = { ...edit.d, personId: edit.d.personId === "new" && edit.d.role !== "admin" ? `p-${crypto.randomUUID().slice(0, 8)}` : edit.d.personId === "new" ? "" : edit.d.personId, email: edit.d.email.trim().toLowerCase(), first: edit.d.first.trim(), last: edit.d.last.trim() };
+    const d = { ...edit.d, personId: edit.d.personId === "new" ? `p-${crypto.randomUUID().slice(0, 8)}` : edit.d.personId, email: edit.d.email.trim().toLowerCase(), first: edit.d.first.trim(), last: edit.d.last.trim() };
     const err = validateUser(users, d, edit.id);
     if (err) { toast.error(err); return; }
     if (edit.id === me?.id && d.role !== "admin") { toast.error("You can't remove your own administrator role."); return; }
@@ -56,7 +57,7 @@ function UsersPage() {
               <td className="px-3 py-1.5">{u.last}, {u.first}{u.id === me?.id && <span className="ml-1.5 text-[10px] text-muted-foreground">(you)</span>}</td>
               <td className="font-mono text-[12px]">{u.email}</td>
               <td><span className={`px-1.5 py-px text-[10px] font-semibold text-primary-foreground ${u.role === "admin" ? "bg-ax-top" : u.role === "teacher" ? "bg-vc-success" : "bg-vc-badge"}`}>{ROLE_LABEL[u.role].toUpperCase()}</span></td>
-              <td className="text-muted-foreground"><span className="flex items-center gap-2">{u.personId && photos[u.personId] && <img src={photos[u.personId]} alt="" className="h-7 w-[21px] object-cover" />}{u.role === "teacher" && u.personId ? `${teacher(u.personId).prefix} ${teacher(u.personId).first} ${teacher(u.personId).last}` : u.role === "student" && studentById(u.personId) ? `${studentById(u.personId)!.first} ${studentById(u.personId)!.last} (Grade ${studentById(u.personId)!.grade})` : "—"}</span></td>
+              <td className="text-muted-foreground"><span className="flex items-center gap-2"><PersonPhoto personId={u.personId} className="size-7" />{u.role === "teacher" && u.personId ? `${teacher(u.personId).prefix} ${teacher(u.personId).first} ${teacher(u.personId).last}` : u.role === "student" && studentById(u.personId) ? `${studentById(u.personId)!.first} ${studentById(u.personId)!.last} (Grade ${studentById(u.personId)!.grade})` : "—"}</span></td>
               <td><Switch aria-label={`Active: ${u.email}`} checked={u.active} disabled={u.id === me?.id} onCheckedChange={(on) => { update((s) => ({ ...s, users: s.users.map((x) => (x.id === u.id ? { ...x, active: on } : x)) })); toast(on ? "Account activated" : "Account deactivated — they can no longer log in"); }} /></td>
               <td className="pr-3 text-right">
                 {canImpersonate(me, u) && <Button variant="ghost" size="icon" className="size-7" title="Log in as this user" aria-label={`Impersonate ${u.email}`} onClick={() => { if (impersonate(u.id)) nav({ to: homeFor(u.role) }); }}><UserRound className="size-4" /></Button>}
@@ -86,13 +87,13 @@ function UsersPage() {
             <div className="grid grid-cols-2 gap-3">
               <label>ROLE<select className={inp} value={edit.d.role} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, role: e.target.value as Role, personId: "new" } })}>{(["student", "teacher", "admin"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select></label>
               {edit.d.role === "teacher" && <label>FACULTY RECORD<select className={inp} value={edit.d.personId} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, personId: e.target.value } })}><option value="new">+ New faculty record</option><option value="">— none —</option>{TEACHERS.map((t) => <option key={t.id} value={t.id}>{t.prefix} {t.first} {t.last}</option>)}{edit.d.personId.startsWith("p-") && <option value={edit.d.personId}>{edit.d.first} {edit.d.last} (own record)</option>}</select></label>}
-              {edit.d.role === "student" && <label>STUDENT RECORD<select className={inp} value={edit.d.personId} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, personId: e.target.value } })}><option value="new">+ New student record</option><option value="">— none —</option><option value="me">Jack Ingle (Grade 9)</option>{edit.d.personId.startsWith("p-") && <option value={edit.d.personId}>{edit.d.first} {edit.d.last} (own record)</option>}</select></label>}
+              {edit.d.role === "student" && <label>STUDENT RECORD<select className={inp} value={edit.d.personId} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, personId: e.target.value } })}><option value="new">+ New student record</option><option value="">— none —</option>{edit.d.personId.startsWith("p-") && <option value={edit.d.personId}>{edit.d.first} {edit.d.last} (own record)</option>}</select></label>}
             </div>
             <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setEdit(null)} className="h-8 border border-vc-line px-3 text-foreground">Cancel</button><button className="h-8 bg-ax-go px-4 font-semibold text-primary-foreground">Save</button></div>
           </form>}
         </DialogContent>
       </Dialog>
-      <ImageCropper open={!!photoFor} onClose={() => setPhotoFor(null)} aspect={3 / 4} outWidth={300} title="Directory Photo"
+      <ImageCropper open={!!photoFor} onClose={() => setPhotoFor(null)} aspect={1} outWidth={300} title="Directory Photo"
         onSave={(url) => { if (!photoFor) return; update((s) => ({ ...s, photos: { ...s.photos, [photoFor]: url } })); toast.success("Photo saved"); }} />
     </AxiomShell>
   );

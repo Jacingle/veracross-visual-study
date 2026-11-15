@@ -1,3 +1,4 @@
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { MapPinned } from "lucide-react";
 import { type Student, studentEmail } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
@@ -9,7 +10,7 @@ export function StudentCard({ s }: { s: Student }) {
   return (
     <div className="border border-vc-line bg-background px-5 py-4 shadow-sm">
       <div className="flex gap-4">
-        {photos[s.id] ? <img src={photos[s.id]} alt="" className="h-[100px] w-[76px] shrink-0 object-cover" /> : <div className="grid size-[76px] shrink-0 place-items-center bg-vc-tile text-2xl font-light text-vc-link-strong">{s.first[0]}{s.last[0]}</div>}
+        <PersonPhoto personId={s.id} className="size-[76px]" />
         <div className="flex flex-1 justify-between gap-4 border-b border-vc-line pb-4">
           <div><div className="text-[21px] font-semibold text-foreground/85">{s.first} {s.last}</div>
             <span className="mt-1 inline-block bg-vc-badge px-1.5 py-px text-[11px] text-primary-foreground">GRADE {s.grade}</span></div>

@@ -1,3 +1,4 @@
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
@@ -62,7 +63,7 @@ function Dir() {
           </div>))}
         {type === "faculty" && slice(faculty).map((t) => (
           <div key={t.id} className="flex items-center gap-5 border border-vc-line px-5 py-4 shadow-sm">
-            {photos[t.id] ? <img src={photos[t.id]} alt="" className="h-16 w-12 object-cover" /> : <div className="grid size-[64px] place-items-center bg-vc-tile text-xl text-vc-link-strong">{t.first[0]}{t.last[0]}</div>}
+            <PersonPhoto personId={t.id} className="size-16" />
             <div className="flex-1"><div className="text-[19px]">{t.prefix} {t.first} {t.last}</div><div className="text-[13px] text-muted-foreground">{t.title} · {t.dept}</div></div>
             <div className="text-[14px]"><span className="mr-3 text-[11px] font-semibold tracking-wider text-muted-foreground">EMAIL</span><a href={`mailto:${t.email}`} className="text-vc-link-strong">{t.email}</a></div>
           </div>))}

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlignLeft, BookUser, Bookmark, CalendarDays, ChevronDown, ClipboardList, Clock, Home, IdCard, Landmark, List, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
 import { useState, type CSSProperties, type ReactNode } from "react";
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -60,21 +61,21 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
       <header className="sticky top-0 z-30">
         <div className="relative flex h-9 items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
           <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
-          <div className="absolute left-1/2 top-0 flex h-9 -translate-x-1/2 items-stretch">
-            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-6 text-[16px] font-semibold [clip-path:polygon(5%_0,100%_0,100%_100%,0_100%)]">
+          <div className="flex h-9 min-w-0 items-stretch lg:absolute lg:left-1/2 lg:top-0 lg:-translate-x-1/2">
+            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-3 text-[16px] font-semibold [clip-path:polygon(5%_0,100%_0,100%_100%,0_100%)]">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="my-1 ml-1 flex h-7 items-center gap-1 border border-primary-foreground/30 bg-vc-navbar/50 px-3 outline-none [clip-path:polygon(10%_0,100%_0,90%_100%,0_100%)]">
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="flex h-9 w-14 shrink-0 items-center justify-center gap-1 rounded-none bg-vc-navbar/50 p-0 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground">
                 <VcLogo className="h-4 w-5" /><ChevronDown className="size-3" />
               </Button>
           </div>
-          <div className="ml-auto flex items-center gap-5">
+          <div className="ml-auto flex items-center gap-3">
             <Link to="/messages" className="flex items-center gap-1.5 hover:underline">
               <Mail className="size-5" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
             </Link>
             <Link to="/calendar" className="flex items-center gap-1.5 hover:underline"><CalendarDays className="size-5" /><span className="hidden md:inline">My Calendar</span></Link>
             <DropdownMenu>
-              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none">{user?.personId && photos[user.personId] ? <img src={photos[user.personId]} alt="Profile" className="size-7 object-cover" /> : initials}</Button>
+              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-7" /></Button>
               <DropdownMenuContent align="end" className="text-[13px]">
                 <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · {user ? ROLE_LABEL[user.role] : ""}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -93,13 +94,13 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
           ))}
         </nav>
       </header>
-      {impersonatorId && <div className="relative z-20 flex items-center justify-center gap-4 bg-vc-note py-2 text-[13px]">Viewing as {user?.first} {user?.last}<Button variant="outline" size="sm" onClick={() => { stopImpersonating(); nav({ to: '/admin/users' }); }}>End Impersonation</Button></div>}
+      {impersonatorId && <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-b border-vc-line bg-vc-note px-4 py-1 text-[12px]"><span>Impersonating: <strong>{user?.first} {user?.last}</strong> · {user ? ROLE_LABEL[user.role] : ""}</span><Button variant="ghost" size="sm" className="h-6 text-vc-link-strong" onClick={() => { stopImpersonating(); nav({ to: '/admin/users' }); }}>Return to Administration</Button></div>}
       <main className="relative min-h-[calc(100vh-80px)] pb-12 pt-7">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
           : <div className={`relative mx-auto bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
-      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={3 / 4} outWidth={300} title="Profile Photo" onSave={(photo) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo } })); }} />
+      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo } })); }} />
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />
     </div>
   );
