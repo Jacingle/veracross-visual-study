@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
 import { course, courseTitle, today } from "@/lib/sis-data";
-import { useStudentAssignments } from "@/lib/school-store";
+import { useMySections, useStudentAssignments } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/updates")({
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/updates")({
 
 function Updates() {
   const all = useStudentAssignments();
+  const sections = useMySections();
   const graded = all.filter((a) => a.score !== undefined && a.due < today()).sort((a, b) => +b.due - +a.due).slice(0, 25);
   return (
     <PortalShell portal="student">
@@ -23,7 +24,7 @@ function Updates() {
           <tbody>{graded.map((a) => (
             <tr key={a.id} className="border-b border-vc-line">
               <td className="py-2">{format(a.due, "MMM d")}</td>
-              <td><Link to="/grades/$classId" params={{ classId: a.courseId }} className="text-vc-link-strong hover:underline">{courseTitle(course(a.courseId))}</Link></td>
+              <td><Link to="/grades/$classId" params={{ classId: a.courseId }} className="text-vc-link-strong hover:underline">{sections.find((c) => c.id === a.courseId)?.name ?? a.courseId}</Link></td>
               <td>{a.title}</td><td className="text-[11px]">{a.category}</td>
               <td className="text-right font-semibold">{a.score} / {a.points}</td>
             </tr>))}</tbody>

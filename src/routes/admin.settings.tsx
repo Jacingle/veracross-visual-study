@@ -5,6 +5,8 @@ import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
 import { Switch } from "@/components/ui/switch";
 import { BACKGROUNDS, DEFAULT_SETTINGS, bgSrc, useSchool, type PortalTheme, type Settings } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
+import { ImageCropper } from "@/components/common/ImageCropper";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin/settings")({
   head: () => pageHead("Axiom · Portal Settings", "Customize portal backgrounds, bar colors and the login page."),
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/admin/settings")({
 
 function BgPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [url, setUrl] = useState(/^https?:/.test(value) ? value : "");
+  const [crop, setCrop] = useState(false);
   return (
     <div>
       <div className="grid grid-cols-5 gap-2">
@@ -22,9 +25,12 @@ function BgPicker({ value, onChange }: { value: string; onChange: (v: string) =>
         <button type="button" onClick={() => onChange("none")} className={`grid h-[76px] place-items-center border-2 bg-vc-panel text-[11px] ${value === "none" ? "border-vc-link-strong" : "border-vc-line"}`}>No background</button>
       </div>
       <div className="mt-2 flex gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => setCrop(true)}>Upload photo</Button>
         <input aria-label="Custom image web address" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Or paste an image web address (https://…)" maxLength={500} className="h-7 flex-1 border border-vc-line px-2" />
         <button type="button" onClick={() => { if (!/^https:\/\/\S+\.\S+/.test(url)) { toast.error("Enter a full https:// image address"); return; } onChange(url); }} className="h-7 border border-vc-line px-3">Use image</button>
       </div>
+      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={16 / 9} outWidth={1600} title="Portal Background" onSave={onChange} />
+      {value.startsWith("data:image/") && <img src={value} alt="Uploaded background" className="mt-2 h-20 w-36 object-cover" />}
     </div>
   );
 }

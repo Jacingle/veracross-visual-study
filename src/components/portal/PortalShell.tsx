@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlignLeft, BookUser, Bookmark, CalendarDays, ChevronDown, ClipboardList, Clock, Home, IdCard, Landmark, List, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { ImageCropper } from "@/components/common/ImageCropper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { VcLogo } from "@/components/portal/VcLogo";
@@ -38,7 +39,9 @@ export function PortalShell({ children, portal, area, wide = false, bare = false
 }
 
 function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: Portal | undefined; wide: boolean; bare: boolean }) {
-  const { user, settings, logout } = useSchool();
+  const { user, settings, logout, photos, update, sections } = useSchool();
+  const [crop, setCrop] = useState(false);
+  const firstClass = sections.find((c) => c.published && (c.teacherIds.includes(user?.personId ?? "") || c.studentIds.includes(user?.personId ?? "")));
   const { read } = usePortal();
   const inbox = useInbox();
   const nav = useNavigate();
@@ -67,7 +70,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
                 {user?.role === "admin" && <DropdownMenuItem asChild><Link to="/admin">Axiom (Administration)</Link></DropdownMenuItem>}
                 {user?.role !== "student" && <DropdownMenuItem asChild><Link to="/teacher">Faculty Portal</Link></DropdownMenuItem>}
                 {user?.role !== "teacher" && <DropdownMenuItem asChild><Link to="/student">Student Portal</Link></DropdownMenuItem>}
-                <DropdownMenuItem asChild><Link to="/class/$classId" params={{ classId: "143-1" }}>Class Websites</Link></DropdownMenuItem>
+                {firstClass && <DropdownMenuItem asChild><Link to="/class/$classId" params={{ classId: firstClass.id }}>Class Website</Link></DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -77,17 +80,18 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             </Link>
             <Link to="/calendar" className="flex items-center gap-1.5 hover:underline"><CalendarDays className="size-5" /> My Calendar</Link>
             <DropdownMenu>
-              <DropdownMenuTrigger aria-label="Account menu" className="grid size-7 place-items-center rounded-full bg-primary-foreground/25 text-[12px] outline-none">{initials}</DropdownMenuTrigger>
+              <DropdownMenuTrigger aria-label="Account menu" className="grid size-7 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 text-[12px] outline-none">{user?.personId && photos[user.personId] ? <img src={photos[user.personId]} alt="Profile" className="size-7 object-cover" /> : initials}</DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="text-[13px]">
                 <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · {user ? ROLE_LABEL[user.role] : ""}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {user?.personId && <DropdownMenuItem onClick={() => setCrop(true)}>Upload Profile Photo</DropdownMenuItem>}
                 {p === "student" && <DropdownMenuItem asChild><Link to="/classes">My Profile & Reports</Link></DropdownMenuItem>}
                 <DropdownMenuItem onClick={signOut}>Log Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
-        <nav className="flex h-11 items-center justify-center gap-8 bg-vc-navbar text-[14px] text-primary-foreground shadow-md">
+        <nav className="flex min-h-11 flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-vc-navbar px-3 py-2 text-[13px] text-primary-foreground shadow-md">
           {NAV[p].map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} activeOptions={{ exact: to === "/teacher" }} className="flex items-center gap-2 border-b-2 border-transparent py-0.5 hover:border-primary-foreground/60" activeProps={{ className: "border-primary-foreground/80" }}>
               <Icon className="size-4" /> {label}
@@ -100,6 +104,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
           : <div className={`relative mx-auto bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
+      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={3 / 4} outWidth={300} title="Profile Photo" onSave={(photo) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo } })); }} />
     </div>
   );
 }

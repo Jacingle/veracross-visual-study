@@ -11,6 +11,8 @@ import campus from "@/assets/campus-bg.jpg";
 import blossoms from "@/assets/faculty-bg.jpg";
 import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
+import { readSchool, saveSchool } from "./browser-save";
+import { toast } from "sonner";
 
 export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
   { key: "graduation", label: "Graduation", src: graduation },
@@ -19,7 +21,7 @@ export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
   { key: "painting", label: "Painting", src: painting },
 ];
 /** Resolve a background setting: preset key, custom https URL, or "none". */
-export const bgSrc = (v: string) => (v === "none" ? null : BACKGROUNDS.find((b) => b.key === v)?.src ?? (/^https?:\/\//.test(v) ? v : null));
+export const bgSrc = (v: string) => (v === "none" ? null : BACKGROUNDS.find((b) => b.key === v)?.src ?? (/^(https?:\/\/|data:image\/)/.test(v) ? v : null));
 
 /** Class website look, set by the class's teacher: blank, a solid color, or an uploaded (cropped) photo. */
 export type Website = { bg: "none" | "color" | "photo"; color: string; photo: string; sections: { title: string; body: string }[]; pages: string[] };
@@ -65,6 +67,7 @@ type State = {
   weights: Record<string, Weight[]>; sent: SentMessage[]; purchases: Purchase[];
   courseFlags: Record<string, Record<string, boolean>>;
   courses: CourseDef[]; sections: Section[]; photos: Record<string, string>;
+  sampleCleared?: boolean;
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
@@ -85,15 +88,27 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<State>(INITIAL);
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    let cancelled = false;
+    void (async () => {
     try {
-      const v = JSON.parse(localStorage.getItem(KEY) || "{}") as Partial<State>;
+      const v = JSON.parse(await readSchool() || "{}") as Partial<State>;
+      if (cancelled) return;
+      if (!v.sampleCleared) {
+        const sampleIds = new Set(["101-1", "122-1", "143-1", "191-1", "210-1", "93-1", "301-1", "143-2", "145-1", "148-1", "ADV-W"]);
+        v.sections = (v.sections ?? []).filter((c) => !sampleIds.has(c.id));
+        v.courses = (v.courses ?? []).filter((c) => !["101", "122", "143", "191", "210", "93", "301", "145", "148", "ADV"].includes(c.id));
+        v.users = (v.users ?? INITIAL.users).map((u) => u.id === "u-teacher" && u.personId === "t3" ? { ...u, personId: "p-teacher", first: "Faculty", last: "Account" } : u.id === "u-student" && u.personId === "me" ? { ...u, personId: "p-student", first: "Student", last: "Account" } : u);
+        v.sampleCleared = true;
+      }
       const users = v.users?.length ? v.users : INITIAL.users;
       const st = { ...DEFAULT_SETTINGS, ...v.settings };
       setS({ ...INITIAL, ...v, users, settings: { student: { ...DEFAULT_SETTINGS.student, ...st.student }, teacher: { ...DEFAULT_SETTINGS.teacher, ...st.teacher }, login: { ...DEFAULT_SETTINGS.login, ...st.login } } });
     } catch { /* corrupt storage: start fresh */ }
-    setReady(true);
+    if (!cancelled) setReady(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
-  useEffect(() => { if (ready) localStorage.setItem(KEY, JSON.stringify(s)); }, [s, ready]);
+  useEffect(() => { if (ready) void saveSchool(JSON.stringify(s)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); }, [s, ready]);
   const update = useCallback((fn: (s: State) => State) => setS(fn), []);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {

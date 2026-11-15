@@ -14,7 +14,7 @@ export const Route = createFileRoute("/calendar")({
 });
 
 function Cal() {
-  const { user } = useSchool();
+  const { user, sections } = useSchool();
   const all = useStudentAssignments();
   const [m, setM] = useState(startOfMonth(today()));
   const [showHw, setShowHw] = useState(true);
@@ -48,7 +48,7 @@ function Cal() {
         <DialogContent className="max-w-[560px] gap-0 p-0 text-[13px]">
           {sel && <>
             <DialogHeader className="border-b border-vc-line px-5 py-3"><DialogTitle className="text-[17px] font-normal">{sel.title}</DialogTitle>
-              <div className="text-[12px] text-muted-foreground">{courseTitle(course(sel.courseId))}</div></DialogHeader>
+              <div className="text-[12px] text-muted-foreground">{sections.find((c) => c.id === sel.courseId)?.name ?? sel.courseId}</div></DialogHeader>
             <dl className="grid grid-cols-[140px_1fr] gap-y-2.5 px-5 py-4">
               <dt className="text-muted-foreground">Category</dt><dd>{sel.category}</dd>
               <dt className="text-muted-foreground">Assignment Date</dt><dd>{format(sel.assigned, "EEEE, MMMM d, yyyy")}</dd>

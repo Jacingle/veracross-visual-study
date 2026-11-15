@@ -25,7 +25,7 @@ function AdminHome() {
   return (
     <AxiomShell title="System Administrator Homepage">
       <div className="grid grid-cols-4 gap-3">
-        {[["Portal Accounts", users.length], ["Students", STUDENTS.length + 1], ["Faculty & Staff", TEACHERS.length], ["Class Sections", sections.length]].map(([l, n]) => (
+        {[["Portal Accounts", users.length], ["Students", users.filter((u) => u.role === "student").length], ["Faculty & Staff", users.filter((u) => u.role === "teacher").length], ["Class Sections", sections.length]].map(([l, n]) => (
           <div key={l} className="border border-vc-line bg-background px-3 py-2.5"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="text-[26px] font-light text-ax-top">{n}</div></div>))}
       </div>
       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_340px] gap-3">

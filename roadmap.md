@@ -8,3 +8,4 @@
 - [x] Vary assignment titles; trim sample data
 - [ ] Teacher assignment editor/student list/weights/reports: closer screenshot match
 - [ ] Student directories, updates, messages, grade detail: second screenshot pass
+- [ ] Remove sample school records, repair all photo upload paths and reload saving; refine supplied screenshots
