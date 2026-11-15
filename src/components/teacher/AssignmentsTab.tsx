@@ -5,7 +5,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Switch } from "@/components/ui/switch";
-import { CATEGORY_CHIP, today, type Assignment, type Category, type Student } from "@/lib/sis-data";
+import { useCategoryStyle } from "@/lib/category-colors";
+import { today, type Assignment, type Category, type Student } from "@/lib/sis-data";
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
 import { isoDay, useSchool, type CustomAssignment } from "@/lib/school-store";
 
@@ -19,6 +20,7 @@ type Props = { courseId: string; list: Assignment[]; roster: Student[]; aid: str
 
 export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
   const nav = useNavigate();
+  const chip = useCategoryStyle(courseId);
   const go = (search: { aid?: string; sub?: "details" | "students" }) => nav({ to: "/teacher/class/$classId", params: { classId: courseId }, search: { tab: "assignments", ...search } });
   const { scores } = useSchool();
   if (aid) {
@@ -45,7 +47,7 @@ export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
           <tr key={a.id} className="border-b border-vc-line hover:bg-vc-panel">
             <td className="py-1.5">{format(a.due, "EEE M/d")}</td>
             <td><Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "assignments", aid: a.id }} className="text-vc-link-strong hover:underline">{a.title}</Link>{a.custom && <span className="ml-1.5 text-[10px] text-muted-foreground">EDITED</span>}</td>
-            <td><span className={`px-1.5 py-px text-[10px] font-semibold text-primary-foreground ${CATEGORY_CHIP[a.category]}`}>{a.category}</span></td>
+            <td><span style={chip(a.category)} className="px-1.5 py-px text-[10px] font-semibold text-primary-foreground">{a.category}</span></td>
             <td className="text-right">{a.points}</td><td className="text-right">{g}/{roster.length}</td><td className="text-right"><PortalFlag id={a.id} /></td>
           </tr>); })}</tbody>
       </table>
