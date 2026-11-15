@@ -1,0 +1,37 @@
+// Pure grade math shared by the student grade detail and the teacher gradebook.
+export type Weight = { cat: string; weight: number; drop: boolean };
+export type Scored = { category: string; points: number; score?: number | undefined };
+
+/** Equal weights across the categories a class uses; remainder goes to the first so the total is 100. */
+export function defaultWeights(cats: string[]): Weight[] {
+  const u = [...new Set(cats)];
+  if (!u.length) return [];
+  const base = Math.floor(100 / u.length);
+  return u.map((cat, i) => ({ cat, weight: base + (i === 0 ? 100 - base * u.length : 0), drop: false }));
+}
+
+export function categoryStats(items: Scored[], drop = false) {
+  const graded = items.filter((a) => a.score !== undefined && a.points > 0);
+  let use = graded;
+  if (drop && graded.length > 1) {
+    const low = graded.reduce((m, a) => ((a.score! / a.points) < (m.score! / m.points) ? a : m));
+    use = graded.filter((a) => a !== low);
+  }
+  const earned = use.reduce((s, a) => s + a.score!, 0);
+  const possible = use.reduce((s, a) => s + a.points, 0);
+  return { count: items.length, earned, possible, pct: possible ? (earned / possible) * 100 : null };
+}
+
+/** Weighted average: categories with no graded work are left out and the remaining weights re-scale. */
+export function weightedAverage(items: Scored[], weights: Weight[]): number | null {
+  let sum = 0, w = 0;
+  for (const wt of weights) {
+    const st = categoryStats(items.filter((a) => a.category === wt.cat), wt.drop);
+    if (st.pct === null || wt.weight <= 0) continue;
+    sum += st.pct * wt.weight; w += wt.weight;
+  }
+  return w ? sum / w : null;
+}
+
+const SCALE: [number, string][] = [[97, "A+"], [93, "A"], [90, "A-"], [87, "B+"], [83, "B"], [80, "B-"], [77, "C+"], [73, "C"], [70, "C-"], [60, "D"]];
+export const letterFor = (pct: number) => SCALE.find(([min]) => pct >= min)?.[1] ?? "F";

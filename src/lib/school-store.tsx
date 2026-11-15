@@ -33,7 +33,8 @@ export type CustomAssignment = {
 };
 export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" };
 export type Purchase = { id: string; item: string; vendor: string; amount: number; reason: string; status: "Pending" | "Approved" | "Denied"; date: string; by: string };
-export type Weight = { cat: string; weight: number; drop: boolean };
+export type { Weight } from "./grading";
+import type { Weight } from "./grading";
 
 type State = {
   users: User[]; sessionId: string | null; settings: Settings;
