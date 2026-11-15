@@ -46,7 +46,7 @@ function Editor({ c }: { c: Section }) {
   const termMode = d.terms.length === 2 ? "FY" : d.terms[0]?.endsWith("S2") ? "S2" : "S1";
   const setTerms = (y: string, m: string) => setD({ ...d, terms: m === "FY" ? [`${y}-S1`, `${y}-S2`] : [`${y}-${m}`] });
   const faculty = [...TEACHERS, ...EXTRA.teachers];
-  const pool = [ME_STUDENT, ...STUDENTS, ...EXTRA.students].filter((s) => !c.studentIds.includes(s.id));
+  const pool = [...STUDENTS, ...EXTRA.students].filter((s) => !c.studentIds.includes(s.id));
   const save = () => {
     if (!d.teacherIds.length) { toast.error("Assign at least one teacher."); return; }
     if (d.published && (!d.block || !d.room)) { toast.error("Set a block and room before publishing."); return; }

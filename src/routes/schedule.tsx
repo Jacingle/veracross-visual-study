@@ -3,8 +3,9 @@ import { addDays, format, parseISO, isValid } from "date-fns";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { z } from "zod";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { scheduleFor, today } from "@/lib/sis-data";
-import { useStudentAssignments } from "@/lib/school-store";
+import { today, courseTitle, teacherFull } from "@/lib/sis-data";
+import { useMySections, useStudentAssignments } from "@/lib/school-store";
+import { classStatus } from "@/lib/terms";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/schedule")({
@@ -19,7 +20,8 @@ function Schedule() {
   const parsed = date ? parseISO(date) : today();
   const d = isValid(parsed) ? parsed : today();
   const go = (n: number) => nav({ search: (p) => ({ ...p, date: format(addDays(d, n), "yyyy-MM-dd") }) });
-  const periods = scheduleFor(d);
+  const mine = useMySections();
+  const periods = mine.filter((c) => c.days.includes(d.getDay()) && classStatus(c.terms, d) === "current").map((c) => ({ time: c.time, title: courseTitle(c), detail: `${teacherFull(c.teacherId)} · ${c.block} · ${c.room}`, kind: "class", courseId: c.id }));
   const all = useStudentAssignments();
   return (
     <PortalShell portal="student">
