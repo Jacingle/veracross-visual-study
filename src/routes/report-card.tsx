@@ -19,7 +19,7 @@ function Report() {
       <StudentTabs />
       <div className="px-8 py-6">
         <div className="flex justify-between border-b-2 border-foreground/70 pb-3">
-          <div><div className="text-[12px] uppercase tracking-wider text-muted-foreground">{SCHOOL.name} · Progress Report</div><h2 className="text-[24px] font-light">Mid-Semester 1 · {ME.first} {ME.last}</h2><div className="text-[13px] text-muted-foreground">Grade {ME.grade} · Advisor: {teacherFull(ME.advisorId)}</div></div>
+          <div><div className="text-[12px] uppercase tracking-wider text-muted-foreground">{SCHOOL.name} · Progress Report</div><h2 className="text-[24px] font-light">Mid-Semester 1 · {user?.first} {user?.last}</h2><div className="text-[13px] text-muted-foreground">Advisor: {teacherFull(ME.advisorId)}</div></div>
           <button onClick={() => window.print()} className="flex h-8 items-center gap-2 border border-vc-line px-3 text-[13px] text-vc-link-strong"><Printer className="size-4" />Print / Save PDF</button>
         </div>
         {COURSES.map((c) => (
