@@ -40,3 +40,4 @@ use the editor.
 - Demo impersonation retains the original administrator session and filters records as the target; never impersonate administrators.
 - Use PersonPhoto for all portraits and ImageCropper for bounded square crop or full-image uploads; one shared photo per person prevents inconsistent portraits.
 - Scheduling sets live in the school store and meetingsOn resolves weekly blocks inside both class and scheduling-set terms; all daily schedules and attendance share this rule.
+- Assignment category colors come from the class's weight settings via src/lib/category-colors.ts; never hardcode per-category color classes. Why: teacher-chosen colors must match on every page.

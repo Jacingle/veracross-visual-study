@@ -1,3 +1,4 @@
+import { categoryColor } from "@/lib/category-colors";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { meetingsOn } from "@/lib/scheduling";
 import { useNavigate } from "@tanstack/react-router";
@@ -111,16 +112,19 @@ export function Weights({ c, list }: { c: Course; list: Assignment[] }) {
   const total = weightsTotal(w);
   return (
     <div className="max-w-[720px]"><h2 className="mb-3 text-[22px] font-light">Assignment Weights</h2><div className="mb-3 flex gap-2 text-[13px]"><Button size="sm" variant={!weights[c.id]?.length ? "default" : "outline"} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: [] } })); toast.success("Weighting by assignment points"); }}>Assignment Points</Button><Button size="sm" variant={weights[c.id]?.length ? "default" : "outline"} onClick={() => setW(defaultWeights(cats))}>Assignment Type</Button></div>
-      <table className="w-full text-[13px]">
-        <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Assignment Type</th><th>Weight</th><th className="text-center">Drop Lowest</th><th className="text-right">Assignments</th><th className="text-right">Total Points</th></tr></thead>
-        <tbody>{w.map((x, i) => { const items = list.filter((a) => a.category === x.cat); const st = categoryStats(items); return (
-          <tr key={x.cat} className="border-b border-vc-line">
-            <td className="py-1.5">{x.cat}</td>
-            <td><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-7 w-16 border border-vc-line text-center" value={String(x.weight)} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && setW(w.map((y, j) => (j === i ? { ...y, weight: Number(e.target.value) } : y)))} /> %</td>
-            <td className="text-center"><input type="checkbox" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => setW(w.map((y, j) => (j === i ? { ...y, drop: e.target.checked } : y)))} /></td>
-            <td className="text-right">{st.count}</td><td className="text-right">{items.reduce((s, a) => s + a.points, 0)}</td>
-          </tr>); })}
-          <tr className="font-semibold"><td className="py-2">Total</td><td className={total === 100 ? "text-vc-success" : "text-destructive"}>{total}%</td><td colSpan={3} /></tr></tbody>
+      <table className="w-full border-separate border-spacing-1 text-[13px]">
+        <thead><tr className="[&>th]:rounded-sm [&>th]:bg-vc-sky [&>th]:px-3 [&>th]:py-2 [&>th]:font-semibold"><th className="text-left">Assignment Types</th><th>Color</th><th>Weight</th><th>Drop Lowest</th><th>Show in Gradebook</th><th>Count</th><th>Total Points</th></tr></thead>
+        <tbody>
+          <tr className="[&>td]:rounded-sm [&>td]:bg-vc-tile-warm [&>td]:px-3 [&>td]:py-2 [&>td]:text-center [&>td]:font-semibold"><td className="!text-right">Totals</td><td /><td className={total === 100 ? "text-vc-success" : "text-destructive"}>{total}%</td><td /><td /><td>{list.length}</td><td>{list.reduce((s2, a) => s2 + a.points, 0)}</td></tr>
+          {w.map((x, i) => { const items = list.filter((a) => a.category === x.cat); const st = categoryStats(items); const col = categoryColor(w, x.cat); const patch = (p2: Partial<Weight>) => setW(w.map((y, j) => (j === i ? { ...y, ...p2 } : y))); return (
+          <tr key={x.cat} className="[&>td]:rounded-sm [&>td]:bg-vc-panel [&>td]:px-3 [&>td]:py-1.5 [&>td]:text-center">
+            <td style={{ background: col }} className="min-w-[220px] !text-left font-semibold uppercase text-primary-foreground">{x.cat}</td>
+            <td><input type="color" aria-label={`${x.cat} color`} value={col} onChange={(e) => patch({ color: e.target.value })} className="h-7 w-10" /></td>
+            <td><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-7 w-14 rounded-sm border border-vc-line bg-background pr-1 text-right" value={String(x.weight)} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && patch({ weight: Number(e.target.value) })} /> %</td>
+            <td><input type="checkbox" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
+            <td><input type="checkbox" aria-label={`Show ${x.cat} in gradebook`} checked={x.show !== false} onChange={(e) => patch({ show: e.target.checked })} /></td>
+            <td>{st.count || ""}</td><td>{items.reduce((s2, a) => s2 + a.points, 0) || ""}</td>
+          </tr>); })}</tbody>
       </table>
       {total !== 100 && <p className="mt-1 text-[12px] text-destructive">Weights must add up to 100% before you can save.</p>}
       <div className="mt-3 flex gap-2">

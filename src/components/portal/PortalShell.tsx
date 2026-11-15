@@ -59,14 +59,14 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
   return (
     <div className={`min-h-screen bg-vc-panel ${p === "teacher" ? "portal-faculty" : ""}`} style={style}>
       <header className="sticky top-0 z-30">
-        <div className="relative flex h-9 items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
+        <div className="relative flex h-10 items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
           <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
-          <div className="flex h-9 min-w-0 items-stretch lg:absolute lg:left-1/2 lg:top-0 lg:-translate-x-1/2">
-            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-3 text-[16px] font-semibold [clip-path:polygon(5%_0,100%_0,100%_100%,0_100%)]">
+          <div className="flex h-10 min-w-0 items-stretch lg:absolute lg:left-1/2 lg:top-0 lg:-translate-x-1/2">
+            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2.5 whitespace-nowrap bg-vc-navbar pl-8 pr-7 text-[17px] font-semibold [clip-path:polygon(14px_0,100%_0,calc(100%-10px)_100%,0_100%)]">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="flex h-9 w-14 shrink-0 items-center justify-center gap-1 rounded-none bg-vc-navbar/50 p-0 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground">
-                <VcLogo className="h-4 w-5" /><ChevronDown className="size-3" />
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="my-1 -ml-1 flex h-8 w-16 shrink-0 items-center justify-center gap-1 rounded-none border border-primary-foreground/30 bg-vc-navbar/70 p-0 text-primary-foreground [clip-path:polygon(6px_0,100%_0,calc(100%-6px)_100%,0_100%)] hover:bg-primary-foreground/20 hover:text-primary-foreground">
+                <VcLogo className="h-5 w-6" /><ChevronDown className="size-3" />
               </Button>
           </div>
           <div className="ml-auto flex items-center gap-3">
@@ -86,10 +86,10 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             </DropdownMenu>
           </div>
         </div>
-        <nav className="flex min-h-11 flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-vc-navbar px-3 py-2 text-[13px] text-primary-foreground shadow-md">
+        <nav className="flex min-h-[50px] flex-wrap items-center justify-center gap-x-9 gap-y-2 bg-vc-navbar px-3 py-2 text-[15px] text-primary-foreground shadow-md">
           {NAV[p].map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} activeOptions={{ exact: to === "/teacher" }} className="flex items-center gap-2 border-b-2 border-transparent py-0.5 hover:border-primary-foreground/60" activeProps={{ className: "border-primary-foreground/80" }}>
-              <Icon className="size-4" /> {label}
+              <Icon className="size-[18px]" /> {label}
             </Link>
           ))}
         </nav>
@@ -98,7 +98,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
       <main className="relative min-h-[calc(100vh-80px)] pb-12 pt-7">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
-          : <div className={`relative mx-auto bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
+          : <div className={`relative mx-auto overflow-hidden rounded-xl bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo } })); }} />
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />

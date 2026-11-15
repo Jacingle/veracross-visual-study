@@ -2,16 +2,22 @@ import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { Plus, Scale } from "lucide-react";
 import { toast } from "sonner";
-import { CATEGORY_CHIP, type Assignment, type Student } from "@/lib/sis-data";
+import { type Assignment, type Student } from "@/lib/sis-data";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
 import { useSchool } from "@/lib/school-store";
+import { useCategoryStyle } from "@/lib/category-colors";
+import { useState } from "react";
 
-export function Gradebook({ courseId, list, roster }: { courseId: string; list: Assignment[]; roster: Student[] }) {
+export function Gradebook({ courseId, list: all, roster }: { courseId: string; list: Assignment[]; roster: Student[] }) {
   const { scores, weights, update, custom } = useSchool();
   const w = weights[courseId] ?? [];
+  const chip = useCategoryStyle(courseId);
+  const [type, setType] = useState("all");
+  const types = [...new Set(all.map((a) => a.category))];
+  const list = all.filter((a) => w.find((x) => x.cat === a.category)?.show !== false && (type === "all" || a.category === type));
   const set = (aid: string, sid: string, v: string) => update((s) => ({ ...s, scores: { ...s.scores, [scoreKey(aid, sid)]: v } }));
-  const avgFor = (sid: string) => weightedAverage(list.filter((a) => custom.find((x) => x.id === a.id)?.inCalc !== false).map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, sid) })), w);
+  const avgFor = (sid: string) => weightedAverage(all.filter((a) => custom.find((x) => x.id === a.id)?.inCalc !== false).map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, sid) })), w);
   const colAvg = (a: Assignment) => { const v = roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined); return v.length ? (v.reduce((x, y) => x + y, 0) / v.length / a.points) * 100 : null; };
   const avgs = roster.map((s) => avgFor(s.id)).filter((x): x is number => x !== null);
   const classAvg = avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : null;
@@ -27,7 +33,7 @@ export function Gradebook({ courseId, list, roster }: { courseId: string; list: 
       <div className="mb-3 flex items-center gap-2">
         <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "assignments", aid: "new" }} className="flex h-8 items-center gap-1.5 rounded-sm bg-vc-success px-3 text-[13px] text-primary-foreground"><Plus className="size-4" />Add Assignment</Link>
         <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "weights" }} className="flex h-8 items-center gap-1.5 rounded-sm bg-vc-link px-3 text-[13px] text-primary-foreground"><Scale className="size-4" />Weighting</Link>
-        <span className="ml-auto text-[12px] text-muted-foreground">Date Order · {list.length} assignments</span>
+        <span className="ml-auto text-[12px] text-muted-foreground">Date Order · {list.length} assignments</span><select aria-label="Assignment type filter" value={type} onChange={(e) => setType(e.target.value)} className="h-8 rounded-sm border border-vc-line bg-background px-2 text-[13px]"><option value="all">All Assignment Types</option>{types.map((t) => <option key={t} value={t}>{t}</option>)}</select>
       </div>
       <div className="overflow-x-auto pb-2">
         <table className="border-separate border-spacing-1">
@@ -36,7 +42,7 @@ export function Gradebook({ courseId, list, roster }: { courseId: string; list: 
             <th className="min-w-[84px] rounded-sm bg-vc-sky px-1 align-bottom text-[12px] font-semibold">Calculated Grade</th>
             {list.map((a) => (
               <th key={a.id} className="min-w-[110px] max-w-[110px] rounded-sm bg-vc-panel p-1.5 text-left align-top font-normal">
-                <span className={`px-1 text-[9px] font-semibold text-primary-foreground ${CATEGORY_CHIP[a.category]}`}>{a.category}</span>
+                <span style={chip(a.category)} className="px-1 text-[9px] font-semibold text-primary-foreground">{a.category}</span>
                 <div className="mt-1 h-[32px] overflow-hidden text-[11px] font-semibold uppercase leading-tight" title={a.title}>{a.title}</div>
                 <div className="mt-1 text-[11px] text-muted-foreground">{format(a.due, "MMM dd")} · /{a.points}</div>
               </th>))}
