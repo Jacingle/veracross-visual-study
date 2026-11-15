@@ -1,3 +1,4 @@
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { format, isAfter } from "date-fns";
 import { ArrowRight, CalendarDays, Clock, FolderOpen, Home, Image, Megaphone, MessagesSquare, User } from "lucide-react";
@@ -64,7 +65,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
         <aside className="mt-[94px] w-[250px] shrink-0 space-y-3 text-[13px]">
           <div className="bg-background p-3">
             <div className="text-[16px]">Teacher</div>
-            <div className="mt-1 flex gap-2.5">{photos[t.id] ? <img src={photos[t.id]} alt="" className="h-[80px] w-[60px] object-cover" /> : <div className="grid h-[80px] w-[60px] place-items-center bg-vc-tile text-lg text-vc-link-strong">{t.first[0]}{t.last[0]}</div>}
+            <div className="mt-1 flex gap-2.5"><PersonPhoto personId={t.id} className="size-[60px]" />
               <div><div className="font-semibold">{t.prefix} {t.last}</div><a href={`mailto:${t.email}`} className="text-vc-link-strong">Email</a></div></div>
             <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-3 flex items-center gap-1 text-vc-link-strong">More class information <ArrowRight className="size-3.5" /></Link>
           </div>

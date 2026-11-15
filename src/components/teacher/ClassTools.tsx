@@ -1,3 +1,5 @@
+import { PersonPhoto } from "@/components/common/PersonPhoto";
+import { meetingsOn } from "@/lib/scheduling";
 import { useNavigate } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
 import { CheckCircle2 } from "lucide-react";
@@ -7,25 +9,27 @@ import { type Assignment, type Course, type Student } from "@/lib/sis-data";
 import { categoryStats, defaultWeights, letterFor, weightedAverage, weightsTotal, weightsValid, type Weight } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
 import { useSchool, type Section } from "@/lib/school-store";
-import { gradingPeriods, termLabel, termOn } from "@/lib/terms";
+import { gradingPeriods, termLabel, termOn, termById } from "@/lib/terms";
 import { Button } from '@/components/ui/button';
 
 const ATT = ["Present", "Tardy", "Absent - Excused", "Absent - Unexcused", "Dismissed", "Field Trip"];
 
 export function Attendance({ c, roster, date }: { c: Section; roster: Student[]; date: string }) {
-  const { attendance, attNotes, attDone, update, photos } = useSchool();
+  const { attendance, attNotes, attDone, update, photos, schedulingSets } = useSchool();
   const nav = useNavigate();
   const key = (sid: string) => `${c.id}|${date}|${sid}`;
   const done = attDone.includes(`${c.id}|${date}`);
   const setDate = (d: string) => nav({ to: "/teacher/class/$classId", params: { classId: c.id }, search: { tab: "attendance", date: d } });
   const go = (n: number) => { const d = parseISO(date); d.setDate(d.getDate() + n); setDate(format(d, "yyyy-MM-dd")); };
   const term = termOn(c.terms, parseISO(date));
+  const meetings = meetingsOn(c, schedulingSets, parseISO(date));
+  const meets = Boolean(term) && meetings.length > 0;
   const counts = ATT.map((st) => [st, roster.filter((s) => (attendance[key(s.id)] ?? "Present") === st).length] as const).filter(([, n]) => n > 0);
   return (
     <div>
       <div className="flex items-center justify-between">
         <h2 className="text-[22px] font-light">Class Attendance <span className={`ml-1 px-1.5 py-0.5 align-middle text-[12px] ${done ? "bg-vc-tile text-vc-success" : "bg-vc-line"}`}>{done ? "Complete" : "Not Taken"}</span></h2>
-        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!term} className="disabled:opacity-40 h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
+        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!meets} className="disabled:opacity-40 h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
       </div>
       <div className="mt-2 flex items-center gap-3 text-[13px]">
         <div className="flex h-8 items-center border border-vc-line">
@@ -33,14 +37,14 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
           <input type="date" className="h-full border-x border-vc-line px-2" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
           <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}>›</button>
         </div>
-        <select aria-label="Attendance block" className="h-8 w-[200px] border border-vc-line bg-background px-2"><option>{c.block} · {c.time}</option></select>
+        <select aria-label="Attendance block" className="h-8 w-[200px] border border-vc-line bg-background px-2">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block} · {b.start}{b.end ? `–${b.end}` : ""}</option>) : <option>Not scheduled</option>}</select>
       </div>
-      {!term ? <p className="my-6 border border-vc-line bg-vc-panel p-4 text-[13px]">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <><div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
+      {!meets ? <p className="my-6 border border-vc-line bg-vc-panel p-4 text-[13px]">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <><div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
       <div className="overflow-x-auto"><table className="w-full text-[13px]">
         <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Status</th><th>Class Attendance Notes</th></tr></thead>
         <tbody>{roster.map((s) => { const v = attendance[key(s.id)] ?? "Present"; return (
           <tr key={s.id} className="border-b border-vc-line">
-            <td className="py-2"><div className="flex items-center gap-2.5">{photos[s.id] ? <img src={photos[s.id]} alt="" className="h-10 w-8 object-cover" /> : <span className="grid h-10 w-8 place-items-center bg-vc-tile text-[13px] text-vc-link-strong">{s.first[0]}{s.last[0]}</span>}<span className="text-[14px] leading-tight">{s.first}<br />{s.last}</span></div></td>
+            <td className="py-2"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-10" /><span className="text-[14px] leading-tight">{s.first}<br />{s.last}</span></div></td>
             <td><select aria-label={`Attendance for ${s.first}`} className={`h-8 w-[190px] rounded-sm border border-vc-line bg-background px-2 ${v === "Present" ? "text-vc-success" : "text-destructive"}`} value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select></td>
             <td><input aria-label={`Note for ${s.first}`} className="h-7 w-full border border-vc-line bg-background px-1.5" maxLength={200} value={attNotes[key(s.id)] ?? ""} onChange={(e) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [key(s.id)]: e.target.value } }))} /></td>
           </tr>); })}</tbody>
@@ -61,10 +65,13 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
   const TERMS = gradingPeriods(c.terms);
   const [term, setTerm] = useState(TERMS[0]?.id ?? "");
   const s = roster.find((x) => x.id === sid) ?? roster[0];
-  const w = weights[c.id] ?? defaultWeights(list.map((a) => a.category));
+  const w = weights[c.id] ?? [];
   if (!s) return <p className="text-[13px] text-muted-foreground">No students enrolled.</p>;
   const k = `${c.id}|${s.id}|${term}`;
-  const avg = weightedAverage(list.map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, s.id) })), w);
+  const period = c.terms.find((id) => term.startsWith(id));
+  const bounds = period ? termById(period) : undefined;
+  const periodList = list.filter((a) => !bounds || (+a.due >= +bounds.start && +a.due <= +(term.endsWith("-M") ? bounds.mid : bounds.end) + 86399999));
+  const avg = weightedAverage(periodList.map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, s.id) })), w);
   const idx = roster.indexOf(s);
   const pick = (id: string) => nav({ to: "/teacher/class/$classId", params: { classId: c.id }, search: { tab: "grades", sid: id } });
   const text = comments[k] ?? "";
@@ -88,8 +95,8 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
         <textarea className="mt-1 h-44 w-full border border-vc-line p-2 text-[14px] leading-relaxed" maxLength={2000} value={text} onChange={(e) => update((x) => ({ ...x, comments: { ...x.comments, [k]: e.target.value } }))} placeholder={`Write a ${TERMS.find((t) => t.id === term)?.label} comment for ${s.first}…`} />
         <div className="flex items-center justify-between text-[12px] text-muted-foreground"><span>{text.trim() ? text.trim().split(/\s+/).length : 0} words · {text.length}/2000 characters · saved automatically</span>
           <div className="flex gap-2">
-            <button disabled={idx <= 0} onClick={() => pick(roster[idx - 1]!.id)} className="h-8 border border-vc-line px-3 text-foreground disabled:opacity-40">Previous</button>
-            <button disabled={idx >= roster.length - 1} onClick={() => pick(roster[idx + 1]!.id)} className="h-8 bg-vc-link-strong px-3 text-primary-foreground disabled:opacity-40">Next Student</button>
+            <button disabled={idx <= 0} onClick={() => pick(roster[idx - 1]?.id ?? s.id)} className="h-8 border border-vc-line px-3 text-foreground disabled:opacity-40">Previous</button>
+            <button disabled={idx >= roster.length - 1} onClick={() => pick(roster[idx + 1]?.id ?? s.id)} className="h-8 bg-vc-link-strong px-3 text-primary-foreground disabled:opacity-40">Next Student</button>
           </div></div>
       </div>
     </div>
@@ -103,7 +110,7 @@ export function Weights({ c, list }: { c: Course; list: Assignment[] }) {
   const [w, setW] = useState<Weight[]>([...initial, ...cats.filter((x) => !initial.some((y) => y.cat === x)).map((cat) => ({ cat, weight: 0, drop: false }))]);
   const total = weightsTotal(w);
   return (
-    <div className="max-w-[720px]">
+    <div className="max-w-[720px]"><h2 className="mb-3 text-[22px] font-light">Assignment Weights</h2><div className="mb-3 flex gap-2 text-[13px]"><Button size="sm" variant={!weights[c.id]?.length ? "default" : "outline"} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: [] } })); toast.success("Weighting by assignment points"); }}>Assignment Points</Button><Button size="sm" variant={weights[c.id]?.length ? "default" : "outline"} onClick={() => setW(defaultWeights(cats))}>Assignment Type</Button></div>
       <table className="w-full text-[13px]">
         <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Assignment Type</th><th>Weight</th><th className="text-center">Drop Lowest</th><th className="text-right">Assignments</th><th className="text-right">Total Points</th></tr></thead>
         <tbody>{w.map((x, i) => { const items = list.filter((a) => a.category === x.cat); const st = categoryStats(items); return (
@@ -129,7 +136,7 @@ export function Reports({ list, roster }: { list: Assignment[]; roster: Student[
   const rows = list.filter((a) => a.assigned <= new Date()).map((a) => {
     const v = roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined);
     const submitted = roster.filter((s) => scoreOf(scores, a, s.id) !== undefined || ["Turned In", "Late"].includes(aStatus[`${a.id}|${s.id}`] ?? "")).length;
-    const pct = (n: number) => (n / a.points) * 100;
+    const pct = (n: number) => a.points > 0 ? (n / a.points) * 100 : 0;
     return { a, submitted, graded: v.length, avg: v.length ? pct(v.reduce((x, y) => x + y, 0) / v.length) : null, hi: v.length ? pct(Math.max(...v)) : null, lo: v.length ? pct(Math.min(...v)) : null };
   });
   const assigned = rows.length * roster.length, sub = rows.reduce((s, r) => s + r.submitted, 0), gr = rows.reduce((s, r) => s + r.graded, 0);

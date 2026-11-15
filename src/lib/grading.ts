@@ -14,10 +14,10 @@ export function categoryStats(items: Scored[], drop = false) {
   const graded = items.filter((a) => a.score !== undefined && a.points > 0);
   let use = graded;
   if (drop && graded.length > 1) {
-    const low = graded.reduce((m, a) => ((a.score! / a.points) < (m.score! / m.points) ? a : m));
+    const low = graded.reduce((m, a) => (((a.score ?? 0) / a.points) < ((m.score ?? 0) / m.points) ? a : m));
     use = graded.filter((a) => a !== low);
   }
-  const earned = use.reduce((s, a) => s + a.score!, 0);
+  const earned = use.reduce((s, a) => s + (a.score ?? 0), 0);
   const possible = use.reduce((s, a) => s + a.points, 0);
   return { count: items.length, earned, possible, pct: possible ? (earned / possible) * 100 : null };
 }

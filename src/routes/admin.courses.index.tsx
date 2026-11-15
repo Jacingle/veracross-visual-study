@@ -21,7 +21,7 @@ function Courses() {
   const { courses, sections, update } = useSchool();
   const nav = useNavigate();
   const years = schoolYears();
-  const [year, setYear] = useState(years[1]!.id);
+  const [year, setYear] = useState(years[1]?.id ?? years[0]?.id ?? "");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const [draft, setDraft] = useState<CourseDef | null>(null);

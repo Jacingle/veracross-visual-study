@@ -1,3 +1,4 @@
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ChevronRight, Clock, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
@@ -17,6 +18,7 @@ export const AXIOM_LINKS = [
   { to: "/admin/users", label: "Users & Security", icon: Users },
   { to: "/admin/courses", label: "Courses & Enrollment", icon: BookOpen },
   { to: "/admin/settings", label: "Portal Settings", icon: Palette },
+  { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock },
   { to: "/admin/messages", label: "Communications", icon: Mail },
   { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt },
 ] as const;
@@ -61,7 +63,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
           <Link to="/teacher" className="hidden whitespace-nowrap hover:underline md:inline">Faculty Portal</Link>
           <Link to="/student" className="hidden whitespace-nowrap hover:underline md:inline">Student Portal</Link>
           <DropdownMenu>
-            <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none">{user?.first[0]}{user?.last[0]}</Button>
+            <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-7" /></Button>
             <DropdownMenuContent align="end" className="text-[13px]">
               <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · Administrator</div></DropdownMenuLabel>
               <DropdownMenuSeparator />

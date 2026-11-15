@@ -38,11 +38,11 @@ function ClassManager() {
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
-  const { scores, weights } = useSchool();
+  const { scores, weights, custom } = useSchool();
   const nav = useNavigate();
   const list = useSectionAssignments(c.id);
   const roster = rosterOf(c);
-  const w = weights[c.id] ?? defaultWeights(list.map((a) => a.category));
+  const w = weights[c.id] ?? [];
   return (
     <PortalShell portal="teacher" area="teacher" wide={tab !== 'attendance'}>
       {tab === 'attendance' && <div className="bg-vc-panel"><div className="px-5 py-3 text-[17px]"><select aria-label="Change class" className="max-w-full bg-transparent" value={c.id} onChange={(e) => nav({ to: '/teacher/class/$classId', params: { classId: e.target.value }, search: { tab } })}>{mine.map((x) => <option key={x.id} value={x.id}>{x.id}: {x.name}</option>)}</select></div><div className="flex overflow-x-auto border-b border-vc-line px-4">{TABS.map(({ id, label }) => <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} className={`shrink-0 px-4 py-4 text-[13px] ${tab === id ? 'border-x border-t border-vc-line bg-background text-vc-link-strong' : 'text-muted-foreground'}`}>{label}</Link>)}</div></div>}
@@ -63,7 +63,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
           <table className="w-full text-[13px]">
             <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Grade</th><th>Current Average</th><th>Missing</th><th /></tr></thead>
             <tbody>{roster.map((s) => {
-              const scored = list.map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, s.id) }));
+              const scored = list.filter((a) => custom.find((x) => x.id === a.id)?.inCalc !== false).map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, s.id) }));
               const av = weightedAverage(scored, w);
               const missing = list.filter((a) => a.due < today() && scoreOf(scores, a, s.id) === undefined).length;
               return (
