@@ -2,11 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { type Course, courseTitle, teacherShort, today } from "@/lib/sis-data";
 import { letterFor } from "@/lib/grading";
-import { useClassAverage } from "@/lib/school-store";
+import { useClassAverage, useSchool } from "@/lib/school-store";
 
 export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overview" }) {
   const meets = c.days.includes(today().getDay());
   const av = useClassAverage(c.id);
+  const { courses } = useSchool();
+  const credits = courses.find((x) => x.id === c.id.split("-")[0])?.credits;
   return (
     <div className="flex justify-between border-b border-vc-line py-5 last:border-b-0">
       <div className="min-w-0">
@@ -20,7 +22,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
         </div>
         {variant === "home"
           ? <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground"><Clock className="size-3.5" /> {meets ? `${c.time} • ${c.block} • ${c.room}` : "Not Scheduled Today"}</div>
-          : <div className="mt-2 text-[15px] text-muted-foreground">{teacherShort(c.teacherId)}</div>}
+          : <div className="mt-2 text-[13px] text-muted-foreground">{teacherShort(c.teacherId)}{credits !== undefined && <span className="ml-3">{credits} credit{credits === 1 ? "" : "s"}</span>}</div>}
         <div className="mt-2.5 flex gap-5 text-[13px] text-foreground/80">
           <Link to="/class/$classId" params={{ classId: c.id }} className="hover:text-vc-link">Website</Link>
           <Link to="/calendar" className="hover:text-vc-link">Calendar</Link>

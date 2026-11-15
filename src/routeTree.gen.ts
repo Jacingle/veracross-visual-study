@@ -24,6 +24,7 @@ import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminPurchasesRouteImport } from './routes/admin.purchases'
+import { Route as AdminSchedulingRouteImport } from './routes/admin.scheduling'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as ClassClassIdRouteImport } from './routes/class.$classId'
@@ -111,6 +112,11 @@ const AdminPurchasesRoute = AdminPurchasesRouteImport.update({
   path: '/admin/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSchedulingRoute = AdminSchedulingRouteImport.update({
+  id: '/admin/scheduling',
+  path: '/admin/scheduling',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/updates': typeof UpdatesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
+  '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/updates': typeof UpdatesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
+  '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/updates': typeof UpdatesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
+  '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
@@ -270,6 +279,7 @@ export interface FileRouteTypes {
     | '/updates'
     | '/admin/messages'
     | '/admin/purchases'
+    | '/admin/scheduling'
     | '/admin/settings'
     | '/admin/users'
     | '/class/$classId'
@@ -298,6 +308,7 @@ export interface FileRouteTypes {
     | '/updates'
     | '/admin/messages'
     | '/admin/purchases'
+    | '/admin/scheduling'
     | '/admin/settings'
     | '/admin/users'
     | '/class/$classId'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/updates'
     | '/admin/messages'
     | '/admin/purchases'
+    | '/admin/scheduling'
     | '/admin/settings'
     | '/admin/users'
     | '/class/$classId'
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminPurchasesRoute: typeof AdminPurchasesRoute
+  AdminSchedulingRoute: typeof AdminSchedulingRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   ClassClassIdRoute: typeof ClassClassIdRoute
@@ -476,6 +489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/scheduling': {
+      id: '/admin/scheduling'
+      path: '/admin/scheduling'
+      fullPath: '/admin/scheduling'
+      preLoaderRoute: typeof AdminSchedulingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/admin/settings'
@@ -571,6 +591,7 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminPurchasesRoute: AdminPurchasesRoute,
+  AdminSchedulingRoute: AdminSchedulingRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   ClassClassIdRoute: ClassClassIdRoute,
