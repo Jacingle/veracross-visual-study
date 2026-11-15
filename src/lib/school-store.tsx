@@ -29,7 +29,7 @@ export type Website = { bg: "none" | "color" | "photo"; color: string; photo: st
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
-export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string; scheduleBlockId?: string };
+export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined };
 
 const Y = String(yearStartFor(new Date()));
 const FY = [`${Y}-S1`, `${Y}-S2`];

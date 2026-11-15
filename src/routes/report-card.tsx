@@ -32,7 +32,7 @@ function Report() {
           <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="size-4" />Print / Save PDF</Button>
         </div>
         {periods.length > 0 && <label className="mt-4 flex items-center gap-3 text-[13px]">Reporting period<select aria-label="Reporting period" className="h-8 border border-vc-line bg-background px-2" value={periodId} onChange={(e) => setSelected(e.target.value)}>{periods.map((p) => <option key={p.id} value={p.id}>{p.id.split('-')[0]} · {p.label}</option>)}</select></label>}
-        {COURSES.filter((c) => c.terms.some((id) => periodId.startsWith(id)) && courseFlags[c.id]?.report !== false).map((c) => {
+        {COURSES.filter((c) => c.terms.some((id) => periodId.startsWith(id)) && courseFlags[c.id]?.['report'] !== false).map((c) => {
           const id = c.terms.find((t) => periodId.startsWith(t)); const t = id ? termById(id) : undefined;
           const list = assignments.filter((a) => a.courseId === c.id && custom.find((x) => x.id === a.id)?.inCalc !== false && (!t || (+a.due >= +t.start && +a.due <= +(periodId.endsWith('-M') ? t.mid : t.end) + 86399999)));
           const avg = weightedAverage(list, weights[c.id] ?? []); const key = `${c.id}|${sid}|${periodId}`;

@@ -2,7 +2,7 @@ import { termOn } from './terms';
 
 export type ScheduleBlock = { id: string; name: string; days: number[]; start: string; end: string };
 export type SchedulingSet = { id: string; name: string; terms: string[]; blocks: ScheduleBlock[] };
-export type ScheduledSection = { terms: string[]; days: number[]; time: string; scheduleSetId?: string; scheduleBlockId?: string };
+export type ScheduledSection = { terms: string[]; days: number[]; time: string; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined };
 
 export const durationMinutes = (start: string, end: string) => {
   const minutes = (s: string) => { const [h, m] = s.split(':').map(Number); return (h ?? 0) * 60 + (m ?? 0); };
