@@ -41,10 +41,10 @@ export function WebsiteSettings({ c }: { c: Section }) {
       <div className="mt-2 space-y-3">{w.sections.map((sec, i) => (
         <div key={i} className="border border-vc-line p-2">
           <div className="flex gap-2"><input aria-label="Section title" className="h-8 flex-1 border border-vc-line px-2 font-semibold" maxLength={80} value={sec.title} onChange={(e) => change({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
-            <button aria-label="Remove section" onClick={() => setW({ ...w, sections: w.sections.filter((_, j) => j !== i) })} className="px-2 text-destructive"><Trash2 className="size-4" /></button></div>
+            <button aria-label="Remove section" onClick={() => change({ ...w, sections: w.sections.filter((_, j) => j !== i) })} className="px-2 text-destructive"><Trash2 className="size-4" /></button></div>
           <textarea aria-label="Section text" className="mt-2 h-24 w-full border border-vc-line p-2" maxLength={4000} value={sec.body} onChange={(e) => change({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)) })} />
         </div>))}</div>
-      <button onClick={() => setW({ ...w, sections: [...w.sections, { title: "Course Description", body: "" }] })} className="mt-2 flex items-center gap-1 text-vc-link-strong"><Plus className="size-4" />Add section</button>
+      <button onClick={() => change({ ...w, sections: [...w.sections, { title: "Course Description", body: "" }] })} className="mt-2 flex items-center gap-1 text-vc-link-strong"><Plus className="size-4" />Add section</button>
 
       <h3 className="mt-6 font-semibold">Pages</h3>
       <div className="mt-1 space-y-1">{w.pages.map((pg, i) => (
