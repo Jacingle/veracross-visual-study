@@ -30,7 +30,7 @@ function Overview() {
         <h2 className="text-[24px] font-light text-foreground/80">Reports</h2>
         <div className="grid grid-cols-2 gap-y-8 px-3 py-6">
           <Report icon={BarChart3} label="PROGRESS REPORT"><Link to="/report-card" className="hover:underline">Grades & Comments</Link></Report>
-          <Report icon={Clock} label="SCHEDULE"><Link to="/schedule" className="hover:underline">Current Class Schedule</Link></Report>
+          <Report icon={Clock} label="SCHEDULE"><Link to="/schedule-report" className="hover:underline">Current Class Schedule</Link></Report>
           <Report icon={Sprout} label="REPORT CARD"><Link to="/report-card" className="hover:underline">Term Report Card</Link></Report>
           <Report icon={SquareCheck} label="ATTENDANCE"><Link to="/attendance" className="hover:underline">Semester 1</Link><span className="mx-2.5 text-muted-foreground/60">•</span><span className="text-muted-foreground/60">Semester 2</span></Report>
         </div>
