@@ -15,27 +15,35 @@ export function Attendance({ c, roster, date }: { c: Course; roster: Student[]; 
   const nav = useNavigate();
   const key = (sid: string) => `${c.id}|${date}|${sid}`;
   const done = attDone.includes(`${c.id}|${date}`);
+  const setDate = (d: string) => nav({ to: "/teacher/class/$classId", params: { classId: c.id }, search: { tab: "attendance", date: d } });
+  const go = (n: number) => { const d = parseISO(date); d.setDate(d.getDate() + n); setDate(format(d, "yyyy-MM-dd")); };
   const counts = ATT.map((st) => [st, roster.filter((s) => (attendance[key(s.id)] ?? "Present") === st).length] as const).filter(([, n]) => n > 0);
   return (
     <div>
-      <div className="mb-3 flex items-center gap-3 bg-vc-panel px-3 py-2 text-[13px]">
-        <label className="flex items-center gap-2">Date <input type="date" className="h-8 border border-vc-line px-2" value={date} onChange={(e) => e.target.value && nav({ to: "/teacher/class/$classId", params: { classId: c.id }, search: { tab: "attendance", date: e.target.value } })} /></label>
-        <span className="text-muted-foreground">Block: <b className="text-foreground">{c.block}</b> · {c.time} · Room {c.room}</span>
-        <span className="ml-auto text-muted-foreground">{counts.map(([st, n]) => `${n} ${st}`).join(" · ")}</span>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[22px]">Class Attendance <span className={`ml-1 px-1.5 py-0.5 align-middle text-[13px] ${done ? "bg-vc-tile text-vc-success" : "bg-vc-line"}`}>{done ? "Complete" : "Not Taken"}</span></h2>
+        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} className="h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
       </div>
-      {done && <div className="mb-3 flex items-center gap-2 bg-vc-tile px-3 py-2 text-[13px] text-vc-success"><CheckCircle2 className="size-4" /> Attendance marked complete for {format(parseISO(date), "EEEE, MMM d")}.</div>}
+      <div className="mt-2 flex items-center gap-3 text-[13px]">
+        <div className="flex h-8 items-center border border-vc-line">
+          <button aria-label="Previous day" className="px-2.5" onClick={() => go(-1)}>‹</button>
+          <input type="date" className="h-full border-x border-vc-line px-2" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+          <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}>›</button>
+        </div>
+        <span className="flex h-8 w-[200px] items-center border border-vc-line px-2 text-muted-foreground">{c.block}</span>
+      </div>
+      <div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
       <table className="w-full text-[13px]">
-        <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Status</th><th>Notes</th></tr></thead>
+        <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Status</th><th>Class Attendance Notes</th></tr></thead>
         <tbody>{roster.map((s) => { const v = attendance[key(s.id)] ?? "Present"; return (
-          <tr key={s.id} className={`border-b border-vc-line ${v !== "Present" ? "bg-vc-attn" : ""}`}>
-            <td className="py-1">{s.last}, {s.first}</td>
-            <td><select aria-label={`Attendance for ${s.first}`} className="h-7 w-[180px] border border-vc-line bg-background px-1" value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select></td>
+          <tr key={s.id} className="border-b border-vc-line">
+            <td className="py-2.5"><div className="flex items-center gap-2.5"><span className="grid size-10 place-items-center rounded-full bg-vc-tile text-[13px] text-vc-link-strong">{s.first[0]}{s.last[0]}</span><span className="text-[15px] leading-tight">{s.first}<br />{s.last}</span></div></td>
+            <td><select aria-label={`Attendance for ${s.first}`} className={`h-8 w-[190px] rounded-sm border border-vc-line bg-background px-2 ${v === "Present" ? "text-vc-success" : "text-destructive"}`} value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select></td>
             <td><input aria-label={`Note for ${s.first}`} className="h-7 w-full border border-vc-line bg-background px-1.5" maxLength={200} value={attNotes[key(s.id)] ?? ""} onChange={(e) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [key(s.id)]: e.target.value } }))} /></td>
           </tr>); })}</tbody>
       </table>
       <div className="mt-3 flex justify-end gap-2">
         <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className="h-8 border border-vc-line px-3 text-[13px]">Mark All Present</button>
-        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} className="h-8 bg-vc-success px-4 text-[13px] font-semibold text-primary-foreground">Mark Complete</button>
       </div>
     </div>
   );

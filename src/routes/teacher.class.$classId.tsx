@@ -39,18 +39,19 @@ function ClassManager() {
   const w = weights[c.id] ?? defaultWeights(list.map((a) => a.category));
   return (
     <PortalShell portal="teacher" area="teacher" wide>
-      <div className="flex items-center justify-between gap-4 border-b border-vc-line px-4 py-2.5">
-        <div className="min-w-0"><div className="truncate text-[19px]">{courseTitle(c)}</div><div className="text-[12px] text-muted-foreground">{teacherFull(c.teacherId)} · {c.block} · Room {c.room} · {roster.length} students</div></div>
-        <div className="flex shrink-0 items-center gap-3 text-[13px]">
-          <select aria-label="Switch class" className="h-8 max-w-[260px] border border-vc-line px-2" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab } })}>
-            {mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</select>
-          <Link to="/class/$classId" params={{ classId: c.id }} className="flex items-center gap-1 text-vc-link-strong hover:underline"><Globe className="size-4" />Class Website</Link>
-        </div>
-      </div>
-      <div className="flex border-b border-vc-line bg-vc-panel px-2">{TABS.map(({ id, label, icon: Icon }) => (
-        <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }}
-          className={`flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-[13px] ${tab === id ? "border-vc-link-strong bg-background text-vc-link-strong" : "border-transparent text-foreground/75 hover:text-foreground"}`}>
-          <Icon className="size-4" />{label}</Link>))}</div>
+      <div className="grid min-h-[640px] grid-cols-[230px_minmax(0,1fr)]">
+      <aside className="border-r border-vc-line bg-vc-panel py-4">
+        <div className="mb-4 flex gap-2.5 px-4"><Globe className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0"><div className="text-[14px] font-semibold leading-tight">{c.id}: {c.name}</div>
+            <select aria-label="Change class" className="mt-0.5 w-full bg-transparent text-[12px] text-muted-foreground" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab } })}>
+              <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</select></div></div>
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }}
+            className={`mx-2 flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] ${tab === id ? "bg-vc-select" : "hover:bg-background"}`}><Icon className="size-5 text-foreground/70" strokeWidth={1.5} />{label}</Link>))}
+        <Link to="/class/$classId" params={{ classId: c.id }} className="mx-2 flex items-center gap-3 px-3 py-2.5 text-[14px] hover:bg-background"><Globe className="size-5 text-foreground/70" strokeWidth={1.5} />Website</Link>
+        <div className="mt-4 px-5 text-[11px] text-muted-foreground">{teacherFull(c.teacherId)}<br />{c.block} · Room {c.room} · {roster.length} students</div>
+      </aside>
+      <div className="min-w-0">
       <div className="px-4 py-4">
         {tab === "overview" && (
           <table className="w-full text-[13px]">
@@ -72,6 +73,8 @@ function ClassManager() {
         {tab === "grades" && <GradesComments c={c} roster={roster} list={list} sid={sid} />}
         {tab === "weights" && <Weights key={c.id} c={c} list={list} />}
         {tab === "reports" && <Reports list={list} roster={roster} />}
+      </div>
+      </div>
       </div>
     </PortalShell>
   );

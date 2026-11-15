@@ -22,12 +22,11 @@ function Login() {
   useEffect(() => { if (ready && user) nav({ to: homeFor(user.role), replace: true }); }, [ready, user, nav]);
   const src = bgSrc(settings.login.bg);
 
-  const next = (e: React.FormEvent) => { e.preventDefault(); if (!username.trim()) return; setError(""); setStep(2); };
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const next = (e?: React.SyntheticEvent) => { e?.preventDefault(); if (!username.trim()) return; setError(""); setStep(2); };
+  const submit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     const u = login(username, password);
     if (!u) { setError(userExists(users, username) ? "The password you entered is incorrect." : "We couldn't find an account with that username."); setPassword(""); return; }
-    nav({ to: homeFor(u.role), replace: true });
   };
 
   return (
@@ -46,7 +45,7 @@ function Login() {
             <label htmlFor="username" className="text-[13px] tracking-wide text-muted-foreground">USERNAME</label>
             <input id="username" autoFocus autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} maxLength={120}
               className="mt-1.5 block h-10 w-full border border-vc-link px-3 outline-none focus:ring-2 focus:ring-vc-link/30" />
-            <button disabled={!username.trim()} className="mt-4 h-[35px] border border-vc-line bg-vc-panel px-4 text-muted-foreground enabled:border-vc-link-strong enabled:bg-vc-link-strong enabled:text-primary-foreground">Next</button>
+            <button type="button" onClick={() => next()} disabled={!username.trim()} className="mt-4 h-[35px] border border-vc-line bg-vc-panel px-4 text-muted-foreground enabled:border-vc-link-strong enabled:bg-vc-link-strong enabled:text-primary-foreground">Next</button>
           </form>
         ) : (
           <form onSubmit={submit} className="mt-6">
@@ -56,7 +55,7 @@ function Login() {
             <label htmlFor="password" className="mt-4 block text-[13px] tracking-wide text-muted-foreground">PASSWORD</label>
             <input id="password" type="password" autoFocus autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={120}
               className="mt-1.5 block h-10 w-full border border-vc-link px-3 outline-none focus:ring-2 focus:ring-vc-link/30" />
-            <button disabled={!password} className="mt-4 h-[35px] border border-vc-line bg-vc-panel px-4 text-muted-foreground enabled:border-vc-link-strong enabled:bg-vc-link-strong enabled:text-primary-foreground">Log In</button>
+            <button type="button" onClick={() => submit()} disabled={!password} className="mt-4 h-[35px] border border-vc-line bg-vc-panel px-4 text-muted-foreground enabled:border-vc-link-strong enabled:bg-vc-link-strong enabled:text-primary-foreground">Log In</button>
           </form>
         )}
         <button type="button" onClick={() => toast.info("Contact the school office", { description: "Your administrator can reset your password from Axiom → Users & Security." })} className="mt-5 block text-vc-link hover:underline">Can't access your account?</button>
