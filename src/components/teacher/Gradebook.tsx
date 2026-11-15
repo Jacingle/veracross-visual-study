@@ -1,4 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
+import { Plus, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORY_CHIP, type Assignment, type Student } from "@/lib/sis-data";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
@@ -13,45 +15,51 @@ export function Gradebook({ courseId, list, roster }: { courseId: string; list: 
   const colAvg = (a: Assignment) => { const v = roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined); return v.length ? (v.reduce((x, y) => x + y, 0) / v.length / a.points) * 100 : null; };
   const avgs = roster.map((s) => avgFor(s.id)).filter((x): x is number => x !== null);
   const classAvg = avgs.length ? avgs.reduce((x, y) => x + y, 0) / avgs.length : null;
+  const nums = (a: Assignment) => roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined);
+  const median = (v: number[]) => { if (!v.length) return null; const t = [...v].sort((x, y) => x - y); const m = Math.floor(t.length / 2); return t.length % 2 ? t[m]! : (t[m - 1]! + t[m]!) / 2; };
+  const sd = (v: number[]) => { if (v.length < 2) return null; const m = v.reduce((x, y) => x + y, 0) / v.length; return Math.sqrt(v.reduce((x, y) => x + (y - m) ** 2, 0) / v.length); };
+  const avgList = roster.map((s) => avgFor(s.id)).filter((x): x is number => x !== null);
+  const cell = "h-10 rounded-sm bg-vc-panel text-center text-[13px]";
+  const blue = "h-10 rounded-sm bg-vc-sky text-center text-[13px]";
+  const stats: [string, (v: number[]) => number | null][] = [["Class Average", (v) => (v.length ? v.reduce((x, y) => x + y, 0) / v.length : null)], ["Class Median", median], ["Standard Dev", sd]];
   return (
     <div>
-      <div className="mb-2 flex items-center gap-4 text-[12px] text-muted-foreground">
-        <span>{roster.length} students · {list.length} assignments</span>
-        <span>Class average: <b className="text-foreground">{classAvg !== null ? `${classAvg.toFixed(2)}%` : "—"}</b></span>
-        <span className="ml-auto">Click a cell to enter a score. Changes save automatically.</span>
+      <div className="mb-3 flex items-center gap-2">
+        <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "assignments", aid: "new" }} className="flex h-8 items-center gap-1.5 rounded-sm bg-vc-success px-3 text-[13px] text-primary-foreground"><Plus className="size-4" />Add Assignment</Link>
+        <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "weights" }} className="flex h-8 items-center gap-1.5 rounded-sm bg-vc-link px-3 text-[13px] text-primary-foreground"><Scale className="size-4" />Weighting</Link>
+        <span className="ml-auto text-[12px] text-muted-foreground">Date Order · Semester 1 · {list.length} assignments</span>
       </div>
-      <div className="overflow-x-auto border border-vc-line">
-        <table className="border-collapse text-[12px]">
-          <thead>
-            <tr className="bg-vc-panel">
-              <th className="sticky left-0 z-10 min-w-[190px] border-b border-r border-vc-line bg-vc-panel px-2 text-left font-semibold">Student</th>
-              <th className="sticky left-[190px] z-10 min-w-[78px] border-b border-r border-vc-line bg-vc-panel px-1 font-semibold">Average</th>
-              {list.map((a) => (
-                <th key={a.id} className="min-w-[66px] max-w-[66px] border-b border-r border-vc-line p-0 align-top font-normal">
-                  <div className={`h-1.5 ${CATEGORY_CHIP[a.category]}`} />
-                  <div className="px-1 pt-1 text-[10px] text-muted-foreground">{format(a.due, "M/d")}</div>
-                  <div className="h-[30px] overflow-hidden px-1 text-[11px] leading-tight" title={a.title}>{a.title}</div>
-                  <div className="px-1 pb-1 text-[10px] text-muted-foreground">/{a.points}</div>
-                </th>))}
-            </tr>
-          </thead>
+      <div className="overflow-x-auto pb-2">
+        <table className="border-separate border-spacing-1">
+          <thead><tr>
+            <th className="sticky left-0 z-10 min-w-[140px] bg-background" />
+            <th className="min-w-[84px] rounded-sm bg-vc-sky px-1 align-bottom text-[12px] font-semibold">Calculated Grade</th>
+            {list.map((a) => (
+              <th key={a.id} className="min-w-[110px] max-w-[110px] rounded-sm bg-vc-panel p-1.5 text-left align-top font-normal">
+                <span className={`px-1 text-[9px] font-semibold text-primary-foreground ${CATEGORY_CHIP[a.category]}`}>{a.category}</span>
+                <div className="mt-1 h-[32px] overflow-hidden text-[11px] font-semibold uppercase leading-tight" title={a.title}>{a.title}</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">{format(a.due, "MMM dd")} · /{a.points}</div>
+              </th>))}
+          </tr></thead>
           <tbody>
-            {roster.map((s, i) => { const av = avgFor(s.id); return (
-              <tr key={s.id} className={i % 2 ? "bg-vc-panel/50" : ""}>
-                <td className="sticky left-0 z-10 border-b border-r border-vc-line bg-background px-2 py-1">{s.last}, {s.first}</td>
-                <td className="sticky left-[190px] z-10 border-b border-r border-vc-line bg-background px-1 text-center font-semibold">{av !== null ? <>{letterFor(av)} <span className="font-normal text-muted-foreground">{av.toFixed(1)}</span></> : "—"}</td>
+            {roster.map((s) => { const av = avgFor(s.id); return (
+              <tr key={s.id}>
+                <td className="sticky left-0 z-10 bg-background pr-2 text-[13px] leading-tight"><b className="font-semibold">{s.first}</b><br />{s.last}</td>
+                <td className={blue}>{av !== null ? av.toFixed(2) : "—"}</td>
                 {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; return (
-                  <td key={a.id} className="border-b border-r border-vc-line p-0">
+                  <td key={a.id} className="p-0">
                     <input aria-label={`${s.first} ${s.last} – ${a.title}`} value={v} inputMode="decimal"
                       onChange={(e) => { if (isScoreInput(e.target.value)) set(a.id, s.id, e.target.value); else toast.error("Scores must be numbers"); }}
-                      className={`h-7 w-full bg-transparent text-center outline-none focus:bg-vc-select ${low ? "text-destructive" : ""}`} />
+                      className={`${cell} w-full outline-none focus:bg-vc-select ${low ? "text-destructive" : ""} ${v === "" && a.due < new Date() ? "bg-vc-attn" : ""}`} />
                   </td>); })}
               </tr>); })}
-            <tr className="bg-vc-panel font-semibold">
-              <td className="sticky left-0 z-10 border-r border-vc-line bg-vc-panel px-2 py-1">Class Average</td>
-              <td className="sticky left-[190px] z-10 border-r border-vc-line bg-vc-panel text-center">{classAvg !== null ? classAvg.toFixed(1) : "—"}</td>
-              {list.map((a) => { const c = colAvg(a); return <td key={a.id} className="border-r border-vc-line text-center">{c !== null ? `${c.toFixed(0)}%` : ""}</td>; })}
-            </tr>
+            <tr><td colSpan={list.length + 2}><div className="h-1.5 bg-vc-line" /></td></tr>
+            {stats.map(([label, fn]) => { const g = fn(avgList); return (
+              <tr key={label}>
+                <td className="sticky left-0 z-10 bg-background pr-2 text-right text-[13px]">{label}</td>
+                <td className={blue}>{g !== null ? g.toFixed(2) : "—"}</td>
+                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={cell}>{r !== null ? r.toFixed(2) : ""}</td>; })}
+              </tr>); })}
           </tbody>
         </table>
       </div>
