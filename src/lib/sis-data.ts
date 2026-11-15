@@ -24,7 +24,9 @@ export const TEACHERS: Teacher[] = [
   { id: "t8", prefix: "Ms.", first: "Paula", last: "Tobin", dept: "Library", title: "Upper School Librarian" },
 ].map((t) => ({ ...t, email: `${t.first.charAt(0).toLowerCase()}${t.last.toLowerCase()}@cedarridge.edu` }));
 
-export const teacher = (id: string) => TEACHERS.find((t) => t.id === id)!;
+/** People created by the admin at runtime (filled in by the school store) so lookups cover them too. */
+export const EXTRA = { teachers: [] as Teacher[], students: [] as Student[] };
+export const teacher = (id: string): Teacher => TEACHERS.find((t) => t.id === id) ?? EXTRA.teachers.find((t) => t.id === id) ?? { id, prefix: "", first: "Unassigned", last: "Teacher", email: "", dept: "", title: "" };
 export const teacherShort = (id: string) => { const t = teacher(id); return `${t.prefix} ${t.last}`; };
 export const teacherFull = (id: string) => { const t = teacher(id); return `${t.prefix} ${t.first} ${t.last}`; };
 
@@ -57,12 +59,12 @@ export type Category = "HOMEWORK" | "QUIZ" | "TEST" | "COLLABORATION" | "CLASSWO
 export type Assignment = { id: string; courseId: string; category: Category; title: string; due: Date; assigned: Date; short: string; points: number; notes: string; score?: number | undefined; custom?: boolean };
 
 const PLAN: Record<string, { cat: Category; title: string; short: string }[]> = {
-  "101-1": [{ cat: "VOCABULARY", title: "Vocabulary Unit 6", short: "Vocab" }, { cat: "CLASSWORK/HOMEWORK", title: "Annotate \"Story of Your Life\"", short: "CwHw" }, { cat: "WRITING", title: "Personal Narrative Draft", short: "Wr" }],
-  "122-1": [{ cat: "QUIZ", title: "Han Dynasty Quiz", short: "QZ" }, { cat: "READING", title: "Read Chapter 7: Han Dynasty China", short: "Rd" }, { cat: "QUIZ", title: "Silk Road Map Quiz", short: "QZ" }],
-  "143-1": [{ cat: "HOMEWORK", title: "Unit 11 #5", short: "HW" }, { cat: "TEST", title: "Unit 11 Test", short: "Test" }],
-  "191-1": [{ cat: "HOMEWORK", title: "作业", short: "HW" }],
-  "210-1": [{ cat: "COLLABORATION", title: "Cell Membrane Lab Group Work", short: "Col" }],
-  "93-1": [{ cat: "CLASSWORK/HOMEWORK", title: "Socratic Seminar Prep", short: "CL" }],
+  "101-1": [{ cat: "VOCABULARY", title: "Vocabulary Unit #", short: "Vocab" }, { cat: "CLASSWORK/HOMEWORK", title: "Reading Annotations #", short: "CwHw" }, { cat: "WRITING", title: "Personal Narrative Draft #", short: "Wr" }],
+  "122-1": [{ cat: "QUIZ", title: "Quiz", short: "QZ" }, { cat: "READING", title: "Reading: Chapter #", short: "Rd" }, { cat: "WRITING", title: "Paper", short: "Wr" }],
+  "143-1": [{ cat: "HOMEWORK", title: "Unit 11 Homework #", short: "HW" }, { cat: "HOMEWORK", title: "Unit 11 Practice Set #", short: "HW" }, { cat: "QUIZ", title: "Unit 11 Quiz #", short: "QZ" }],
+  "191-1": [{ cat: "HOMEWORK", title: "作业 #", short: "HW" }, { cat: "VOCABULARY", title: "Lesson # Characters", short: "Vocab" }],
+  "210-1": [{ cat: "COLLABORATION", title: "Lab # Group Work", short: "Col" }, { cat: "QUIZ", title: "Cells Quiz #", short: "QZ" }],
+  "93-1": [{ cat: "CLASSWORK/HOMEWORK", title: "Seminar Prep #", short: "CL" }],
 };
 
 export const today = () => startOfDay(new Date());
@@ -72,6 +74,7 @@ export function buildAssignments(): Assignment[] {
   const out: Assignment[] = [];
   const start = addDays(today(), -28);
   const MATH = PLAN["143-1"]!;
+  const counts: Record<string, number> = {};
   for (let i = 0; i < 56; i++) {
     const d = addDays(start, i);
     if (isWeekend(d)) continue;
@@ -80,7 +83,9 @@ export function buildAssignments(): Assignment[] {
       const plan = PLAN[c.id] ?? (c.teacherId === "t3" && c.type !== "ADVISORY" ? MATH : undefined);
       if (!plan || !c.days.includes(dow)) return;
       if ((i + ci) % 2 !== 0) return;
-      const p = plan[(i + ci) % plan.length]!;
+      const p0 = plan[(i + ci) % plan.length]!;
+      const ck = c.id + p0.title; counts[ck] = (counts[ck] ?? 0) + 1;
+      const p = { ...p0, title: p0.title.includes("#") ? p0.title.replace("#", String(counts[ck])) : p0.title };
       const id = `${c.id}-${format(d, "yyyyMMdd")}`;
       const past = d < today();
       out.push({ id, courseId: c.id, category: p.cat, title: p.title, short: p.short, due: d, assigned: addDays(d, -4), notes: NOTES[p.cat], points: p.cat === "TEST" ? 100 : p.cat === "QUIZ" ? 20 : 10,
@@ -165,7 +170,7 @@ const PARENT_F = ["David","Christopher","Michael","Anthony","Robert","James"];
 const PARENT_M = ["Tamika","Jeannette","Laura","Angela","Monica","Rachel"];
 const ph = (n: number) => `${["313","586","248"][n % 3]}-${String(200 + (n * 37) % 799).padStart(3, "0")}-${String(1000 + (n * 431) % 8999)}`;
 
-export const STUDENTS: Student[] = Array.from({ length: 96 }, (_, i) => {
+export const STUDENTS: Student[] = Array.from({ length: 36 }, (_, i) => {
   const first = FIRST[i % FIRST.length]!; const last = LAST[(i * 7 + Math.floor(i / 24) * 5) % LAST.length]!;
   const pf = PARENT_F[i % 6]!, pm = PARENT_M[(i + 2) % 6]!;
   return {
@@ -178,12 +183,13 @@ export const STUDENTS: Student[] = Array.from({ length: 96 }, (_, i) => {
     ],
   };
 }).sort((a, b) => a.last.localeCompare(b.last));
+export const studentById = (id: string): Student | undefined => (id === "me" ? ME_STUDENT : STUDENTS.find((s) => s.id === id) ?? EXTRA.students.find((s) => s.id === id));
 export const studentEmail = (s: Student) => `${s.first.toLowerCase()}${s.last.toLowerCase()}@cedarridge.edu`;
 
 // class rosters: deterministic subset of grade-9 students
 export const rosterFor = (courseId: string) => {
   const seed = courseId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return STUDENTS.filter((s, i) => s.grade === 9 && (i + seed) % 2 === 0).slice(0, 14);
+  return STUDENTS.filter((s, i) => s.grade === 9 && (i + seed) % 2 === 0).slice(0, 8);
 };
 
 export const ME_STUDENT: Student = {
