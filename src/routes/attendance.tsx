@@ -1,33 +1,54 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { courseTitle } from "@/lib/sis-data";
+import { Printer, X } from "lucide-react";
+import { useState } from "react";
+import { format, parseISO } from "date-fns";
+import { PortalShell } from "@/components/portal/PortalShell";
+import { Button } from "@/components/ui/button";
+import { courseTitle, ME } from "@/lib/sis-data";
 import { useMySections, useSchool } from "@/lib/school-store";
+import { classAttendance } from "@/lib/attendance";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/attendance")({
-  head: () => pageHead("Attendance", "Attendance totals by class, as taken by your teachers."),
+  head: () => pageHead("Attendance Detail", "Daily and class attendance totals, as taken by your teachers."),
   component: Att,
 });
 
-const COLS = ["Present", "Tardy", "Absent - Excused", "Absent - Unexcused"];
+const th = "border border-vc-line bg-vc-panel px-1.5 py-1 text-left font-normal";
 function Att() {
   const { attendance, attDone, user } = useSchool();
   const mine = useMySections().filter((c) => c.status === "current");
   const sid = user?.personId || "me";
+  const [open, setOpen] = useState<string | null>(null);
+  const rows = mine.map((c) => ({ c, ...classAttendance(attendance, attDone, c.id, sid) }));
+  const days = new Set(rows.flatMap((r) => r.records.map((x) => x.date)));
+  const missed = new Set(rows.flatMap((r) => r.records.filter((x) => x.status.startsWith("Absent")).map((x) => x.date)));
+  const attended = days.size - missed.size;
+  const sum = (k: "AU" | "AE" | "AT" | "TU" | "TE" | "TT") => rows.reduce((s, r) => s + r[k], 0);
+  const sel = rows.find((r) => r.c.id === open);
   return (
-    <PortalShell portal="student">
-      <StudentTabs />
-      <div className="px-6 py-6">
-        <h2 className="mb-4 text-[24px] font-light text-foreground/80">Attendance</h2>
-        <table className="w-full text-[13px]"><thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Class</th>{COLS.map((h) => <th key={h} className="text-right">{h}</th>)}</tr></thead>
-          <tbody>{mine.map((c) => {
-            const vals = Object.entries(attendance).filter(([k]) => k.startsWith(`${c.id}|`) && k.endsWith(`|${sid}`)).map(([, v]) => v);
-            // Days marked complete count as Present unless the teacher recorded something else.
-            const days = attDone.filter((k) => k.startsWith(`${c.id}|`)).map((k) => k.split("|")[1]);
-            const count = (h: string) => h === "Present" ? days.filter((d) => (attendance[`${c.id}|${d}|${sid}`] ?? "Present") === "Present").length : vals.filter((v) => v === h).length;
-            return <tr key={c.id} className="border-b border-vc-line"><td className="py-2">{courseTitle(c)}</td>{COLS.map((h) => <td key={h} className="text-right">{count(h)}</td>)}</tr>;
-          })}</tbody></table>
-        <p className="mt-3 text-[12px] text-muted-foreground">Counts update as teachers take attendance in each class.</p>
+    <PortalShell portal="student" bare>
+      <div className="mx-auto max-w-[1150px] rounded-sm bg-background font-[Arial,sans-serif] text-[18px] shadow-xl">
+        <div className="flex h-10 items-center justify-end rounded-t-sm bg-foreground px-6 print:hidden"><Button variant="ghost" onClick={() => window.print()} className="text-background hover:bg-transparent hover:text-background"><Printer className="size-4" />Print to <span className="text-destructive">PDF</span></Button></div>
+        <div className="px-8 py-8">
+          <div className="flex flex-wrap justify-between gap-6">
+            <div><h1 className="text-[42px] font-bold">Attendance Detail</h1><div className="text-[30px]">{user?.first ?? ME.first} {user?.last ?? ME.last} <span className="text-[22px] text-muted-foreground">- Grade {ME.grade}</span></div><div className="text-[24px]">Current Term</div></div>
+            <table className="h-fit text-center"><thead><tr>{["Days Enrolled", "Days Attended", "% Attended", "Today's Status"].map((h) => <th key={h} className={`${th} text-center`}>{h}</th>)}</tr></thead>
+              <tbody><tr className="text-[38px]"><td className="border border-vc-line px-3">{days.size}</td><td className="border border-vc-line px-3">{attended}</td><td className="border border-vc-line px-3">{days.size ? `${(attended / days.size * 100).toFixed(2)}%` : "N/A"}</td><td className="border border-vc-line px-3">N/A</td></tr></tbody></table>
+          </div>
+          <h2 className="mt-10 w-1/2 rounded-t-md bg-foreground px-2 py-0.5 font-bold text-background">Daily</h2>
+          <table className="w-full table-fixed"><thead><tr>{["Absent (U)", "Absent (E)", "Absent (Total)", "Tardy (U)", "Tardy (E)", "Tardy (Total)"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+            <tbody><tr className="text-[32px] font-bold">{[sum("AU"), sum("AE"), sum("AT"), sum("TU"), sum("TE"), sum("TT")].map((v, i) => <td key={i} className={`border border-vc-line px-1.5 ${i === 2 ? "bg-destructive/10" : i === 5 ? "bg-vc-sky" : ""}`}>{i < 3 ? v.toFixed(1) : v}</td>)}</tr></tbody></table>
+          <p className="mt-6">{user?.first ?? ME.first} has missed {sum("AT")} classes and been tardy {sum("TT")} times this term.</p>
+          <h2 className="mt-8 w-1/2 rounded-t-md bg-foreground px-2 py-0.5 font-bold text-background">Classes</h2>
+          <table className="w-full"><thead><tr><th className={th}>Course</th>{["AU", "AE", "AT", "TU", "TE", "TT"].map((h) => <th key={h} className={`${th} w-14 text-center ${h === "AU" ? "text-destructive" : h === "AE" ? "text-cat-quiz" : h === "TU" ? "text-vc-link" : h === "TE" ? "text-vc-link/60" : ""}`}>{h}</th>)}<th className={th}>Days</th></tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.c.id} onClick={() => setOpen(r.c.id)} className={`cursor-pointer ${r.AT ? "bg-vc-tile-warm" : ""} hover:bg-vc-select`}><td className="border border-vc-line px-1.5 py-1.5">{courseTitle(r.c)}</td>{[r.AU, r.AE, r.AT, r.TU, r.TE, r.TT].map((v, i) => <td key={i} className={`border border-vc-line text-center ${i === 2 ? "bg-destructive/10" : i === 5 ? "bg-vc-sky" : ""}`}>{v}</td>)}<td className="border border-vc-line px-1.5"><span className="flex items-end gap-px">{r.records.map((x) => <span key={x.date} title={`${x.date}: ${x.status}`} className={`w-[3px] ${x.status === "Present" ? "h-[3px] bg-vc-success" : x.status.startsWith("Absent") ? "h-4 bg-destructive" : "h-4 bg-cat-quiz"}`} />)}{!r.records.length && <span className="text-[14px] text-muted-foreground">No attendance taken</span>}</span></td></tr>)}
+              {!rows.length && <tr><td colSpan={8} className="border border-vc-line p-4 text-center text-muted-foreground">No current classes.</td></tr>}
+              <tr><td className="pr-2 text-right text-[15px]">Total:</td>{(["AU", "AE", "AT", "TU", "TE", "TT"] as const).map((k) => <td key={k} className="text-center">{sum(k)}</td>)}<td /></tr></tbody></table>
+          {sel && <div className="mt-6"><div className="flex w-1/2 items-center justify-between rounded-t-md bg-foreground px-2 py-0.5 text-background">{courseTitle(sel.c)}<Button variant="ghost" size="icon" aria-label="Close class detail" className="size-6 text-destructive" onClick={() => setOpen(null)}><X className="size-5" /></Button></div>
+            <table className="w-full"><thead><tr><th className={th}>Date</th><th className={th}>Status</th></tr></thead><tbody>{sel.records.filter((x) => x.status !== "Present").map((x) => <tr key={x.date}><td className="border border-vc-line px-1.5">{format(parseISO(x.date), "MMM dd")}</td><td className="border border-vc-line px-1.5"><span className={x.status.startsWith("Absent") ? "block bg-destructive/30 px-1" : "block bg-vc-tile-warm px-1"}>{x.status}</span></td></tr>)}
+              {!sel.records.some((x) => x.status !== "Present") && <tr><td colSpan={2} className="border border-vc-line px-1.5 text-muted-foreground">No absences or tardies.</td></tr>}</tbody></table></div>}
+        </div>
       </div>
     </PortalShell>
   );

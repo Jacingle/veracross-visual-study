@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
@@ -111,18 +113,41 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
 function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
   const { scores, aStatus, pub, comments, update } = useSchool();
   const set = (field: "scores" | "aStatus" | "comments", k: string, v: string) => update((s) => ({ ...s, [field]: { ...s[field], [k]: v } }));
+  const [picked, setPicked] = useState<string[]>([]);
+  const [desc, setDesc] = useState(false);
+  const [bulk, setBulk] = useState<{ open: boolean; grade?: string | undefined; status?: string | undefined; published?: boolean | undefined }>({ open: false });
+  const rows = [...roster].sort((x, y) => (desc ? -1 : 1) * `${x.last}${x.first}`.localeCompare(`${y.last}${y.first}`));
+  const applyBulk = () => {
+    if (!picked.length) { toast.error("Select one or more students first."); return; }
+    if (bulk.grade !== undefined && !isScoreInput(bulk.grade)) { toast.error("Grade must be a number"); return; }
+    update((x) => {
+      const n = { ...x, scores: { ...x.scores }, aStatus: { ...x.aStatus }, pub: { ...x.pub } };
+      for (const sid of picked) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined) n.scores[k] = bulk.grade; if (bulk.status !== undefined) n.aStatus[k] = bulk.status; if (bulk.published !== undefined) n.pub[k] = bulk.published; }
+      return n;
+    });
+    toast.success(`Updated ${picked.length} student${picked.length === 1 ? "" : "s"}`); setBulk({ open: false });
+  };
   return (
+    <div className="relative">
+      <div className="mb-2 flex justify-end"><Button variant="outline" size="sm" onClick={() => setBulk({ open: !bulk.open })}>Bulk Edit</Button></div>
+      {bulk.open && <div className="absolute right-0 top-10 z-20 w-[240px] space-y-3 rounded-sm border border-vc-line bg-background p-3 text-[12px] shadow-lg">
+        <label className="block"><input type="checkbox" checked={bulk.grade !== undefined} onChange={(e) => setBulk({ ...bulk, grade: e.target.checked ? "" : undefined })} /> GRADE<input aria-label="Bulk grade" disabled={bulk.grade === undefined} className="mt-1 h-7 w-full border border-vc-line px-1" value={bulk.grade ?? ""} onChange={(e) => setBulk({ ...bulk, grade: e.target.value })} /></label>
+        <label className="block"><input type="checkbox" checked={bulk.status !== undefined} onChange={(e) => setBulk({ ...bulk, status: e.target.checked ? (STATUSES[0] ?? "") : undefined })} /> COMPLETION STATUS<select aria-label="Bulk completion status" disabled={bulk.status === undefined} className="mt-1 h-7 w-full border border-vc-line" value={bulk.status ?? ""} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></label>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={bulk.published !== undefined} onChange={(e) => setBulk({ ...bulk, published: e.target.checked ? true : undefined })} /> PUBLISHED?<Switch aria-label="Bulk published" disabled={bulk.published === undefined} checked={bulk.published ?? false} onCheckedChange={(v) => setBulk({ ...bulk, published: v })} /></label>
+        <Button size="sm" className="w-full bg-vc-success" onClick={applyBulk}>Update</Button>
+      </div>}
     <table className="w-full text-[13px]">
-      <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Score</th><th>Completion</th><th>Dropbox</th><th>Comment</th><th className="text-right">Publish</th></tr></thead>
-      <tbody>{roster.map((s, i) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? ""); return (
+      <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th><input type="checkbox" aria-label="Select all students" checked={picked.length === roster.length && roster.length > 0} onChange={(e) => setPicked(e.target.checked ? roster.map((x) => x.id) : [])} /></th><th className="py-1.5"><button type="button" onClick={() => setDesc(!desc)} className="uppercase">Student {desc ? "Z→A" : "A→Z"}</button></th><th>Grade</th><th>Assignment Status</th><th>Comment</th><th className="text-right">Published?</th></tr></thead>
+      <tbody>{rows.map((s) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? ""); return (
         <tr key={s.id} className="border-b border-vc-line">
-          <td className="py-1">{s.last}, {s.first}</td>
-          <td><input aria-label={`Score for ${s.first}`} className="h-7 w-14 border border-vc-line text-center" value={v} onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /> <span className="text-muted-foreground">/ {a.points}</span></td>
-          <td><select aria-label={`Completion for ${s.first}`} className="h-7 border border-vc-line px-1" value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></td>
-          <td className="text-[12px] text-muted-foreground">-</td>
-          <td><input aria-label={`Comment for ${s.first}`} className="h-7 w-full border border-vc-line px-1.5" maxLength={300} value={comments[`a|${k}`] ?? ""} onChange={(e) => set("comments", `a|${k}`, e.target.value)} /></td>
+          <td className="w-6"><input type="checkbox" aria-label={`Select ${s.first}`} checked={picked.includes(s.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, s.id] : picked.filter((x) => x !== s.id))} /></td>
+          <td className="py-2"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-10 rounded-full" /><div className="leading-tight"><div className="text-[15px] font-semibold">{s.first}</div><div className="text-[14px]">{s.last}</div></div></div></td>
+          <td><input aria-label={`Score for ${s.first}`} className="h-8 w-14 rounded-sm border border-vc-line text-center" value={v} onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /> <span className="text-muted-foreground">/{a.points}</span></td>
+          <td><select aria-label={`Completion for ${s.first}`} className="h-8 w-[170px] rounded-sm border border-vc-line px-1 font-semibold" value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></td>
+          <td><input aria-label={`Comment for ${s.first}`} className="h-8 w-full rounded-sm border border-vc-line px-1.5" maxLength={300} value={comments[`a|${k}`] ?? ""} onChange={(e) => set("comments", `a|${k}`, e.target.value)} /></td>
           <td className="text-right"><Switch aria-label={`Publish for ${s.first}`} checked={pub[k] !== false} onCheckedChange={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></td>
         </tr>); })}</tbody>
     </table>
+    </div>
   );
 }

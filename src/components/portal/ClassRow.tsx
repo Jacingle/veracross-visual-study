@@ -40,7 +40,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
           {av !== null ? <><span>{letterFor(av)}</span><span>{av.toFixed(2)}%</span></> : <span>-</span>}
         </Link>
         <div className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
-          <span className={`rounded-sm px-1 text-[12px] font-semibold ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-foreground"}`}>{fresh}</span> new updates
+          <span className={`rounded-sm px-1 text-[12px] font-semibold ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-foreground"}`}>{fresh}</span> new notifications
         </div>
         <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-2.5 text-[13px] text-foreground/80 hover:text-vc-link">View All Assignments</Link>
       </div>

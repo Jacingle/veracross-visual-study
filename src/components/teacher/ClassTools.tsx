@@ -1,3 +1,4 @@
+import { ATT_STATUSES } from "@/lib/attendance";
 import { categoryColor } from "@/lib/category-colors";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { meetingsOn } from "@/lib/scheduling";
@@ -13,7 +14,7 @@ import { useSchool, type Section } from "@/lib/school-store";
 import { gradingPeriods, termLabel, termOn, termById } from "@/lib/terms";
 import { Button } from '@/components/ui/button';
 
-const ATT = ["Present", "Tardy", "Absent - Excused", "Absent - Unexcused", "Dismissed", "Field Trip"];
+const ATT = ATT_STATUSES;
 
 export function Attendance({ c, roster, date }: { c: Section; roster: Student[]; date: string }) {
   const { attendance, attNotes, attDone, update, photos, schedulingSets } = useSchool();
