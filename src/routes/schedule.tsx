@@ -4,7 +4,8 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-rea
 import { z } from "zod";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
 import { today, courseTitle, teacherFull } from "@/lib/sis-data";
-import { useMySections, useStudentAssignments } from "@/lib/school-store";
+import { useMySections, useStudentAssignments, useSchool } from "@/lib/school-store";
+import { meetingsOn } from '@/lib/scheduling';
 import { classStatus } from "@/lib/terms";
 import { pageHead } from "@/lib/head";
 
@@ -21,7 +22,8 @@ function Schedule() {
   const d = isValid(parsed) ? parsed : today();
   const go = (n: number) => nav({ search: (p) => ({ ...p, date: format(addDays(d, n), "yyyy-MM-dd") }) });
   const mine = useMySections();
-  const periods = mine.filter((c) => c.days.includes(d.getDay()) && classStatus(c.terms, d) === "current").map((c) => ({ time: c.time, title: courseTitle(c), detail: `${teacherFull(c.teacherId)} · ${c.block} · ${c.room}`, kind: "class", courseId: c.id }));
+  const { schedulingSets } = useSchool();
+  const periods = mine.flatMap((c) => meetingsOn(c, schedulingSets, d).map((b) => ({ time: b.end ? `${b.start}–${b.end}` : b.start, title: courseTitle(c), detail: `${teacherFull(c.teacherId)} · ${b.name || c.block} · ${c.room}`, kind: 'class', courseId: c.id }))).sort((a, b) => a.time.localeCompare(b.time));
   const all = useStudentAssignments();
   return (
     <PortalShell portal="student">
