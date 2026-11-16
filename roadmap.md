@@ -1,4 +1,8 @@
 # Roadmap
+- [ ] Finish full teacher portraits and bulk student/teacher class membership
+- [ ] Research and align course/class setup; validate and preserve entered records
+- [ ] Review Recent Updates, Classes & Reports, and term attendance with supplied pictures
+- [ ] Verify enrollment, photos, reports, and reload saving in the browser
 - [x] Repair bounded square photo crop/drop zone and uncropped website uploads; verify reload
 - [x] Polish portal switching/impersonation, original branding and simplified login
 - [x] Align student grade detail, weighting and term report selection
