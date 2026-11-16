@@ -94,7 +94,7 @@ function UsersPage() {
         </DialogContent>
       </Dialog>
       <ImageCropper open={!!photoFor} onClose={() => setPhotoFor(null)} aspect={1} outWidth={300} title="Directory Photo"
-        onSave={(url) => { if (!photoFor) return; update((s) => ({ ...s, photos: { ...s.photos, [photoFor]: url } })); toast.success("Photo saved"); }} />
+        onSave={(url, fullPhoto) => { if (!photoFor) return; update((s) => ({ ...s, photos: { ...s.photos, [photoFor]: url }, fullPhotos: { ...s.fullPhotos, [photoFor]: fullPhoto } })); toast.success("Photo saved"); }} />
     </AxiomShell>
   );
 }

@@ -11,10 +11,10 @@ export const updateKey = (id: string, score: number | undefined) => `upd:${id}:$
 export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overview" }) {
   const meets = c.days.includes(today().getDay());
   const av = useClassAverage(c.id);
-  const { courses } = useSchool();
+  const { courses, sections } = useSchool();
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;
-  const credits = courses.find((x) => x.id === c.id.split("-")[0])?.credits;
+  const credits = courses.find((x) => x.id === sections.find((section) => section.id === c.id)?.courseNo)?.credits;
   return (
     <div className="flex justify-between border-b border-vc-line py-5 last:border-b-0">
       <div className="min-w-0">
@@ -40,7 +40,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
           {av !== null ? <><span>{letterFor(av)}</span><span>{av.toFixed(2)}%</span></> : <span>-</span>}
         </Link>
         <div className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
-          <span className={`rounded-sm px-1 text-[12px] font-semibold ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-foreground"}`}>{fresh}</span> new notifications
+          <span className={`rounded-sm px-1 text-[12px] font-semibold ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-foreground"}`}>{fresh}</span> new updates
         </div>
         <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-2.5 text-[13px] text-foreground/80 hover:text-vc-link">View All Assignments</Link>
       </div>

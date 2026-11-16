@@ -100,7 +100,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
           : <div className={`relative mx-auto overflow-hidden rounded-xl bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
-      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo } })); }} />
+      <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo, fullPhoto) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo }, fullPhotos: { ...s.fullPhotos, [user.personId]: fullPhoto } })); }} />
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />
     </div>
   );

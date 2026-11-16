@@ -67,7 +67,7 @@ type State = {
   comments: Record<string, string>; termGrades: Record<string, string>;
   weights: Record<string, Weight[]>; sent: SentMessage[]; purchases: Purchase[];
   courseFlags: Record<string, Record<string, boolean>>;
-  courses: CourseDef[]; sections: Section[]; photos: Record<string, string>;
+  courses: CourseDef[]; sections: Section[]; photos: Record<string, string>; fullPhotos: Record<string, string>;
   sampleCleared?: boolean;
   impersonatorId?: string | null;
   schedulingSets: SchedulingSet[];
@@ -75,7 +75,7 @@ type State = {
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
   scores: {}, aStatus: {}, pub: {}, attendance: {}, attNotes: {}, attDone: [], comments: {}, termGrades: {},
-  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, schedulingSets: [],
+  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, fullPhotos: {}, schedulingSets: [],
 };
 const KEY = "cra-school-v2";
 
