@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 /** Pick a photo, drag to position and zoom inside a fixed frame, then save a cropped JPEG data URL. */
 export function ImageCropper({ open, onClose, onSave, aspect, outWidth, title = "Crop Photo", uncropped = false }: {
-  open: boolean; onClose: () => void; onSave: (dataUrl: string) => void; aspect: number; outWidth: number; title?: string; uncropped?: boolean;
+  open: boolean; onClose: () => void; onSave: (dataUrl: string, fullPhoto: string) => void; aspect: number; outWidth: number; title?: string; uncropped?: boolean;
 }) {
   const [src, setSrc] = useState("");
   const [img, setImg] = useState<HTMLImageElement | null>(null);
@@ -40,7 +40,15 @@ export function ImageCropper({ open, onClose, onSave, aspect, outWidth, title = 
     const context = cv.getContext("2d");
     if (!context) return;
     if (uncropped) context.drawImage(img, 0, 0); else context.drawImage(img, pos.x * k, pos.y * k, w * k, h * k);
-    try { onSave(cv.toDataURL("image/jpeg", 0.82)); onClose(); } catch { toast.error("Photo could not be saved. Please try another photo."); }
+    try {
+      const full = document.createElement('canvas');
+      const ratio = Math.min(1, 1920 / Math.max(img.width, img.height));
+      full.width = Math.round(img.width * ratio); full.height = Math.round(img.height * ratio);
+      const fullContext = full.getContext('2d');
+      if (!fullContext) return;
+      fullContext.drawImage(img, 0, 0, full.width, full.height);
+      onSave(cv.toDataURL("image/jpeg", 0.82), full.toDataURL('image/jpeg', 0.85)); onClose();
+    } catch { toast.error("Photo could not be saved. Please try another photo."); }
   };
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

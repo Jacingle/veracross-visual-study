@@ -65,8 +65,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
         <aside className="mt-[94px] w-[290px] shrink-0 space-y-3 text-[13px]">
           <div className="rounded-sm bg-background p-3 shadow-sm">
             <div className="text-[18px]">Teacher</div>
-            <div className="mt-1 flex gap-2.5"><PersonPhoto personId={t.id} className="size-[66px]" />
-              <div className="text-[15px]"><div className="font-semibold">{t.last}</div><a href={`mailto:${t.email}`} className="text-vc-link-strong">Email</a></div></div>
+            {c.teacherIds.map((id) => { const faculty = teacher(id); return <div key={id} className="mt-3"><PersonPhoto personId={id} full className="w-full" alt={`${faculty.first} ${faculty.last}`} /><div className="mt-2 text-[15px]"><div className="font-semibold">{faculty.prefix} {faculty.first} {faculty.last}</div><a href={`mailto:${faculty.email}`} className="text-vc-link-strong">Email</a></div></div>; })}
             <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-3 flex items-center gap-1 text-vc-link-strong">More class information <ArrowRight className="size-3.5" /></Link>
           </div>
           <div className="rounded-sm bg-background p-3 shadow-sm">
