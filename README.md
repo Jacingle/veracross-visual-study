@@ -1,14 +1,18 @@
-# Welcome to your Lovable project
+# Veracross Visual Study
+
+Hello! We are building Veracross, literally! See pictures and DO RESEARCH! I want it to look EXACT.
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://veracross-visual-study.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/b5f7ea33-14bc-4ce6-a9bb-41dddc4cceae).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +24,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
