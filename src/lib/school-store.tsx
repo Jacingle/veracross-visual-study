@@ -71,6 +71,7 @@ type State = {
   sampleCleared?: boolean;
   impersonatorId?: string | null;
   schedulingSets: SchedulingSet[];
+  classOrder?: Record<string, string[]>;
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
@@ -118,7 +119,7 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
     EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
-    EXTRA.students = s.users.filter((u) => u.role === "student" && u.personId).map((u) => ({ id: u.personId, first: u.preferred || u.first, last: u.last, grade: u.grade ?? 9, address: [u.address, u.city, u.state, u.postal].filter(Boolean).join(", "), homePhone: u.phone ?? "", parents: [] }));
+    EXTRA.students = s.users.filter((u) => u.role === "student" && u.personId).map((u) => ({ id: u.personId, first: u.preferred || u.first, last: u.last, email: u.email, grade: u.grade ?? 9, address: [u.address, u.city, u.state, u.postal].filter(Boolean).join(", "), homePhone: u.phone ?? "", parents: [] }));
   }, [s.users]);
   const value = useMemo<Ctx>(() => ({
     ...s, ready, update,
@@ -143,13 +144,16 @@ export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment
 }
 /** Classes the signed-in person sees: published ones they teach or are enrolled in (admins see all). */
 export function useMySections(): (Section & { status: ClassStatus })[] {
-  const { sections, user } = useSchool();
+  const { sections, user, classOrder } = useSchool();
   return useMemo(() => {
+    const order = classOrder?.[user?.id ?? ""] ?? [];
+    const rank = (id: string) => { const i = order.indexOf(id); return i < 0 ? 1e6 : i; };
     const pid = user?.personId ?? "";
     return sections
       .filter((c) => user?.role === "admin" || (c.published && (user?.role === "teacher" ? c.teacherIds.includes(pid) : c.studentIds.includes(pid))))
-      .map((c) => ({ ...c, status: classStatus(c.terms, today()) }));
-  }, [sections, user]);
+      .map((c) => ({ ...c, status: classStatus(c.terms, today()) }))
+      .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+  }, [sections, user, classOrder]);
 }
 export function useSection(id: string): Section | undefined { const { sections } = useSchool(); return sections.find((c) => c.id === id); }
 export const rosterOf = (c: Section | undefined): Student[] => (c ? c.studentIds.map(studentById).filter((x): x is Student => !!x).sort((a, b) => a.last.localeCompare(b.last)) : []);

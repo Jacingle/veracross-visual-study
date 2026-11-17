@@ -9,6 +9,7 @@ export type Course = {
   letter: string; pct: number; type: "ACADEMIC" | "ARTS" | "ADVISORY"; days: number[]; time: string;
 };
 export type Student = {
+  email?: string;
   id: string; first: string; last: string; grade: number; address: string; homePhone: string;
   parents: { name: string; mobile: string; email: string }[];
 };
@@ -114,7 +115,7 @@ const ph = (n: number) => `${["313","586","248"][n % 3]}-${String(200 + (n * 37)
 
 export const STUDENTS: Student[] = [];
 export const studentById = (id: string): Student | undefined => (id === "me" ? ME_STUDENT : STUDENTS.find((s) => s.id === id) ?? EXTRA.students.find((s) => s.id === id));
-export const studentEmail = (s: Student) => `${s.first.toLowerCase()}${s.last.toLowerCase()}@cedarridge.edu`;
+export const studentEmail = (s: Student) => s.email || `${s.first.toLowerCase()}${s.last.toLowerCase()}@cedarridge.edu`;
 
 // class rosters: deterministic subset of grade-9 students
 export const rosterFor = (courseId: string) => {

@@ -30,7 +30,7 @@ function UsersPage() {
   const { users, user: me, update, photos, impersonate } = useSchool();
   const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ id?: string; d: Draft } | null>(null);
-  const shown = users.filter((u) => (!role || u.role === role) && `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(q.toLowerCase()));
+  const shown = users.filter((u) => (!role || u.role === role) && `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     if (!edit) return;
