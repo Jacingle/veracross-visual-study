@@ -15,7 +15,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;
   return (
-    <div className="flex justify-between border-b border-vc-line mx-2 px-7 py-6 last:border-b-0">
+    <div className="flex justify-between border-b border-vc-line mx-2 px-5 py-6 last:border-b-0">
       <div className="min-w-0">
         <div className="flex items-baseline gap-2.5">
           <Link to="/class/$classId" params={{ classId: c.id }}
