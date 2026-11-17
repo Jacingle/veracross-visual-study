@@ -1,4 +1,3 @@
-import { useSchool } from "@/lib/school-store";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, Clock, SquareCheck, Sprout } from "lucide-react";
 import { useState } from "react";
@@ -26,7 +25,6 @@ function Report({ icon: Icon, label, children }: { icon: typeof Clock; label: st
 function Overview() {
   const [tab, setTab] = useState<"Active" | "Future" | "Past">("Active");
   const allClasses = useMySections();
-  const { user, update } = useSchool();
   const terms = [...new Set(allClasses.flatMap((c) => c.terms))].sort();
   const mine = allClasses.filter((c) => c.status === ({ Active: "current", Future: "future", Past: "past" } as const)[tab]);
   return (
@@ -48,10 +46,8 @@ function Overview() {
         ))}</div>
       </div>
       <div className="px-6 pb-8 pt-5">
-        {mine.length ? mine.map((c) => <div key={c.id} draggable title="Drag to reorder" onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)} onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { const from = e.dataTransfer.getData("text/plain"); if (!from || from === c.id || !user) return; const ids = allClasses.map((x) => x.id).filter((x) => x !== from); ids.splice(ids.indexOf(c.id), 0, from); update((s) => ({ ...s, classOrder: { ...s.classOrder, [user.id]: ids } })); }}
-          className="cursor-grab active:cursor-grabbing"><ClassRow c={c} variant="overview" /></div>)
-          : <p className="py-12 text-center text-[14px] text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
+        {mine.length ? mine.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)
+          :<p className="py-12 text-center text-[14px] text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
       </div>
     </PortalShell>
   );

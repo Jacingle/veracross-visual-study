@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
@@ -28,8 +28,27 @@ function Courses() {
   const [sel, setSel] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CourseDef | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  // The order of this list is the order classes appear everywhere in the app (student, teacher and admin views).
+  const moveCourse = (from: string, to: string) => {
+    if (from === to) return;
+    update((s) => {
+      const moving = s.courses.find((c) => c.id === from);
+      if (!moving) return s;
+      const rest = s.courses.filter((c) => c.id !== from);
+      const at = rest.findIndex((c) => c.id === to);
+      rest.splice(at < 0 ? rest.length : at, 0, moving);
+      return { ...s, courses: rest };
+    });
+  };
   const shownCourses = courses.filter((c) => `${c.id} ${c.name}`.toLowerCase().includes(q.toLowerCase()));
-  const yearSections = sections.filter((s) => s.terms.some((t) => t.startsWith(year)) && (!sel || s.courseNo === sel));
+  const courseRank = (no: string) => { const i = courses.findIndex((x) => x.id === no); return i < 0 ? 1e6 : i; };
+  const yearSections = sections
+    .map((s, position) => ({ s, position }))
+    .filter(({ s }) => s.terms.some((t) => t.startsWith(year)) && (!sel || s.courseNo === sel))
+    .sort((a, b) => courseRank(a.s.courseNo) - courseRank(b.s.courseNo) || a.position - b.position)
+    .map(({ s }) => s);
 
   const saveCourse = (e: React.FormEvent) => {
     e.preventDefault(); if (!draft) return;
@@ -52,11 +71,18 @@ function Courses() {
     <AxiomShell title="Courses & Enrollment" actions={<button onClick={() => { setEditing(false); setDraft({ id: "", name: "", type: "ACADEMIC", dept: "", credits: 1, description: "" }); }} className="flex h-7 items-center gap-1 bg-ax-go px-3 font-semibold text-primary-foreground"><Plus className="size-4" />New Course</button>}>
       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-3">
         <Panel title={`Courses (${courses.length})`}>
-          <input aria-label="Filter courses" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter courses" className={`${inp} mb-2`} />
+          <input aria-label="Filter courses" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter courses" className={`${inp} mb-1`} />
+          <p className="mb-2 text-[11px] text-muted-foreground">Drag courses to set the order classes appear in across the app.</p>
           <ul className="max-h-[560px] overflow-y-auto">
             <li><button onClick={() => setSel(null)} className={`w-full px-2 py-1.5 text-left ${!sel ? "bg-vc-select" : "hover:bg-vc-panel"}`}>All courses</button></li>
             {shownCourses.map((c) => (
-              <li key={c.id} className={`flex items-center justify-between px-2 py-1.5 ${sel === c.id ? "bg-vc-select" : "hover:bg-vc-panel"}`}>
+              <li key={c.id} draggable title="Drag to set the order classes appear in across the app"
+                onDragStart={(e) => { setDragId(c.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.id); }}
+                onDragOver={(e) => { e.preventDefault(); if (dragId && overId !== c.id) setOverId(c.id); }}
+                onDrop={(e) => { e.preventDefault(); const from = e.dataTransfer.getData("text/plain") || dragId; if (from) moveCourse(from, c.id); setDragId(null); setOverId(null); }}
+                onDragEnd={() => { setDragId(null); setOverId(null); }}
+                className={`flex cursor-grab items-center justify-between px-2 py-1.5 active:cursor-grabbing ${dragId === c.id ? "opacity-40" : ""} ${overId === c.id && dragId !== c.id ? "border-t-2 border-vc-link" : "border-t-2 border-transparent"} ${sel === c.id ? "bg-vc-select" : "hover:bg-vc-panel"}`}>
+                <GripVertical aria-hidden className="mr-1 size-4 shrink-0 text-muted-foreground/60" />
                 <button onClick={() => setSel(c.id)} className="min-w-0 flex-1 truncate text-left"><span className="font-mono text-[12px]">{c.id}</span> · {c.name}</button>
                 <button onClick={() => newClass(c)} className="ml-2 shrink-0 text-[12px] text-vc-link-strong hover:underline">+ Class</button></li>))}
           </ul>

@@ -71,7 +71,6 @@ type State = {
   sampleCleared?: boolean;
   impersonatorId?: string | null;
   schedulingSets: SchedulingSet[];
-  classOrder?: Record<string, string[]>;
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
@@ -144,16 +143,18 @@ export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment
 }
 /** Classes the signed-in person sees: published ones they teach or are enrolled in (admins see all). */
 export function useMySections(): (Section & { status: ClassStatus })[] {
-  const { sections, user, classOrder } = useSchool();
+  const { sections, user, courses } = useSchool();
   return useMemo(() => {
-    const order = classOrder?.[user?.id ?? ""] ?? [];
-    const rank = (id: string) => { const i = order.indexOf(id); return i < 0 ? 1e6 : i; };
+    // Order is set by the administrator: the course list order on Courses & Enrollment, then section order within a course.
+    const rank = (courseNo: string) => { const i = courses.findIndex((x) => x.id === courseNo); return i < 0 ? 1e6 : i; };
     const pid = user?.personId ?? "";
     return sections
-      .filter((c) => user?.role === "admin" || (c.published && (user?.role === "teacher" ? c.teacherIds.includes(pid) : c.studentIds.includes(pid))))
-      .map((c) => ({ ...c, status: classStatus(c.terms, today()) }))
-      .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
-  }, [sections, user, classOrder]);
+      .map((c, position) => ({ c, position }))
+      .filter(({ c }) => user?.role === "admin" || (c.published && (user?.role === "teacher" ? c.teacherIds.includes(pid) : c.studentIds.includes(pid))))
+      .map(({ c, position }) => ({ c: { ...c, status: classStatus(c.terms, today()) }, position }))
+      .sort((a, b) => rank(a.c.courseNo) - rank(b.c.courseNo) || a.position - b.position)
+      .map(({ c }) => c);
+  }, [sections, user, courses]);
 }
 export function useSection(id: string): Section | undefined { const { sections } = useSchool(); return sections.find((c) => c.id === id); }
 export const rosterOf = (c: Section | undefined): Student[] => (c ? c.studentIds.map(studentById).filter((x): x is Student => !!x).sort((a, b) => a.last.localeCompare(b.last)) : []);
