@@ -98,7 +98,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
       <main className="relative min-h-[calc(100vh-80px)] pb-12 pt-7">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
-          : <div className={`relative mx-auto overflow-hidden rounded-xl bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
+          : <div className={`relative mx-auto overflow-hidden bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo, fullPhoto) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo }, fullPhotos: { ...s.fullPhotos, [user.personId]: fullPhoto } })); }} />
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />

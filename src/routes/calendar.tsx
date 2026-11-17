@@ -46,7 +46,7 @@ function Cal() {
         ))}
       </div>
       <Dialog open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
-        <DialogContent className="max-w-[840px] gap-0 overflow-hidden rounded-sm p-0 text-[13px]">
+        <DialogContent className="max-w-[840px] gap-0 overflow-hidden rounded-none sm:rounded-none p-0 text-[13px]">
           {sel && <>
             <DialogHeader className="flex-row items-start justify-between space-y-0 bg-vc-panel px-6 py-4 text-left"><div><DialogTitle className="text-[20px] font-light"><strong className="font-semibold">{sel.courseId}:</strong> {sections.find((c) => c.id === sel.courseId)?.name ?? ""}</DialogTitle>
               <div className="text-[14px] text-muted-foreground">{teacherShort(sections.find((c) => c.id === sel.courseId)?.teacherId ?? "")}</div></div><span className="mr-6 text-[14px] font-semibold tracking-wide text-muted-foreground">ASSIGNMENT</span></DialogHeader>

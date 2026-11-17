@@ -16,9 +16,9 @@ export const Route = createFileRoute("/classes")({
 
 function Report({ icon: Icon, label, children }: { icon: typeof Clock; label: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-4">
-      <div className="grid size-10 place-items-center border-2 border-muted-foreground/40 text-muted-foreground/70"><Icon className="size-5" strokeWidth={1.25} /></div>
-      <div><div className="text-[13px] text-foreground/70">{label}</div><div className="mt-1.5 text-[14px] text-vc-link">{children}</div></div>
+    <div className="flex gap-3.5">
+      <div className="grid size-8 shrink-0 place-items-center border-2 border-muted-foreground/40 text-muted-foreground/70"><Icon className="size-5" strokeWidth={1.25} /></div>
+      <div><div className="text-[14px] text-foreground/70">{label}</div><div className="mt-2 text-[14.5px] text-vc-link">{children}</div></div>
     </div>
   );
 }
@@ -32,22 +32,22 @@ function Overview() {
   return (
     <PortalShell portal="student">
       <StudentTabs />
-      <div className="px-6 pt-6">
-        <h2 className="text-[24px] font-light text-foreground/80">Reports</h2>
-        <div className="grid grid-cols-1 gap-y-8 px-3 py-6 sm:grid-cols-2">
+      <div className="px-5 pt-6">
+        <h2 className="text-[25px] font-light text-foreground/80">Reports</h2>
+        <div className="grid grid-cols-1 gap-y-6 px-2.5 pb-11 pt-[26px] sm:grid-cols-2">
           <Report icon={BarChart3} label="PROGRESS REPORT"><Link to="/report-card" className="hover:underline">Grades & Comments</Link></Report>
           <Report icon={Clock} label="SCHEDULE"><Link to="/schedule-report" className="hover:underline">Current Class Schedule</Link></Report>
           <Report icon={Sprout} label="REPORT CARD"><Link to="/report-card" className="hover:underline">Term Report Card</Link></Report>
           <Report icon={SquareCheck} label="ATTENDANCE">{terms.map((id, i) => <span key={id}>{i > 0 && <span className="mx-2.5 text-muted-foreground/60">•</span>}<Link to="/attendance" search={{ term: id }} className="hover:underline">{termById(id)?.label ?? id}</Link></span>)}{!terms.length && <span className="text-muted-foreground">-</span>}</Report>
         </div>
       </div>
-      <div className="mt-2 flex items-end justify-between border-b border-vc-line pl-6">
-        <h2 className="pb-2 text-[24px] font-light text-foreground/80">Classes</h2>
-        <div className="flex">{(["Active", "Future", "Past"] as const).map((t) => (
-          <Button variant="ghost" key={t} onClick={() => setTab(t)} className={`w-[96px] py-3 text-[14px] ${tab === t ? "-mb-px border border-vc-line border-b-background text-vc-link-strong" : "text-foreground/75"}`}>{t}</Button>
+      <div className="mt-2 flex items-end justify-between border-b border-vc-line pl-5">
+        <h2 className="pb-2 text-[25px] font-light text-foreground/80">Classes</h2>
+        <div className="flex pr-5">{(["Active", "Future", "Past"] as const).map((t) => (
+          <Button variant="ghost" key={t} onClick={() => setTab(t)} className={`h-10 w-[96px] rounded-none py-3 text-[14px] ${tab === t ? "-mb-px border border-vc-line border-b-background text-vc-link-strong" : "text-foreground/75"}`}>{t}</Button>
         ))}</div>
       </div>
-      <div className="px-6 pb-8">
+      <div className="px-6 pb-8 pt-5">
         {mine.length ? mine.map((c) => <div key={c.id} draggable title="Drag to reorder" onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)} onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { const from = e.dataTransfer.getData("text/plain"); if (!from || from === c.id || !user) return; const ids = allClasses.map((x) => x.id).filter((x) => x !== from); ids.splice(ids.indexOf(c.id), 0, from); update((s) => ({ ...s, classOrder: { ...s.classOrder, [user.id]: ids } })); }}
           className="cursor-grab active:cursor-grabbing"><ClassRow c={c} variant="overview" /></div>)

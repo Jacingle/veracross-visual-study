@@ -20,8 +20,8 @@ function ScheduleReport() {
   const cols = DAYS.map((_, i) => mine.flatMap((c) => meetingsOn(c, schedulingSets, addDays(mon, i)).map((m) => ({ c, block: m.name || c.block, start: m.start, end: m.end || "" }))).sort((a, b) => a.start.localeCompare(b.start)));
   return (
     <PortalShell portal="student" bare>
-      <div className="mx-auto max-w-[1500px] rounded-sm bg-background font-[Arial,sans-serif] shadow-xl">
-        <div className="flex h-12 items-center justify-end rounded-t-sm bg-foreground px-6 print:hidden"><Button variant="ghost" onClick={() => window.print()} className="text-[18px] text-background hover:bg-transparent hover:text-background"><Printer className="size-5" />Print to <span className="text-destructive">PDF</span></Button></div>
+      <div className="mx-auto max-w-[1500px] bg-background font-[Arial,sans-serif] shadow-xl">
+        <div className="flex h-12 items-center justify-end bg-foreground px-6 print:hidden"><Button variant="ghost" onClick={() => window.print()} className="text-[18px] text-background hover:bg-transparent hover:text-background"><Printer className="size-5" />Print to <span className="text-destructive">PDF</span></Button></div>
         <div className="px-7 pb-7 pt-10">
           <h1 className="text-center text-[28px] font-bold">{user?.first ?? ME.first} {user?.last ?? ME.last} — Current Term</h1>
           <p className="ml-11 mt-4 text-[13px]">Grade {ME.grade}</p>

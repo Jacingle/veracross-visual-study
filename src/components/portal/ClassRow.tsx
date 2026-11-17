@@ -14,6 +14,27 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
   
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;
+  if (variant === "overview") return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 border-b border-vc-line px-5 pb-6 pt-3.5">
+      <div className="flex min-w-0 items-baseline gap-2.5">
+        <Link to="/class/$classId" params={{ classId: c.id }} className="text-[24px] font-light text-foreground/80 hover:text-vc-link">{courseTitle(c)}</Link>
+        <span className="border border-foreground/70 px-[5px] py-[3px] text-[10px] tracking-wide text-foreground/80">{c.type}</span>
+      </div>
+      <Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: "detail" }} className="flex justify-self-end gap-8 text-[24px] font-light text-foreground/85 hover:text-vc-link">
+        {av !== null ? <><span>{letterFor(av)}</span><span>{av.toFixed(2)}%</span></> : <span>-</span>}
+      </Link>
+      <div className="mt-1.5 text-[16px] font-light text-muted-foreground">{teacherShort(c.teacherId)}</div>
+      <div className="mt-1.5 flex items-center justify-self-end gap-1.5 text-[14px] text-muted-foreground">
+        <span className={`rounded-sm px-1.5 text-[13px] font-semibold ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-foreground"}`}>{fresh}</span> new updates
+      </div>
+      <div className="mt-2 flex gap-5 text-[13px] text-foreground/80">
+        <Link to="/class/$classId" params={{ classId: c.id }} className="hover:text-vc-link">Website</Link>
+        <Link to="/calendar" className="hover:text-vc-link">Calendar</Link>
+        <Link to="/class/$classId" params={{ classId: c.id }} search={{ tab: "directory" }} className="hover:text-vc-link">Directory</Link>
+      </div>
+      <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-2 justify-self-end text-[13px] text-foreground/80 hover:text-vc-link">View All Assignments</Link>
+    </div>
+  );
   return (
     <div className="flex justify-between border-b border-vc-line mx-1 px-4 py-6 last:border-b-0">
       <div className="min-w-0">
