@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { type Course, courseTitle, teacherShort, today } from "@/lib/sis-data";
 import { letterFor } from "@/lib/grading";
-import { useClassAverage, useSchool, useStudentAssignments } from "@/lib/school-store";
+import { useClassAverage, useStudentAssignments } from "@/lib/school-store";
 import { usePortal } from "@/lib/portal-store";
 
 /** Key for a published score change; reading the class grades marks it seen. */
@@ -11,10 +11,9 @@ export const updateKey = (id: string, score: number | undefined) => `upd:${id}:$
 export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overview" }) {
   const meets = c.days.includes(today().getDay());
   const av = useClassAverage(c.id);
-  const { courses, sections } = useSchool();
+  
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;
-  void courses; const _c = .find((x) => x.id === sections.find((section) => section.id === c.id)?.courseNo)?.credits; void _c;
   return (
     <div className="flex justify-between border-b border-vc-line mx-2 px-7 py-6 last:border-b-0">
       <div className="min-w-0">
