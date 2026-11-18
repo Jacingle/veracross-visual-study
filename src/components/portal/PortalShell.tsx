@@ -72,8 +72,8 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             <Link to={p === "student" ? "/student" : "/teacher"} className="portal-title flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-7 text-[16px] font-semibold">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="ml-[18px] mb-1 mt-[6px] h-6 w-[54px] shrink-0 skew-x-[14deg] rounded-none border border-primary-foreground/30 bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
-                <span className="flex -skew-x-[14deg] items-center justify-center gap-[7px]"><VcLogo className="h-[18px] w-5" /><ChevronDown className="size-[13px]" /></span>
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="ml-[18px] mb-1 mt-[6px] h-6 w-[54px] shrink-0 skew-x-[16.4deg] rounded-none border border-primary-foreground/30 bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
+                <span className="flex -skew-x-[16.4deg] items-center justify-center gap-[7px]"><VcLogo className="h-[18px] w-5" /><ChevronDown className="size-[13px]" /></span>
               </Button>
           </div>
           <div className="ml-auto flex h-full items-center">
@@ -124,9 +124,9 @@ export function StudentTabs() {
   return (
     <div className="grid grid-cols-4 border-b border-vc-line bg-vc-panel sm:flex sm:justify-end">
       {TABS.map(({ to, label, icon: Icon, solid }) => (
-        <Link key={to} to={to} className="flex min-w-0 flex-col items-center gap-2 border-l border-vc-line px-2 pb-[11px] pt-[19px] sm:min-w-[125px] sm:px-5 text-[12.5px] leading-[18.75px] text-foreground/75 [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]"
+        <Link key={to} to={to} className="flex min-w-0 flex-col items-center gap-1 border-l border-vc-line px-2 pb-[11px] pt-[19px] sm:min-w-[125px] sm:px-5 text-[12.5px] leading-[18.75px] text-foreground/75 [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]"
           activeProps={{ className: "!bg-background !text-vc-link -mb-px [--cut:var(--background)]" }}>
-          <Icon className={solid ? "size-[18px] fill-current stroke-(--cut)" : "size-[18px]"} strokeWidth={solid ? 2 : 1.5} />{label}
+          <Icon className={solid ? "size-5 fill-current stroke-(--cut)" : "size-5"} strokeWidth={solid ? 2 : 1.5} />{label}
         </Link>
       ))}
     </div>

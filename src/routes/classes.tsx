@@ -23,7 +23,7 @@ function Report({ icon: Icon, label, boxed = true, children }: { icon: Glyph; la
   return (
     <div className="flex items-start gap-3.5">
       {boxed
-        ? <div className="grid h-10 w-[33px] shrink-0 place-items-center border-2 border-vc-gray-light/70 text-vc-gray-light"><Icon className="size-4" strokeWidth={1.6} /></div>
+        ? <div className="grid h-10 w-[33px] shrink-0 place-items-center border-2 border-vc-gray-light/70 text-vc-gray-light"><Icon className="size-6" strokeWidth={1.5} /></div>
         : <Icon className="-ml-1 h-10 w-[38px] shrink-0 text-vc-gray-light" />}
       <div>
         <div className="text-[14px] font-light uppercase leading-[21px] text-vc-gray">{label}</div>
