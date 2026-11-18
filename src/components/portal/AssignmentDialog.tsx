@@ -38,7 +38,7 @@ export function AssignmentMini({ assignment, closable = false, close }: { assign
         {closable ? <DialogClose aria-label="Close" className="grid size-5 place-items-center outline-none"><X className="size-4" strokeWidth={4} /></DialogClose> : close}
       </div>
       <div className="px-[18px] pb-4 pt-3.5 text-[22px] leading-7">{assignment.title}</div>
-      <div className={`${row} min-h-[32px] items-center py-1`}><CalendarDays className="size-[22px] shrink-0" strokeWidth={1.6} /><span className="text-[18px] font-semibold">{format(assignment.due, 'EEE, MMM d')}</span></div>
+      <div className={`${row} min-h-[32px] items-center py-1`}><CalendarDays className="size-[22px] shrink-0" strokeWidth={1.6} /><span className="text-[17.5px] font-semibold">{format(assignment.due, 'EEE, MMM d')}</span></div>
       {assignment.notes.trim() !== '' && <div className={`${row} py-3`}><FileText className="size-[22px] shrink-0" strokeWidth={1.6} /><span className="whitespace-pre-wrap text-[15px] leading-[19px]">{assignment.notes}</span></div>}
       <div className={`${row} items-center py-2.5`}><Info className="size-[18px] shrink-0 fill-current stroke-background" /><span className="text-[15px] italic">{section ? `${courseTitle(section)} - ${teacherFullNames(section.teacherIds, users.map((u) => ({ ...u, id: u.personId })))}` : ''}</span></div>
     </div>

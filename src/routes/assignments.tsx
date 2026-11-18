@@ -17,8 +17,8 @@ export const Route = createFileRoute("/assignments")({
   component: Planner,
 });
 
-const COL = 165;   // one weekday column
-const LEFT = 185;  // the class column
+const COL = 159;   // one weekday column
+const LEFT = 177;  // the class column
 
 function Planner() {
   const classes = useMySections().filter((c) => c.status === "current");
@@ -43,7 +43,7 @@ function Planner() {
   return (
     <PortalShell portal="student" fullWidth>
       <StudentTabs compact />
-      <div className="flex items-center justify-end gap-3 px-6 pb-[22px] pt-[7px]">
+      <div className="flex items-center justify-end gap-3 pl-6 pr-7 pb-[22px] pt-[7px]">
         <button onClick={() => toAnchor(true)} className={linkBtn}>Today</button><span className="text-vc-gray">·</span>
         <button onClick={() => by(-5)} className={linkBtn}><ArrowLeft className="size-4" strokeWidth={3} />Previous</button><span className="text-vc-gray">·</span>
         <button onClick={() => by(5)} className={linkBtn}>Next<ArrowRight className="size-4" strokeWidth={3} /></button>
@@ -52,21 +52,21 @@ function Planner() {
         <div className="grid" style={{ gridTemplateColumns: `${LEFT}px repeat(${days.length}, ${COL}px)`, width: LEFT + days.length * COL }}>
           {/* date headings */}
           <div className="sticky left-0 z-10 border-r-2 border-foreground bg-background" />
-          {days.map((d) => <div key={+d} className={`whitespace-nowrap px-3 pb-[3px] pt-[3px] text-[15px] leading-[17px] text-foreground/85 ${d.getDay() === 5 ? "border-r border-vc-line" : ""}`}>{format(d, "EEEE, MMM d")}</div>)}
+          {days.map((d) => <div key={+d} className={`whitespace-nowrap px-2.5 pb-[3px] pt-[3px] text-[15px] leading-[17px] text-foreground/85 ${d.getDay() === 5 ? "border-r border-vc-line" : ""}`}>{format(d, "EEEE, MMM d")}</div>)}
           {/* counts */}
-          <div className="sticky left-0 z-10 flex items-center justify-between border-b-2 border-r-2 border-t border-foreground border-t-vc-line bg-background px-2 py-1.5 text-[12px] uppercase text-foreground/85"><span>Class details:</span><button type="button" onClick={() => setDetails((v) => !v)} className="hover:underline">+ Show - Hide</button></div>
+          <div className="sticky left-0 z-10 flex items-center justify-between border-b-2 border-r-2 border-t border-foreground border-t-vc-line bg-background px-[5px] py-[2px] text-[12px] uppercase text-foreground/85"><span>Class details:</span><button type="button" onClick={() => setDetails((v) => !v)} className="hover:underline">+ Show - Hide</button></div>
           {days.map((d) => {
             const n = all.filter((a) => isSameDay(a.due, d)).length;
-            return <div key={+d} className={`flex items-center gap-2 whitespace-nowrap border-b-2 border-t border-foreground border-t-vc-line px-3 py-1.5 text-[12px] uppercase text-foreground/85 ${d.getDay() === 5 ? "border-r border-r-vc-line" : ""}`}><span className="grid h-[22px] min-w-[22px] place-items-center rounded-[2px] border border-vc-gray-light bg-background px-1 text-[12px] font-semibold">{n}</span>Assignments due</div>;
+            return <div key={+d} className={`flex items-center gap-2 whitespace-nowrap border-b-2 border-t border-foreground border-t-vc-line px-2.5 py-[2px] text-[12px] uppercase text-foreground/85 ${d.getDay() === 5 ? "border-r border-r-vc-line" : ""}`}><span className="grid h-[17px] min-w-[17px] place-items-center rounded-[2px] border border-vc-gray-light bg-background px-1 text-[11px] leading-none font-semibold">{n}</span>Assignments due</div>;
           })}
           {/* one row per class */}
           {classes.map((c) => (
             <ClassCells key={c.id}>
-              <div className="sticky left-0 z-10 min-h-[83px] overflow-hidden border-b border-r-2 border-b-vc-line border-r-foreground bg-background px-2 py-1">
-                <div className="flex items-start gap-2.5">
-                  <span className="mt-1.5 size-3.5 shrink-0 border border-vc-line bg-vc-panel" />
+              <div className="sticky left-0 z-10 min-h-[80px] overflow-hidden border-b border-r-2 border-b-vc-line border-r-foreground bg-background pl-[5px] pr-[5px] py-0">
+                <div className="flex items-start gap-2">
+                  <span className="mt-[7px] size-2.5 shrink-0 border border-vc-line bg-vc-panel" />
                   <div className="min-w-0">
-                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block whitespace-nowrap text-[16px] font-light leading-6 text-vc-site-blue">{courseTitle(c)}</Link>
+                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block max-w-[131px] overflow-hidden whitespace-nowrap text-[16px] font-light leading-6 text-vc-site-blue">{courseTitle(c)}</Link>
                     {details && <div className="text-[12.5px] leading-[18px]">
                       <div className="italic text-vc-gray">{teacherFullNames(c.teacherIds, users.map((u) => ({ ...u, id: u.personId })))}</div>
                       <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block text-vc-gray-dark hover:underline">view website</Link>
@@ -76,15 +76,15 @@ function Planner() {
                 </div>
               </div>
               {days.map((d) => (
-                <div key={+d} className={`min-h-[83px] space-y-[9px] border-b border-vc-line pb-[7px] pl-2.5 pr-1.5 pt-[7px] ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
+                <div key={+d} className={`min-h-[80px] space-y-[9px] border-b border-vc-line pb-[7px] pl-2.5 pr-1.5 pt-[7px] ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
                   {all.filter((a) => a.courseId === c.id && isSameDay(a.due, d)).map((a) => (
                     <Popover key={a.id}>
                       <PopoverTrigger className="flex h-[19px] w-full items-stretch border border-vc-gray-light/70 bg-background text-left text-[11.5px] uppercase shadow-[0_1px_2px_rgba(0,0,0,.15)]">
-                        <span className="w-1 shrink-0" style={{ background: categoryColor(weights[a.courseId], a.category) }} />
+                        <span className="w-[3px] shrink-0" style={{ background: categoryColor(weights[a.courseId], a.category) }} />
                         <span className="min-w-0 flex-1 truncate px-1.5 leading-[17px]">{a.category}</span>
-                        <span className="bg-vc-sky px-3 text-[12px] font-bold leading-[17px] text-vc-site-blue">{done.includes(a.id) ? "Done" : "Due"}</span>
+                        <span className="min-w-[33px] bg-vc-sky px-1.5 text-center text-[12px] font-bold leading-[17px] text-vc-site-blue">{done.includes(a.id) ? "Done" : "Due"}</span>
                       </PopoverTrigger>
-                      <PopoverContent align="start" sideOffset={6} className="w-[330px] max-w-[calc(100vw-2rem)] rounded-none border-2 border-foreground bg-background p-0 shadow-[0_2px_10px_rgba(0,0,0,.35)]">
+                      <PopoverContent side="right" align="start" sideOffset={-8} alignOffset={2} className="w-[325px] max-w-[calc(100vw-2rem)] rounded-none border-2 border-foreground bg-background p-0 shadow-[0_2px_10px_rgba(0,0,0,.35)]">
                         <AssignmentMini assignment={a} close={<PopoverClose aria-label="Close" className="grid size-5 place-items-center outline-none"><X className="size-4" strokeWidth={4} /></PopoverClose>} />
                       </PopoverContent>
                     </Popover>

@@ -65,24 +65,24 @@ function AllAssignments({ list, teacherName, fresh }: { list: Assignment[]; teac
         const color = categoryColor(weights[a.courseId], a.category); const open = expanded === a.id; const fb = feedback(a);
         return <div key={a.id} className="border-b border-vc-line">
           <div className={`flex min-h-[46px] items-center gap-3 pl-3.5 pr-6 ${open ? 'bg-vc-bar' : ''}`}>
-            <span className="grid w-[18px] shrink-0 place-items-center">{fb && <MessageCircle className="size-4 fill-current text-vc-submit" />}</span>
-            <button type="button" onClick={() => setExpanded(open ? null : a.id)} className="grid min-w-0 flex-1 cursor-pointer grid-cols-[62px_44px_minmax(0,1fr)] items-center gap-x-2 py-2 text-left text-[14px]">
+            <span className="grid w-[18px] shrink-0 place-items-center">{fb && <MessageCircle className="size-[17px] fill-current text-vc-link" />}</span>
+            <button type="button" onClick={() => setExpanded(open ? null : a.id)} className="grid min-w-0 flex-1 cursor-pointer grid-cols-[52px_44px_minmax(0,1fr)] items-center py-2 text-left text-[14px]">
               <b className="font-semibold">{format(a.due, 'MMM dd')}</b><b className="font-semibold">{format(a.due, 'EEE')}</b>
-              <span className="flex min-w-0 items-center gap-2 border-l-2 pl-[3px]" style={{ borderColor: color }}><span className="shrink-0 bg-vc-bar px-1.5 font-semibold leading-6" style={{ color }}>{category(a.category)}</span><span className="min-w-0 break-words">{a.title}</span></span>
+              <span className="flex min-w-0 items-center gap-2.5"><span className="flex shrink-0 items-stretch"><span className="w-[3px] shrink-0" style={{ background: color }} /><span className="bg-vc-bar px-1.5 text-[14.5px] font-semibold leading-[26px] text-foreground">{category(a.category)}</span></span><span className="min-w-0 break-words text-[15px]">{a.title}</span></span>
             </button>
             {done.includes(a.id) && <span className="flex shrink-0 items-center gap-1 bg-vc-done px-2 py-[3px] text-[13px] font-semibold text-primary-foreground"><Check className="size-3.5" strokeWidth={3} />Done!</span>}
             
-            <span className="flex w-[74px] shrink-0 items-center justify-end gap-1 text-[15px]"><strong className="font-semibold">{a.score ?? '-'}</strong><span className="min-w-[26px] bg-vc-bar px-1 text-center font-light text-vc-gray-dark">{a.points}</span></span>
+            {a.score === undefined ? <span className="flex min-w-[74px] shrink-0 justify-end text-[14px] italic text-vc-gray-dark">{status(a) || (a.due >= today() ? 'Pending' : '-')}</span> : <span className="flex shrink-0 items-stretch text-[17px] leading-[21px]"><strong className="bg-background px-[6px] font-bold">{a.score}</strong><span className="min-w-[27px] bg-vc-bar px-[5px] text-center font-light text-vc-gray-dark">{a.points}</span></span>}
           </div>
-          {open && <div className="grid gap-8 bg-[oklch(0.985_0_0)] px-10 py-5 text-[14px] md:grid-cols-[54fr_46fr]">
+          {open && <div className="grid gap-8 bg-[oklch(0.985_0_0)] px-7 pb-6 pt-5 text-[14px] md:grid-cols-[54fr_46fr]">
             <div>
-              <div className="flex gap-9">{[['DATE ASSIGNED', a.assigned], ['DUE DATE', a.due]].map(([label, d]) => <div key={String(label)}><div className="text-[12.5px] font-light uppercase text-vc-gray-dark">{String(label)}</div><div className="text-[18px] font-semibold leading-6">{format(d as Date, 'EEE, MMM dd')}</div></div>)}</div>
-              <p className="mt-5 whitespace-pre-wrap text-[14.5px]">{a.notes || '-'}</p>
+              <div className="flex gap-[34px]">{[['DATE ASSIGNED', a.assigned], ['DUE DATE', a.due]].map(([label, d]) => <div key={String(label)}><div className="text-[12px] font-light uppercase leading-5 text-vc-gray-dark">{String(label)}</div><div className="text-[16px] font-semibold leading-5">{format(d as Date, 'EEE, MMM dd')}</div></div>)}</div>
+              <p className="mt-[18px] whitespace-pre-wrap text-[14px] leading-[17px]">{a.notes || '-'}</p>
               <div className="mt-4 flex gap-2"><Button variant="outline" size="sm" onClick={() => setSelected(a)} className="h-7 rounded-none text-[12px]">Assignment Details</Button><Button variant="outline" size="sm" onClick={() => toggleDone(a.id)} className="h-7 rounded-none text-[12px]"><Check className="size-3" />{done.includes(a.id) ? 'Mark Not Done' : 'Mark Done'}</Button></div>
             </div>
             <div>
-              <h3 className="text-[13px] font-semibold uppercase">Assignment Feedback</h3>
-              {fb ? <div className="mt-3 border-t border-dotted border-vc-gray-light pt-3"><div className="flex justify-end"><span className="border-r-2 border-vc-link-strong bg-vc-bar px-2 py-0.5 text-[13px] font-semibold text-vc-link-strong">{teacherName}</span></div><p className="mt-4 whitespace-pre-wrap pl-14 text-[14.5px] leading-[22px]">{fb}</p></div> : <p className="mt-3">-</p>}
+              <h3 className="text-[13px] font-bold uppercase leading-5">Assignment Feedback</h3>
+              {fb ? <div className="mt-2.5"><div className="flex justify-end"><span className="border-r-[3px] border-vc-link-strong bg-vc-sky px-2 text-[14px] font-semibold leading-[20px] text-vc-link-strong">{teacherName}</span></div><p className="mt-5 whitespace-pre-wrap pl-[50px] text-justify text-[14px] leading-[17px]">{fb}</p><div className="mt-4 border-b border-dotted border-vc-gray-light" /></div> : <p className="mt-3">-</p>}
               {status(a) && <div className="mt-3 flex items-center gap-1.5 text-[13px]"><Paperclip className="size-3.5" />{status(a)}</div>}
             </div>
           </div>}

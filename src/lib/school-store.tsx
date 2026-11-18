@@ -11,7 +11,9 @@ import campus from "@/assets/campus-bg.jpg";
 import blossoms from "@/assets/faculty-bg.jpg";
 import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
+import { setTypeColors } from "./type-colors";
 import { readSchool, saveSchool } from "./browser-save";
+import { setTypeColors } from "./category-colors";
 import { toast } from "sonner";
 import type { ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
@@ -58,6 +60,18 @@ export type CustomAssignment = {
 export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" };
 export type Purchase = { id: string; item: string; vendor: string; amount: number; reason: string; status: "Pending" | "Approved" | "Denied"; date: string; by: string };
 export type { Weight } from "./grading";
+/** An assignment type, set up once by the administrator; its color is used for that type everywhere in the app. */
+export type AssignmentType = { id: string; description: string; abbreviation: string; color: string; system: boolean; obsolete: boolean; sortKey: number };
+export const SEED_TYPES: AssignmentType[] = [
+  { id: "1", description: "HOMEWORK", abbreviation: "HW", color: "#3f991e", system: true, obsolete: false, sortKey: 1 },
+  { id: "2", description: "QUIZ", abbreviation: "QZ", color: "#ff9900", system: false, obsolete: false, sortKey: 2 },
+  { id: "3", description: "TEST", abbreviation: "TST", color: "#b02b02", system: false, obsolete: false, sortKey: 3 },
+  { id: "4", description: "COLLABORATION", abbreviation: "COL", color: "#e4f23c", system: false, obsolete: false, sortKey: 4 },
+  { id: "5", description: "CLASSWORK/HOMEWORK", abbreviation: "CW/HW", color: "#000000", system: false, obsolete: false, sortKey: 5 },
+  { id: "6", description: "VOCABULARY", abbreviation: "VOC", color: "#09b3a7", system: false, obsolete: false, sortKey: 6 },
+  { id: "7", description: "WRITING", abbreviation: "WR", color: "#7a5ea8", system: false, obsolete: false, sortKey: 7 },
+  { id: "8", description: "READING", abbreviation: "RD", color: "#ee6363", system: false, obsolete: false, sortKey: 8 },
+];
 import type { Weight } from "./grading";
 
 type State = {
@@ -72,11 +86,12 @@ type State = {
   sampleCleared?: boolean;
   impersonatorId?: string | null;
   schedulingSets: SchedulingSet[];
+  assignmentTypes: AssignmentType[];
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
   scores: {}, aStatus: {}, pub: {}, attendance: {}, attNotes: {}, attDone: [], comments: {}, termGrades: {},
-  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, fullPhotos: {}, schedulingSets: [],
+  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, fullPhotos: {}, schedulingSets: [], assignmentTypes: SEED_TYPES,
 };
 const KEY = "cra-school-v2";
 
@@ -116,6 +131,8 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) void saveSchool(JSON.stringify(s)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); }, [s, ready]);
   const update = useCallback((fn: (s: State) => State) => setS(fn), []);
+  // The administrator's assignment-type colors are read by every page through categoryColor().
+  useMemo(() => { setTypeColors(s.assignmentTypes); }, [s.assignmentTypes]);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
     EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));

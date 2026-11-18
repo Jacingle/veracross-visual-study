@@ -12,7 +12,6 @@ import { today, type Assignment, type Category, type Student } from "@/lib/sis-d
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
 import { isoDay, useSchool, type CustomAssignment } from "@/lib/school-store";
 
-const CATS: Category[] = ["HOMEWORK", "QUIZ", "TEST", "COLLABORATION", "CLASSWORK/HOMEWORK", "VOCABULARY", "WRITING", "READING"];
 const STATUSES = ["", "Turned In", "Late", "Missing", "Excused", "Incomplete"];
 const inp = "h-8 w-full border border-vc-line px-2 text-[13px] outline-none focus:border-vc-link";
 const schema = z.object({ title: z.string().trim().min(1, "Description is required").max(120), points: z.number().int().min(0).max(1000, "Max score is 1000"), assigned: z.string().min(1), due: z.string().min(1) })
@@ -68,7 +67,7 @@ function L({ label, children }: { label: string; children: React.ReactNode }) {
 }
 
 function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assignment | undefined; onSaved: (id: string) => void; onDeleted: () => void }) {
-  const { custom, update } = useSchool();
+  const { custom, update, assignmentTypes } = useSchool();
   const existing = a ? custom.find((x) => x.id === a.id) : undefined;
   const [f, setF] = useState<CustomAssignment>(existing ?? {
     id: a?.id ?? `c-${crypto.randomUUID().slice(0, 8)}`, courseId, title: a?.title ?? "", category: a?.category ?? "HOMEWORK",
@@ -88,7 +87,7 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
     <form onSubmit={save} className="grid grid-cols-2 gap-x-8 border border-vc-line p-4">
       <div>
         <L label="Description"><input className={inp} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></L>
-        <L label="Assignment Type"><select className={inp} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{CATS.map((c) => <option key={c}>{c}</option>)}</select></L>
+        <L label="Assignment Type"><select className={inp} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{[...new Set([...assignmentTypes.filter((t) => !t.obsolete).sort((a, b) => a.sortKey - b.sortKey).map((t) => t.description), f.category])].map((c) => <option key={c}>{c}</option>)}</select></L>
         <L label="Assignment Date"><input type="date" className={inp} value={f.assigned} onChange={(e) => setF({ ...f, assigned: e.target.value })} /></L>
         <L label="Due Date"><input type="date" className={inp} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} /></L>
         <L label="Grading Method"><select className={inp} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter Grade", "Pass/Fail", "Completion"].map((m) => <option key={m}>{m}</option>)}</select></L>

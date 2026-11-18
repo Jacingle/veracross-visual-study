@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin/")({
 
 const TILES = [
   { group: "Users & Security", items: [{ to: "/admin/users", label: "Users", icon: Users }, { to: "/admin/users", label: "Add a User", icon: UserPlus }] },
-  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/courses", label: "Class Enrollments", icon: ClipboardList }] },
+  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/courses", label: "Class Enrollments", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
   { group: "Portals", items: [{ to: "/admin/settings", label: "Portal Settings", icon: Palette }, { to: "/admin/settings", label: "Backgrounds", icon: Image }] },
   { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
 ] as const;

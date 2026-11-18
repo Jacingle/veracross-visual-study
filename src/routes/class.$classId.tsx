@@ -81,7 +81,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
           <div className="min-h-[680px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
             <div role="tablist" className={`grid grid-cols-4 border-b border-vc-line px-6 sm:grid-cols-8 ${styled ? "bg-vc-panel" : "bg-background"}`}>{TABS.map(({ id, label, icon: Icon }) => (
               <Link key={id} role="tab" aria-selected={active === id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
-                className={`-mb-px flex h-[67px] flex-col items-center justify-center gap-[4px] border-b-[3px] text-[15px] leading-5 ${active === id ? `border-vc-site-blue ${styled ? "bg-background" : "bg-vc-panel"} text-vc-site-blue` : "border-transparent text-foreground hover:bg-background"}`}>
+                className={`-mb-px flex h-[67px] flex-col items-center justify-center gap-[4px] border-b-[3px] text-[15px] leading-5 ${active === id ? `border-vc-site-blue bg-background text-vc-site-blue` : "border-transparent text-foreground hover:bg-background"}`}>
                 <Icon className="size-[23px]" />{label}</Link>))}</div>
             {body}
           </div>

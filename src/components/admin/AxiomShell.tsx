@@ -18,6 +18,7 @@ export const AXIOM_LINKS = [
   { to: "/admin/users", label: "Users & Security", icon: Users },
   { to: "/admin/courses", label: "Courses & Enrollment", icon: BookOpen },
   { to: "/admin/settings", label: "Portal Settings", icon: Palette },
+  { to: "/admin/assignment-types", label: "Class Assignment Types", icon: Palette },
   { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock },
   { to: "/admin/messages", label: "Communications", icon: Mail },
   { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt },
