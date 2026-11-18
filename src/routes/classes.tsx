@@ -39,7 +39,11 @@ function Overview() {
   const [tab, setTab] = useState<"Active" | "Future" | "Past">("Active");
   const allClasses = useMySections();
   // Attendance reports are only offered for the two semesters (for now).
-  const terms = [...new Set(allClasses.flatMap((c) => c.terms))].filter((id) => /-S[12]$/.test(id)).sort();
+  // One Semester 1 and one Semester 2 report, for the current school year only (no repeats).
+  const sem = [...new Set(allClasses.flatMap((c) => c.terms))].filter((id) => /-S[12]$/.test(id));
+  const nowTerm = sem.map(termById).find((t) => t && +t.start <= +today() && +today() <= +t.end);
+  const year = nowTerm?.yearId ?? sem.map(termById).flatMap((t) => (t ? [t.yearId] : [])).sort().pop();
+  const terms = sem.filter((id) => termById(id)?.yearId === year).sort();
   const mine = allClasses.filter((c) => c.status === ({ Active: "current", Future: "future", Past: "past" } as const)[tab]);
   const started = (id: string) => { const t = termById(id); return !t || +t.start <= +today(); };
   return (
@@ -66,11 +70,12 @@ function Overview() {
           </Report>
         </div>
       </div>
-      <div className="flex items-end justify-between border-b border-vc-line pl-5">
-        <h2 className="pb-[3px] text-[24px] font-light leading-9 text-foreground/90">Classes</h2>
-        <div className="flex pr-[22px]">{(["Active", "Future", "Past"] as const).map((t) => (
-          <Button variant="ghost" key={t} onClick={() => setTab(t)} className={`h-[39px] w-[89px] rounded-none p-0 text-[14px] font-normal ${tab === t ? "relative z-10 -mb-px rounded-b-none rounded-t-[3px] border-x border-t border-b-0 border-vc-line bg-background pb-px text-vc-navbar hover:bg-background hover:text-vc-navbar" : "text-vc-gray hover:bg-transparent hover:text-vc-gray"}`}>{t}</Button>
-        ))}</div>
+      <div className="flex items-end">
+        <h2 className="h-[39px] flex-1 border-b border-vc-line pb-[3px] pl-5 text-[24px] font-light leading-9 text-foreground/90">Classes</h2>
+        {(["Active", "Future", "Past"] as const).map((t) => (
+          <Button variant="ghost" key={t} onClick={() => setTab(t)} aria-pressed={tab === t} className={`h-[39px] w-[89px] rounded-none p-0 text-[14px] font-normal ${tab === t ? "rounded-t-[3px] border-x border-t border-vc-line bg-background text-vc-navbar hover:bg-background hover:text-vc-navbar" : "border-b border-vc-line text-vc-gray hover:bg-transparent hover:text-vc-gray"}`}>{t}</Button>
+        ))}
+        <div aria-hidden className="h-[39px] w-[22px] border-b border-vc-line" />
       </div>
       <div className="px-6 pb-8 pt-[21px]">
         {mine.length ? mine.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)

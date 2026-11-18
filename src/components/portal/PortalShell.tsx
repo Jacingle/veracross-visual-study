@@ -1,12 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AlignLeft, CalendarDays, ChevronDown, Home } from "lucide-react";
+import { AlignLeft, CalendarDays, ChevronDown } from "lucide-react";
 import { useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { VcLogo } from "@/components/portal/VcLogo";
-import { MegaphoneSparks, OverviewClipboard, Stopwatch, BookRibbon, BriefcaseSolid, BuildingSolid, ClockSolid, DeskPhone, ListSquares, ReceiptSolid, SharpEnvelope, ResourcesIcon } from "@/components/portal/icons";
+import { HomeSolid, MegaphoneSparks, OverviewClipboard, Stopwatch, BookRibbon, BriefcaseSolid, BuildingSolid, ClockSolid, DeskPhone, ListSquares, ReceiptSolid, SharpEnvelope, ResourcesIcon } from "@/components/portal/icons";
 import { ROLE_LABEL, type Area } from "@/lib/auth-rules";
 import { SCHOOL } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
@@ -69,10 +69,10 @@ function Frame({ children, portal, wide, bare, maxWidth, fullWidth }: { children
         <div className="relative flex h-[34px] items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
           <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
           <div className="flex h-[34px] min-w-0 items-stretch sm:absolute sm:left-1/2 sm:top-0 sm:-translate-x-1/2">
-            <Link to={p === "student" ? "/student" : "/teacher"} className="portal-title flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-7 text-[16px] font-semibold">
-              <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
+            <Link to={p === "student" ? "/student" : "/teacher"} className="portal-title flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-7 [--cut:var(--vc-navbar)] text-[16px] font-semibold">
+              <HomeSolid className="size-[17px]" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="ml-[18px] mb-1 mt-[6px] h-6 w-[54px] shrink-0 skew-x-[16.4deg] rounded-none border border-primary-foreground/30 bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="mb-[4px] ml-[5px] mt-[4px] h-[26px] w-[54px] shrink-0 skew-x-[16.4deg] rounded-none border border-primary-foreground/30 bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
                 <span className="flex -skew-x-[16.4deg] items-center justify-center gap-[7px]"><VcLogo className="h-[18px] w-5" /><ChevronDown className="size-[13px]" /></span>
               </Button>
           </div>

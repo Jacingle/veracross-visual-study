@@ -24,7 +24,7 @@ type TileIcon = ComponentType<{ className?: string }>;
 /** `solid` lucide icons are filled and stroke their details with --cut; custom icons read --cut themselves. */
 function Tile({ to, label, icon: Icon, warm, solid }: { to: "/schedule" | "/assignments" | "/classes" | "/calendar" | "/directories"; label: string; icon: TileIcon; warm?: boolean; solid?: boolean }) {
   return (
-    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)]" : "bg-vc-tile text-vc-link-strong [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]"}`}>
+    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)]" : "bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]"}`}>
       <Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}
     </Link>
   );
@@ -72,7 +72,7 @@ function Home() {
             <MailOutline className="size-[42px] shrink-0 text-vc-gray-light" />
             <span>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</span>
           </Link>
-          <Link to="/assignments" className="mt-[8.5px] flex h-[38px] items-center justify-center gap-2.5 rounded-[3px] border-b-[4px] border-b-[color-mix(in_oklab,var(--vc-success)_75%,black)] bg-vc-success text-[16px] font-semibold text-primary-foreground [--cut:var(--vc-success)] hover:opacity-90">
+          <Link to="/assignments" className="mt-[8.5px] flex h-[38px] items-center justify-center gap-2.5 rounded-[3px] border-b-[4px] border-b-vc-success-edge bg-vc-success text-[16px] font-semibold text-primary-foreground [--cut:var(--vc-success)] hover:opacity-90">
             <PlayDisc className="size-[22px]" /> Submit Assignments
           </Link>
           <div className="mt-[8.5px] grid grid-cols-2 gap-2">
@@ -86,7 +86,7 @@ function Home() {
 
           </div>
           {links.length === 0 ? (
-            <div className="flex flex-col items-center gap-[6.5px] pb-[15.5px] pt-[23px] text-[14px] leading-5 text-vc-link"><Link2 className="size-4" strokeWidth={1.75} />No links to display</div>
+            <div className="flex flex-col items-center gap-[6.5px] pb-[15.5px] pt-[23px] text-[14px] leading-5 text-vc-link-soft"><Link2 className="size-4" strokeWidth={1.75} />No links to display</div>
           ) : (
             <ul className="space-y-1.5 py-3 text-[14px]">{links.map((l) => (
               <li key={l.url} className="flex items-center justify-between"><a href={l.url} target="_blank" rel="noreferrer" className="text-vc-link-strong hover:underline">{l.label}</a></li>))}
@@ -99,7 +99,7 @@ function Home() {
             <Tile to="/directories" label="Student Directory" icon={BookUser} solid />
             <Tile to="/directories" label="Faculty/Staff Directory" icon={BookUser} solid />
           </div>
-          <Link to="/calendar" className="mt-2 flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-link-strong [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]">
+          <Link to="/calendar" className="mt-2 flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]">
             <CloudDownload className="size-[18px] fill-current stroke-(--cut)" /> Subscribe to Calendars
           </Link>
         </aside>

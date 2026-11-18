@@ -1,4 +1,4 @@
-export const ATT_STATUSES = ["Present", "Absent - Excused", "Absent - Unexcused", "Tardy - Excused", "Tardy - Unexcused", "Not Expected", "Dismissed", "Field Trip"];
+export const ATT_STATUSES = ["Present", "Tardy - Unexcused", "Tardy - Excused", "Absent - Unexcused", "Absent - Excused", "Medical", "Dismissed", "Field Trip", "Not Expected"];
 
 /** Per-class attendance totals for one student; days a teacher marked complete count as Present unless recorded otherwise. */
 export function classAttendance(attendance: Record<string, string>, attDone: string[], classId: string, sid: string, range?: { start: Date; end: Date }) {

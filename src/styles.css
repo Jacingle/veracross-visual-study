@@ -93,6 +93,9 @@
   --color-vc-select: var(--vc-select);
   --color-vc-note: var(--vc-note);
   --color-vc-bar: var(--vc-bar);
+  --color-vc-tile-fg: var(--vc-tile-fg);
+  --color-vc-success-edge: var(--vc-success-edge);
+  --color-vc-link-soft: var(--vc-link-soft);
   --color-vc-toggle: var(--vc-toggle);
   --color-vc-paper: var(--vc-paper);
   --color-vc-submit: var(--vc-submit);
@@ -138,10 +141,13 @@
   --vc-gray-dark: oklch(0.51 0 0);
   --vc-gray: oklch(0.68 0 0);
   --vc-gray-light: oklch(0.76 0 0);
-  --vc-tile: oklch(0.95 0.012 247);
-  --vc-tile-hover: oklch(0.91 0.025 247);
-  --vc-tile-warm: oklch(0.98 0.024 94);
-  --vc-tile-warm-fg: oklch(0.76 0.14 71);
+  --vc-tile: oklch(0.959 0.011 252);
+  --vc-tile-fg: oklch(0.596 0.116 252);
+  --vc-success-edge: oklch(0.573 0.11 149);
+  --vc-link-soft: oklch(0.671 0.164 254);
+  --vc-tile-hover: oklch(0.915 0.025 252);
+  --vc-tile-warm: oklch(0.975 0.024 94);
+  --vc-tile-warm-fg: oklch(0.758 0.14 72);
   --vc-success: oklch(0.663 0.16 152.4);
   --vc-classbar: oklch(0.45 0.09 262);
   --vc-panel: oklch(0.965 0.002 250);

@@ -75,13 +75,13 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
         <ClassPicker current={c.id} options={options} onPick={(id) => nav({ to: "/class/$classId", params: { classId: id } })} />
         <div className="whitespace-nowrap">{user?.email} <button onClick={() => { logout(); nav({ to: "/", replace: true }); }} className="ml-1.5 underline">log out</button></div>
       </div>
-      <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1215px] pb-12">
-        <h1 className={`pb-[18px] pt-[28px] text-[35px] font-light leading-[44px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
-        <div className="grid grid-cols-1 items-start gap-[15px] md:grid-cols-[minmax(0,1fr)_290px]">
+      <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1160px] pb-12">
+        <h1 className={`pb-[18px] pt-[28px] text-[30px] font-light leading-[38px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
+        <div className="grid grid-cols-1 items-start gap-[15px] md:grid-cols-[minmax(0,1fr)_280px]">
           <div className="min-h-[740px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
-            <div role="tablist" className="grid grid-cols-4 border-b border-vc-line bg-background px-6 sm:grid-cols-8">{TABS.map(({ id, label, icon: Icon }) => (
+            <div role="tablist" className={`grid grid-cols-4 border-b border-vc-line px-6 sm:grid-cols-8 ${styled ? "bg-vc-panel" : "bg-background"}`}>{TABS.map(({ id, label, icon: Icon }) => (
               <Link key={id} role="tab" aria-selected={active === id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
-                className={`-mb-px flex h-[74px] flex-col items-center justify-center gap-[5px] border-b-[3px] text-[16px] leading-5 ${active === id ? "border-vc-site-blue bg-vc-panel text-vc-site-blue" : "border-transparent text-foreground hover:bg-vc-panel"}`}>
+                className={`-mb-px flex h-[74px] flex-col items-center justify-center gap-[5px] border-b-[3px] text-[16px] leading-5 ${active === id ? `border-vc-site-blue ${styled ? "bg-background" : "bg-vc-panel"} text-vc-site-blue` : "border-transparent text-foreground hover:bg-background"}`}>
                 <Icon className="size-[25px]" />{label}</Link>))}</div>
             {body}
           </div>

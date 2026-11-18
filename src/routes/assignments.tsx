@@ -17,8 +17,8 @@ export const Route = createFileRoute("/assignments")({
   component: Planner,
 });
 
-const COL = 158;   // one weekday column
-const LEFT = 178;  // the class column
+const COL = 165;   // one weekday column
+const LEFT = 185;  // the class column
 
 function Planner() {
   const classes = useMySections().filter((c) => c.status === "current");
@@ -39,11 +39,11 @@ function Planner() {
   useEffect(() => { toAnchor(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const by = (n: number) => scroller.current?.scrollBy({ left: n * COL, behavior: "smooth" });
 
-  const linkBtn = "flex items-center gap-1.5 text-[16px] uppercase text-vc-site-blue hover:underline";
+  const linkBtn = "flex items-center gap-1.5 text-[14.5px] uppercase text-vc-site-blue hover:underline";
   return (
     <PortalShell portal="student" fullWidth>
       <StudentTabs />
-      <div className="flex items-center justify-end gap-3 px-6 pb-8 pt-[22px]">
+      <div className="flex items-center justify-end gap-3 px-6 pb-[22px] pt-[7px]">
         <button onClick={() => toAnchor(true)} className={linkBtn}>Today</button><span className="text-vc-gray">·</span>
         <button onClick={() => by(-5)} className={linkBtn}><ArrowLeft className="size-4" strokeWidth={3} />Previous</button><span className="text-vc-gray">·</span>
         <button onClick={() => by(5)} className={linkBtn}>Next<ArrowRight className="size-4" strokeWidth={3} /></button>
@@ -52,7 +52,7 @@ function Planner() {
         <div className="grid" style={{ gridTemplateColumns: `${LEFT}px repeat(${days.length}, ${COL}px)`, width: LEFT + days.length * COL }}>
           {/* date headings */}
           <div className="sticky left-0 z-10 border-r-2 border-foreground bg-background" />
-          {days.map((d) => <div key={+d} className="whitespace-nowrap px-3 pb-2 pt-2.5 text-[15px] leading-5 text-foreground/85">{format(d, "EEEE, MMM d")}</div>)}
+          {days.map((d) => <div key={+d} className="whitespace-nowrap px-3 pb-[3px] pt-[3px] text-[14px] leading-[17px] text-foreground/85">{format(d, "EEEE, MMM d")}</div>)}
           {/* counts */}
           <div className="sticky left-0 z-10 flex items-center justify-between border-b-2 border-r-2 border-t border-foreground border-t-vc-line bg-background px-2 py-1.5 text-[12px] uppercase text-foreground/85"><span>Class details:</span><button type="button" onClick={() => setDetails((v) => !v)} className="hover:underline">+ Show - Hide</button></div>
           {days.map((d) => {
@@ -62,12 +62,12 @@ function Planner() {
           {/* one row per class */}
           {classes.map((c) => (
             <ClassCells key={c.id}>
-              <div className="sticky left-0 z-10 min-h-[80px] overflow-hidden border-b border-r-2 border-b-vc-line border-r-foreground bg-background px-2 py-1">
+              <div className="sticky left-0 z-10 min-h-[83px] overflow-hidden border-b border-r-2 border-b-vc-line border-r-foreground bg-background px-2 py-1">
                 <div className="flex items-start gap-2.5">
                   <span className="mt-1.5 size-3.5 shrink-0 border border-vc-line bg-vc-panel" />
                   <div className="min-w-0">
-                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block whitespace-nowrap text-[18px] font-light leading-6 text-vc-site-blue">{courseTitle(c)}</Link>
-                    {details && <div className="text-[13.5px] leading-[19px]">
+                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block whitespace-nowrap text-[16px] font-light leading-6 text-vc-site-blue">{courseTitle(c)}</Link>
+                    {details && <div className="text-[12.5px] leading-[18px]">
                       <div className="italic text-vc-gray">{teacherFullNames(c.teacherIds, users.map((u) => ({ ...u, id: u.personId })))}</div>
                       <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block text-vc-gray-dark hover:underline">view website</Link>
                       <Link to="/grades/$classId" params={{ classId: c.id }} className="block text-vc-gray-dark hover:underline">view all assignments</Link>
@@ -76,10 +76,10 @@ function Planner() {
                 </div>
               </div>
               {days.map((d) => (
-                <div key={+d} className={`min-h-[80px] space-y-1.5 border-b border-vc-line px-[7px] py-[7px] ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
+                <div key={+d} className={`min-h-[83px] space-y-[9px] border-b border-vc-line pb-[7px] pl-2.5 pr-1.5 pt-[7px] ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
                   {all.filter((a) => a.courseId === c.id && isSameDay(a.due, d)).map((a) => (
                     <Popover key={a.id}>
-                      <PopoverTrigger className="flex h-[19px] w-full items-stretch border border-vc-gray-light/70 bg-background text-left text-[12px] uppercase shadow-[0_1px_2px_rgba(0,0,0,.15)]">
+                      <PopoverTrigger className="flex h-[19px] w-full items-stretch border border-vc-gray-light/70 bg-background text-left text-[11.5px] uppercase shadow-[0_1px_2px_rgba(0,0,0,.15)]">
                         <span className="w-1 shrink-0" style={{ background: categoryColor(weights[a.courseId], a.category) }} />
                         <span className="min-w-0 flex-1 truncate px-1.5 leading-[17px]">{a.category}</span>
                         <span className="bg-vc-sky px-3 text-[12px] font-bold leading-[17px] text-vc-site-blue">{done.includes(a.id) ? "Done" : "Due"}</span>

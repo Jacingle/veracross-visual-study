@@ -13,10 +13,11 @@ import { scoreOf } from "@/lib/gradebook";
 import { useSchool, type Section } from "@/lib/school-store";
 import { gradingPeriods, termLabel, termOn, termById } from "@/lib/terms";
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const ATT = ATT_STATUSES;
 
-const DOT = (v: string) => (v === "Present" ? "bg-vc-success" : v === "Not Expected" || v.startsWith("Absent") ? "bg-destructive" : "bg-vc-tile-warm-fg");
+const DOT = (v: string) => (v === "Present" ? "bg-vc-success" : v.startsWith("Tardy") ? "bg-vc-tile-warm-fg" : v.startsWith("Absent") || v === "Medical" ? "bg-destructive/70" : "bg-vc-gray");
 const COL = "text-[10px] font-semibold uppercase tracking-wide text-vc-gray";
 
 export function Attendance({ c, roster, date }: { c: Section; roster: Student[]; date: string }) {
@@ -32,7 +33,11 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
   const meets = Boolean(term) && meetings.length > 0;
   const status = (sid: string) => attendance[key(sid)] ?? "Present";
   const notExpected = roster.filter((s) => status(s.id) === "Not Expected").length;
-  const setNote = (k: string, v: string) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [k]: v } }));
+  // Any change after a day was marked complete reopens it: it has to be marked complete again to save.
+  const doneKey = `${c.id}|${date}`;
+  const reopen = (x: { attDone: string[] }) => x.attDone.filter((k) => k !== doneKey);
+  const setNote = (k: string, v: string) => update((x) => ({ ...x, attDone: reopen(x), attNotes: { ...x.attNotes, [k]: v } }));
+  const setStatus = (sid: string, v: string) => update((x) => ({ ...x, attDone: reopen(x), attendance: { ...x.attendance, [key(sid)]: v } }));
   const ghost = "h-8 rounded-[3px] border border-vc-line bg-background px-3 text-[12px] shadow-sm";
   return (
     <div className="text-[13px]">
@@ -62,9 +67,17 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
             <tr key={s.id} className="align-top hover:bg-vc-sky">
               <td className="py-[7px] pl-2 pr-3"><div className="flex items-center gap-3"><PersonPhoto personId={s.id} fit={{ w: 50, h: 50 }} className="rounded-full" alt={`${s.first} ${s.last}`} /><span className="text-[16px] leading-[19px]">{s.first}<br /><span className="text-vc-gray-dark">{s.last}</span></span></div></td>
               <td className="pr-4 pt-[15px]">
-                <div className="relative w-[150px]"><span aria-hidden className={`pointer-events-none absolute left-2.5 top-1/2 size-2 -translate-y-1/2 rounded-full ${DOT(v)}`} />
-                  <select aria-label={`Attendance for ${s.first}`} className="h-8 w-full appearance-none rounded-[3px] border border-vc-line bg-background pl-6 pr-8 text-[11px] text-foreground/70 shadow-sm" value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select>
-                  <span aria-hidden className="pointer-events-none absolute inset-y-1 right-7 border-l border-vc-line" /><ChevronDown aria-hidden className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-foreground/60" /></div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" aria-label={`Attendance for ${s.first}: ${v}`} className="relative flex h-8 w-[150px] items-center rounded-[3px] border border-vc-line bg-background pl-6 pr-8 text-left text-[11px] text-foreground/70 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-vc-site-blue">
+                      <span aria-hidden className={`absolute left-2.5 top-1/2 size-2 -translate-y-1/2 rounded-full ${DOT(v)}`} />{v}
+                      <span aria-hidden className="absolute inset-y-1 right-7 border-l border-vc-line" /><ChevronDown aria-hidden className="absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-foreground/60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[150px] min-w-0 rounded-[3px] p-0 text-[11px]">
+                    {ATT.map((a) => <DropdownMenuItem key={a} onSelect={() => setStatus(s.id, a)} className={`flex items-center gap-2 rounded-none px-2.5 py-2 text-[11px] ${a === v ? "bg-vc-site-blue text-primary-foreground focus:bg-vc-site-blue focus:text-primary-foreground" : ""}`}><span aria-hidden className={`size-2 shrink-0 rounded-full ${DOT(a)}`} />{a}</DropdownMenuItem>)}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {v.startsWith("Tardy") && <div className="mt-2 w-[150px]"><div className="text-[9.5px] uppercase tracking-wide text-vc-gray">Late arrival time</div><input type="time" aria-label={`Late arrival time for ${s.first}`} className="mt-1 h-9 w-full rounded-[3px] border border-vc-line bg-background px-2 text-[12px] text-foreground/80" value={attNotes[lateKey] ?? ""} onChange={(e) => setNote(lateKey, e.target.value)} /></div>}
               </td>
               <td className="pl-2 pt-[15px] text-[11px] leading-[17px]">
@@ -74,7 +87,7 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
             </tr>); })}</tbody>
         </table></div>
         <div className="mt-3 flex justify-end">
-          <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className={ghost}>Mark All Present</button>
+          <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attDone: reopen(x), attendance: a }; })} className={ghost}>Mark All Present</button>
         </div>
       </>}
     </div>

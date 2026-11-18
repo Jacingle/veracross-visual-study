@@ -35,7 +35,7 @@ function Cal() {
 
   return (
     <PortalShell fullWidth>
-      <div className="px-3.5 pb-[18px] pt-[22px] text-[20px] font-light leading-7 text-foreground/85">{student ? "Student Calendar" : "My Calendar"}</div>
+      <div className="px-3.5 pb-[18px] pt-[22px] text-[20px] font-normal leading-7 text-foreground/85">{student ? "Student Calendar" : "My Calendar"}</div>
       <div className="relative flex min-h-[52px] flex-wrap items-center justify-between gap-y-2 border-t border-vc-line pr-0">
         <div className="flex items-center">
           <button aria-label="Previous" onClick={() => step(-1)} className="grid h-9 w-[54px] place-items-center text-foreground"><ChevronLeft className="size-[18px]" strokeWidth={3} /></button>
