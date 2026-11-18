@@ -1,16 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { addDays, format, isSameWeek, startOfWeek } from 'date-fns';
+import { addDays, format, startOfWeek } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { usePortal } from '@/lib/portal-store';
 import { updateKey } from '@/components/portal/ClassRow';
-import { Printer, MessageCircle, CirclePlay, Check, Info } from 'lucide-react';
+import { ArrowRight, Printer, MessageCircle, CirclePlay, Check, Info, Paperclip } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { Button } from '@/components/ui/button';
 import { GradeCalculation } from "@/components/portal/GradeCalculation";
 import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
-import { teacherNames } from "@/lib/student-presentation";
+import { teacherFullNames, teacherNames } from "@/lib/student-presentation";
 import { categoryColor } from '@/lib/category-colors';
-import { courseTitle, teacherFull, today, type Assignment } from '@/lib/sis-data';
+import { courseTitle, today, type Assignment } from '@/lib/sis-data';
 import { categoryStats, defaultWeights, letterFor, weightedAverage } from '@/lib/grading';
 import { useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
 import { termById, termOn } from '@/lib/terms';
@@ -30,21 +30,68 @@ function Grades() {
   const { read, markRead } = usePortal();
   const { users } = useSchool();
   const faculty = teacherNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
+  const [fresh] = useState(() => new Set(list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => a.id)));
   const unseen = list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => updateKey(a.id, a.score)).join(',');
   useEffect(() => { if (unseen) unseen.split(',').forEach(markRead); }, [unseen, markRead]);
-  return <PortalShell portal="student">{c ? <><div className="flex flex-wrap items-center justify-between gap-2 px-7 pb-5 pt-4"><h1 className="text-[25px] font-light"><strong className="font-semibold">{c.id}:</strong> {courseTitle(c)} <span className="ml-2 text-[13px] italic text-muted-foreground">{faculty}</span></h1><Link to="/class/$classId" params={{ classId }} className="text-[12px] text-vc-link-strong">View Class Website →</Link></div><div className="flex px-6 text-[13px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-4 py-2.5 ${Boolean(tab) === Boolean(v) ? 'bg-vc-panel font-semibold' : 'text-muted-foreground'}`}>{label}</Link>)}</div>{tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
+  const fullNames = teacherFullNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
+  return <PortalShell portal="student" maxWidth={930}>{c ? <>
+    <div className="relative px-9 pb-[19px] pt-2.5">
+      <h1 className="flex flex-wrap items-baseline gap-x-3 text-[25px] font-light leading-9"><span><strong className="font-semibold">{c.id}:</strong> {courseTitle(c)}</span><span className="text-[14px] italic text-vc-gray">{fullNames}</span></h1>
+      <Link to="/class/$classId" params={{ classId }} className="absolute right-3 top-3 flex items-center gap-1 text-[12px] text-vc-link">View Class Website <ArrowRight className="size-3" /></Link>
+    </div>
+    <div className="flex pl-[26px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-[15px] py-[9px] text-[14.5px] leading-5 ${Boolean(tab) === Boolean(v) ? 'bg-vc-bar font-semibold text-foreground' : 'text-vc-gray-dark'}`}>{label}</Link>)}</div>
+    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
 }
-function AllAssignments({ list }: { list: Assignment[] }) {
+function AllAssignments({ list, teacherName, fresh }: { list: Assignment[]; teacherName: string; fresh: Set<string> }) {
   const { comments, aStatus, user, weights } = useSchool();
-  const { done, toggleDone, read } = usePortal();
+  const { done, toggleDone } = usePortal();
   const [selected, setSelected] = useState<Assignment | null>(null);
   const [filter, setFilter] = useState('all'); const [sort, setSort] = useState('date'); const [expanded, setExpanded] = useState<string | null>(null);
   const feedback = (a: Assignment) => comments[`a|${a.id}|${user?.personId}`] ?? '';
   const status = (a: Assignment) => aStatus[`${a.id}|${user?.personId}`] ?? '';
-  const shown = list.filter((a) => filter === 'all' || (filter === 'updates' ? a.score !== undefined && !read.includes(updateKey(a.id, a.score)) : filter === 'feedback' ? Boolean(feedback(a)) : filter === 'problems' ? ['Missing', 'Incomplete', 'Late'].includes(status(a)) : a.score === undefined && a.due >= today()));
+  const shown = list.filter((a) => filter === 'all' || (filter === 'updates' ? fresh.has(a.id) : filter === 'feedback' ? Boolean(feedback(a)) : filter === 'problems' ? ['Missing', 'Incomplete', 'Late'].includes(status(a)) : a.score === undefined && a.due >= today()));
   const groups: { key: string; label: string; items: Assignment[] }[] = [];
   for (const a of shown) { const start = startOfWeek(a.due); const key = sort === 'type' ? a.category : String(+start); let group = groups.find((g) => g.key === key); if (!group) { group = { key, label: sort === 'type' ? category(a.category) : `${format(start, 'MMMM d')} - ${format(addDays(start, 6), 'MMMM d')}`, items: [] }; groups.push(group); } group.items.push(a); }
-  return <><div className="flex flex-wrap items-center justify-between gap-2 bg-vc-panel px-6 py-1 text-[12px]"><div className="flex gap-1">{[['all', 'All Assignments'], ['updates', 'New Updates'], ['notifications', 'Notifications'], ['feedback', 'Feedback'], ['problems', 'Problems']].map(([v, label]) => <Button key={v} size="sm" variant="ghost" onClick={() => setFilter(v ?? 'all')} className={`h-6 px-2 text-[12px] ${filter === v ? 'bg-foreground text-background' : v === 'updates' ? 'bg-vc-note text-vc-gray-dark' : v === 'problems' ? 'text-destructive' : v === 'notifications' ? 'text-vc-tile-warm-fg' : 'text-vc-link-strong'}`}>{label}</Button>)}</div><div className="flex items-center gap-1"><span className="text-muted-foreground">sort by:</span>{[['date', 'Due Date'], ['type', 'Assignment Type']].map(([v, label]) => <Button key={v} size="sm" variant="ghost" onClick={() => setSort(v ?? 'date')} className={`h-6 px-2 text-[12px] ${sort === v ? 'bg-foreground text-background' : ''}`}>{label}</Button>)}</div></div>{groups.map((g) => <section key={g.key}><h2 className="border-b border-vc-line px-8 pb-2 pt-6 text-[18px]">{g.label} <span className="text-[11px]">({g.items.length} assignments)</span></h2>{g.items.map((a) => <div key={a.id}><Button variant="ghost" onClick={() => setExpanded(expanded === a.id ? null : a.id)} className={`grid h-auto min-h-9 w-full grid-cols-[90px_minmax(0,1fr)_65px] gap-2 rounded-none border-b border-vc-line px-7 py-1.5 text-left text-[13px] ${expanded === a.id ? 'bg-vc-panel' : ''}`}><span className="flex gap-2 text-[12px] font-semibold">{format(a.due, 'MMM d')} {format(a.due, 'EEE')}</span><span className="min-w-0 whitespace-normal font-normal"><span style={{ borderColor: categoryColor(weights[a.courseId], a.category), color: categoryColor(weights[a.courseId], a.category) }} className="mr-2 border-l-2 bg-vc-panel px-1 font-semibold">{category(a.category)}</span>{a.title}{done.includes(a.id) && <span className="ml-2 bg-vc-success px-1 text-primary-foreground">✓ Done!</span>}{feedback(a) && <MessageCircle className="ml-2 inline size-3 text-vc-link-strong" />}</span><span className="flex justify-end gap-1"><strong>{a.score ?? '-'}</strong><span className="bg-vc-line px-1 text-muted-foreground">{a.points}</span></span></Button>{expanded === a.id && <div className="grid gap-6 bg-vc-panel/50 px-8 py-5 text-[13px] md:grid-cols-2"><div><div className="flex gap-8"><div><div className="text-[11px] text-muted-foreground">DATE ASSIGNED</div><b>{format(a.assigned, 'EEE, MMM dd')}</b></div><div><div className="text-[11px] text-muted-foreground">DUE DATE</div><b>{format(a.due, 'EEE, MMM dd')}</b></div></div><p className="mt-4 whitespace-pre-wrap">{a.notes || '-'}</p><div className="mt-4 flex gap-2"><Button variant="outline" size="sm" onClick={() => setSelected(a)} className="h-7 text-[12px]">Assignment Details</Button><Button variant="outline" size="sm" onClick={() => toggleDone(a.id)} className="h-7 text-[12px]"><Check className="size-3" />{done.includes(a.id) ? 'Mark Not Done' : 'Mark Done'}</Button></div></div><div><h3 className="text-[12px] font-semibold">ASSIGNMENT FEEDBACK</h3><p className="mt-3 whitespace-pre-wrap">{feedback(a) || '-'}</p>{status(a) && <div className="mt-3">{status(a)}</div>}</div></div>}</div>)}</section>)}{!shown.length && <p className="px-8 py-10 text-[13px] text-muted-foreground">No assignments.</p>}<AssignmentDialog assignment={selected} onClose={() => setSelected(null)} /></>;
+  const FILTERS: [string, string, string][] = [['all', 'All Assignments', ''], ['updates', 'New Updates', 'bg-vc-note text-vc-tile-warm-fg'], ['notifications', 'Notifications', 'text-vc-tile-warm-fg'], ['feedback', 'Feedback', 'text-vc-link-strong'], ['problems', 'Problems', 'text-destructive']];
+  const chip = (on: boolean, extra = '') => `h-[19px] rounded-none px-[6px] text-[12.5px] font-normal leading-[19px] ${on ? 'bg-foreground font-semibold text-background hover:bg-foreground hover:text-background' : `hover:bg-transparent ${extra}`}`;
+  return <>
+    <div className="flex flex-wrap items-center justify-between gap-2 bg-vc-bar px-[26px] py-[7px]">
+      <div className="flex gap-2">{FILTERS.map(([v, label, extra]) => <Button key={v} size="sm" variant="ghost" onClick={() => setFilter(v)} className={chip(filter === v, extra)}>{label}</Button>)}</div>
+      <div className="flex items-center gap-2 text-[12.5px]"><span className="text-vc-gray">sort by:</span>{[['date', 'Due Date'], ['type', 'Assignment Type']].map(([v, label]) => <Button key={v} size="sm" variant="ghost" onClick={() => setSort(v ?? 'date')} className={chip(sort === v)}>{label}</Button>)}</div>
+    </div>
+    {groups.map((g) => <section key={g.key}>
+      <h2 className="border-b border-vc-line px-10 pb-[7px] pt-7 text-[20px] font-light leading-7">{g.label} <span className="text-[12px]">({g.items.length} assignments)</span></h2>
+      {g.items.map((a) => {
+        const color = categoryColor(weights[a.courseId], a.category); const open = expanded === a.id; const fb = feedback(a);
+        return <div key={a.id} className="border-b border-vc-line">
+          <div className={`flex min-h-[46px] items-center gap-3 pl-3.5 pr-6 ${open ? 'bg-vc-bar' : ''}`}>
+            <span className="grid w-[18px] shrink-0 place-items-center">{fb && <MessageCircle className="size-4 fill-current text-vc-submit" />}</span>
+            <button type="button" onClick={() => setExpanded(open ? null : a.id)} className="grid min-w-0 flex-1 cursor-pointer grid-cols-[62px_44px_minmax(0,1fr)] items-center gap-x-2 py-2 text-left text-[14px]">
+              <b className="font-semibold">{format(a.due, 'MMM dd')}</b><b className="font-semibold">{format(a.due, 'EEE')}</b>
+              <span className="flex min-w-0 items-center gap-2 border-l-2 pl-2" style={{ borderColor: color }}><span className="shrink-0 bg-vc-bar px-1.5 font-semibold leading-6" style={{ color }}>{category(a.category)}</span><span className="min-w-0 break-words">{a.title}</span></span>
+            </button>
+            {done.includes(a.id) && <span className="flex shrink-0 items-center gap-1 bg-vc-done px-2 py-[3px] text-[13px] font-semibold text-primary-foreground"><Check className="size-3.5" strokeWidth={3} />Done!</span>}
+            {!/QUIZ/.test(a.category) && <button type="button" onClick={() => setSelected(a)} className="flex shrink-0 items-center gap-1.5 bg-vc-submit px-3 py-[5px] text-[13px] font-semibold uppercase text-primary-foreground shadow-[0_2px_0_rgba(0,0,0,.2)] hover:opacity-90"><CirclePlay className="size-4" />Submit</button>}
+            <span className="flex w-[74px] shrink-0 items-center justify-end gap-1 text-[15px]"><strong className="font-semibold">{a.score ?? '-'}</strong><span className="min-w-[26px] bg-vc-bar px-1 text-center font-light text-vc-gray-dark">{a.points}</span></span>
+          </div>
+          {open && <div className="grid gap-8 bg-[oklch(0.985_0_0)] px-10 py-5 text-[14px] md:grid-cols-2">
+            <div>
+              <div className="flex gap-9">{[['DATE ASSIGNED', a.assigned], ['DUE DATE', a.due]].map(([label, d]) => <div key={String(label)}><div className="text-[12.5px] font-light uppercase text-vc-gray-dark">{String(label)}</div><div className="text-[17px] font-semibold leading-6">{format(d as Date, 'EEE, MMM dd')}</div></div>)}</div>
+              <p className="mt-5 whitespace-pre-wrap text-[14.5px]">{a.notes || '-'}</p>
+              <div className="mt-4 flex gap-2"><Button variant="outline" size="sm" onClick={() => setSelected(a)} className="h-7 rounded-none text-[12px]">Assignment Details</Button><Button variant="outline" size="sm" onClick={() => toggleDone(a.id)} className="h-7 rounded-none text-[12px]"><Check className="size-3" />{done.includes(a.id) ? 'Mark Not Done' : 'Mark Done'}</Button></div>
+            </div>
+            <div>
+              <h3 className="text-[13px] font-semibold uppercase">Assignment Feedback</h3>
+              {fb ? <div className="mt-3 border-t border-dotted border-vc-gray-light pt-3"><span className="border-r-2 border-vc-link-strong bg-vc-bar px-2 py-0.5 text-[13px] font-semibold text-vc-link-strong">{teacherName}</span><p className="mt-3 whitespace-pre-wrap pl-2 text-[14.5px]">{fb}</p></div> : <p className="mt-3">-</p>}
+              {status(a) && <div className="mt-3 flex items-center gap-1.5 text-[13px]"><Paperclip className="size-3.5" />{status(a)}</div>}
+            </div>
+          </div>}
+        </div>;
+      })}
+    </section>)}
+    {!shown.length && <p className="px-10 py-10 text-[14px] text-vc-gray-dark">No assignments.</p>}
+    <AssignmentDialog assignment={selected} onClose={() => setSelected(null)} />
+  </>;
 }
 function Detail({ list, c }: { list: Assignment[]; c: Section }) {
   const { weights, user, termGrades, custom, users } = useSchool();
@@ -61,8 +108,8 @@ function Detail({ list, c }: { list: Assignment[]; c: Section }) {
   const categories = [...new Set(items.map((a) => a.category))].sort();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   return <>
-    <div className="grade-toolbar flex flex-wrap items-center gap-1 bg-vc-panel px-6 py-1.5 text-[12px]"><span className="text-vc-gray">view:</span>{terms.map((t) => <Button key={t.id} variant="ghost" size="sm" className={`h-6 rounded-none px-2 text-[12px] ${selected === t.id ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : ''}`} onClick={() => setSelected(t.id)}>{t.label}</Button>)}</div>
-    <div className="bg-vc-panel px-4 py-5 md:px-[62px]">
+    <div className="grade-toolbar flex flex-wrap items-center gap-2 bg-vc-bar px-[26px] py-[7px] text-[12.5px]"><span className="text-vc-gray">view:</span>{terms.map((t) => <Button key={t.id} variant="ghost" size="sm" className={`h-[19px] rounded-none px-1.5 text-[12.5px] font-normal ${selected === t.id ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : ''}`} onClick={() => setSelected(t.id)}>{t.label}</Button>)}</div>
+    <div className="bg-vc-paper px-4 pb-8 pt-2.5 md:px-[65px]">
       <article className="grade-print border border-vc-line bg-background shadow-lg">
         <div className="grade-print-action flex justify-end bg-foreground px-5 py-1 text-background"><Button variant="ghost" size="sm" className="h-8 text-[16px] font-normal hover:bg-transparent hover:text-background" onClick={() => window.print()}><Printer className="size-4" />Print to <span className="text-destructive">PDF</span></Button></div>
         <div className="px-5 pb-6 pt-6">

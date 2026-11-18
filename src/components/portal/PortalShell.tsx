@@ -40,15 +40,15 @@ const NAV = {
 const TOP_LINK = "flex h-full items-center gap-2 px-2.5 [--cut:var(--vc-topbar)] hover:bg-primary-foreground/20 hover:[--cut:color-mix(in_oklab,var(--vc-topbar)_80%,white)]";
 
 /** Portal frame: two-row top bar + customizable background + white content card. */
-export function PortalShell({ children, portal, area, wide = false, bare = false }: { children: ReactNode; portal?: Portal; area?: Area; wide?: boolean; bare?: boolean }) {
+export function PortalShell({ children, portal, area, wide = false, bare = false, maxWidth }: { children: ReactNode; portal?: Portal; area?: Area; wide?: boolean; bare?: boolean; maxWidth?: number }) {
   return (
     <RoleGate area={area ?? portal ?? "shared"}>
-      <Frame portal={portal} wide={wide} bare={bare}>{children}</Frame>
+      <Frame portal={portal} wide={wide} bare={bare} maxWidth={maxWidth}>{children}</Frame>
     </RoleGate>
   );
 }
 
-function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: Portal | undefined; wide: boolean; bare: boolean }) {
+function Frame({ children, portal, wide, bare, maxWidth }: { children: ReactNode; portal: Portal | undefined; wide: boolean; bare: boolean; maxWidth: number | undefined }) {
   const { user, settings, logout, photos, update, sections, impersonatorId, stopImpersonating } = useSchool();
   const [chooser, setChooser] = useState(false);
   const [crop, setCrop] = useState(false);
@@ -105,7 +105,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
       <main className="relative min-h-[calc(100vh-79px)] pb-12 pt-[30px]">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
-          : <div className={`relative mx-auto overflow-hidden bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
+          : <div style={maxWidth ? { maxWidth } : undefined} className={`relative mx-auto overflow-hidden bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo, fullPhoto) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo }, fullPhotos: { ...s.fullPhotos, [user.personId]: fullPhoto } })); }} />
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />
