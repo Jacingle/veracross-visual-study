@@ -50,7 +50,7 @@ function UsersPage() {
             <option value="">All roles</option>{(["admin", "teacher", "student"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
           <span className="ml-auto text-muted-foreground">{shown.length} of {users.length} accounts</span>
         </div>
-        <table className="w-full">
+        <table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-[#fafafa] [&_tbody_tr]:h-[34px]">
           <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="px-3 py-1.5">Name</th><th>Username</th><th>Role</th><th>Linked Record</th><th>Status</th><th className="pr-3 text-right">Actions</th></tr></thead>
           <tbody>{shown.map((u) => (
             <tr key={u.id} className="border-b border-vc-line hover:bg-vc-panel">

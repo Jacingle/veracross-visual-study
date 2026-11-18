@@ -94,7 +94,7 @@ function Courses() {
             <label className="ml-auto flex items-center gap-2">School Year
               <select aria-label="School year" value={year} onChange={(e) => setYear(e.target.value)} className="h-7 border border-vc-line bg-background px-2">{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></label>
           </div>
-          <div className="overflow-x-auto"><table className="w-full min-w-[760px]">
+          <div className="overflow-x-auto"><table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-[#fafafa] [&_tbody_tr]:h-[34px] min-w-[760px]">
             <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="px-3 py-1.5">Class ID</th><th>Description</th><th>Teacher(s)</th><th>Block</th><th>Room</th><th>Terms</th><th>Status</th><th>Portals</th><th className="pr-3 text-right">Enrolled</th></tr></thead>
             <tbody>{yearSections.map((c) => (
               <tr key={c.id} className="border-b border-vc-line hover:bg-vc-panel">

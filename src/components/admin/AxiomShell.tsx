@@ -1,8 +1,7 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, ChevronRight, Clock, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+import { BookOpen, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import crest from "@/assets/crest.png";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -35,6 +34,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
   const [open, setOpen] = useState(false);
   const [chooser, setChooser] = useState(false);
   const [q, setQ] = useState("");
+  const [searching, setSearching] = useState(false);
   const results = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (t.length < 2) return [];
@@ -48,35 +48,42 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
   return (
     <div className="min-h-screen bg-ax-side text-[13px]">
       <header className="sticky top-0 z-30">
-        <div className="flex h-10 items-center gap-3 bg-ax-top px-2 text-primary-foreground">
-          <button onClick={() => setOpen(true)} aria-label="Open Launchpad" className="flex h-8 items-center gap-1.5 px-2 hover:bg-primary-foreground/10"><LayoutGrid className="size-5" /><span className="text-[15px] font-semibold">Axiom</span></button>
-          <img src={crest} alt="" width={816} height={816} className="size-6 rounded-full bg-background object-contain" />
-          <span className="hidden text-[14px] lg:inline">{SCHOOL.name}</span>
-          <div className="relative mx-auto w-full max-w-[520px]">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 opacity-80" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people, classes and users" aria-label="Search Axiom"
-              className="h-7 w-full rounded-sm bg-ax-search/40 pl-8 pr-2 text-primary-foreground placeholder:text-primary-foreground/70 outline-none focus:bg-background focus:text-foreground" />
-            {results.length > 0 && (
-              <ul className="absolute left-0 right-0 top-8 max-h-80 overflow-y-auto border border-vc-line bg-background text-foreground shadow-lg">
-                {results.map((r, i) => <li key={i}><button onClick={() => { setQ(""); r.go(); }} className="flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-vc-panel"><span className="w-14 text-[10px] font-semibold uppercase text-muted-foreground">{r.kind}</span>{r.label}</button></li>)}
+        <div className="flex h-[30px] items-center justify-between bg-ax-top px-4 text-primary-foreground">
+          <span className="text-[15px] font-semibold uppercase tracking-tight">{SCHOOL.name}</span>
+          <span className="flex items-center gap-4 text-[12px]">
+            <Link to="/teacher" className="hidden hover:underline md:inline">Faculty Portal</Link>
+            <Link to="/student" className="hidden hover:underline md:inline">Student Portal</Link>
+            <span className="hidden opacity-80 sm:inline">{user?.first} {user?.last}</span>
+            <button onClick={() => { logout(); nav({ to: "/", replace: true }); }} className="hover:underline">[log out]</button>
+          </span>
+        </div>
+        <div className="flex h-[56px] items-center gap-3 bg-ax-bar px-4 text-primary-foreground shadow-[0_1px_2px_rgba(0,0,0,.25)]">
+          <button onClick={() => setOpen(true)} aria-label="Open Launchpad" title="Launchpad" className="grid size-9 place-items-center hover:bg-primary-foreground/10"><Rocket className="size-6 fill-current" /></button>
+          <button onClick={() => setOpen(true)} aria-label="Favorites" title="Favorites" className="grid size-9 place-items-center hover:bg-primary-foreground/10"><Star className="size-6 fill-current" /></button>
+          <div className="relative flex h-[40px] min-w-0 max-w-[640px] flex-1 items-stretch border border-primary-foreground/60">
+            <button onClick={() => setSearching((v) => !v)} aria-label="Search Axiom" className="grid w-[46px] shrink-0 place-items-center border-r border-primary-foreground/60 hover:bg-primary-foreground/10"><Search className="size-5" /></button>
+            {searching ? (
+              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => { if (!q) setSearching(false); }} placeholder="Search people, classes and users" aria-label="Search people, classes and users" className="min-w-0 flex-1 bg-background px-3 text-[14px] text-foreground outline-none" />
+            ) : (
+              <div className="flex min-w-0 items-center gap-4 px-4 text-[20px] leading-none">
+                {crumbs.length ? crumbs.map((c) => (c.to ? <Link key={c.label} to={c.to} className="shrink-0 font-semibold hover:underline">{c.label}</Link> : <span key={c.label} className="shrink-0 font-semibold">{c.label}</span>)) : <Link to="/admin" className="shrink-0 font-semibold hover:underline">System</Link>}
+                <span className="truncate font-light">{title}</span>
+              </div>)}
+            {searching && results.length > 0 && (
+              <ul className="absolute left-0 right-0 top-[42px] max-h-80 overflow-y-auto border border-vc-line bg-background text-[13px] text-foreground shadow-lg">
+                {results.map((r, i) => <li key={i}><button onClick={() => { setQ(""); setSearching(false); r.go(); }} className="flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-vc-panel"><span className="w-14 text-[10px] font-semibold uppercase text-muted-foreground">{r.kind}</span>{r.label}</button></li>)}
               </ul>)}
           </div>
-          <Link to="/teacher" className="hidden whitespace-nowrap hover:underline md:inline">Faculty Portal</Link>
-          <Link to="/student" className="hidden whitespace-nowrap hover:underline md:inline">Student Portal</Link>
+          <div className="ml-auto flex items-center gap-2 text-[13px]">{actions}</div>
           <DropdownMenu>
-            <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-7" /></Button>
+            <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-8" /></Button>
             <DropdownMenuContent align="end" className="text-[13px]">
               <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · Administrator</div></DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => { logout(); nav({ to: "/", replace: true }); }}><LogOut className="size-4" /> Log Out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        <div className="flex h-9 items-center gap-2 border-b border-vc-line bg-background px-4">
-          <Link to="/admin" className="text-vc-link-strong hover:underline">Home</Link>
-          {crumbs.map((c) => <span key={c.label} className="flex items-center gap-2"><ChevronRight className="size-3.5 text-muted-foreground" />{c.to ? <Link to={c.to} className="text-vc-link-strong hover:underline">{c.label}</Link> : c.label}</span>)}
-          <ChevronRight className="size-3.5 text-muted-foreground" /><b className="font-semibold">{title}</b>
-          <div className="ml-auto flex items-center gap-2">{actions}</div>
+          <button onClick={() => setOpen(true)} aria-label="All homepages" title="Homepages" className="grid size-9 place-items-center hover:bg-primary-foreground/10"><LayoutGrid className="size-6" /></button>
         </div>
       </header>
       <main className="p-4">{children}</main>
