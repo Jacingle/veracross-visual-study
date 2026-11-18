@@ -1,4 +1,8 @@
 # Roadmap
+- [ ] Match Classes & Reports top, teacher lists, all assignments and grade calculation hover to new references
+- [ ] Match daily schedule; share assignment popup across schedule, calendar and home
+- [ ] Match trapezoid header and sharp envelope/resources icons; green submit action; remove student link editing
+- [ ] Test teacher formatting/calculation and verify populated student flows across desktop and mobile
 - [ ] Finish full teacher portraits and bulk student/teacher class membership
 - [ ] Research and align course/class setup; validate and preserve entered records
 - [ ] Review Recent Updates, Classes & Reports, and term attendance with supplied pictures

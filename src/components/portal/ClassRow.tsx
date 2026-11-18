@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { type Course, courseTitle, teacherShort, today } from "@/lib/sis-data";
 import { letterFor } from "@/lib/grading";
-import { useClassAverage, useStudentAssignments } from "@/lib/school-store";
+import { useClassAverage, useStudentAssignments, useSchool } from "@/lib/school-store";
+import { teacherNames } from "@/lib/student-presentation";
 import { usePortal } from "@/lib/portal-store";
 
 /** Key for a published score change; reading the class grades marks it seen. */
@@ -11,6 +12,9 @@ export const updateKey = (id: string, score: number | undefined) => `upd:${id}:$
 export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overview" }) {
   const meets = c.days.includes(today().getDay());
   const av = useClassAverage(c.id);
+  const { users, sections } = useSchool();
+  const section = sections.find((s) => s.id === c.id);
+  const faculty = teacherNames(section?.teacherIds ?? [c.teacherId], users.map((u) => ({ ...u, id: u.personId })));
   
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;
@@ -37,7 +41,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
           <Link to="/class/$classId" params={{ classId: c.id }} className="text-[22px] font-light leading-[26px] text-foreground/90">{courseTitle(c)}</Link>
           <span className="border border-foreground/80 px-[5px] py-[3px] text-[10px] leading-[15px] tracking-wide text-foreground/80">{c.type}</span>
         </div>
-        <div className="mt-[9px] text-[16px] font-light leading-6 text-vc-gray-dark">{teacherShort(c.teacherId)}</div>
+        <div className="mt-[9px] text-[16px] font-light leading-6 text-vc-gray-dark">{faculty}</div>
         <div className="mt-[9px] flex gap-[18px] text-[12.5px] leading-[18px] text-vc-gray-dark">{tools}</div>
       </div>
       <div className="flex shrink-0 flex-col items-end">
@@ -53,7 +57,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
           <Link to="/class/$classId" params={{ classId: c.id }} className="text-[22px] font-light leading-[26px] text-vc-link">{courseTitle(c)}</Link>
-          <span className="text-[12.5px] italic text-vc-gray">{teacherShort(c.teacherId)}</span>
+          <span className="text-[12.5px] italic text-vc-gray">{faculty}</span>
         </div>
         <div className="mt-[5.5px]">
           {meets

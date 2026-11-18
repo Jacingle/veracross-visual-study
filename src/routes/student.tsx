@@ -2,12 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { addDays, isSameDay } from "date-fns";
 import { BookUser, CalendarCheck, CalendarDays, CirclePlay, CloudDownload, Link2, Mail, X } from "lucide-react";
 import { useState, type ComponentType } from "react";
-import { toast } from "sonner";
+
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ClassRow } from "@/components/portal/ClassRow";
 import { Basketball, BookRibbon, ClockSolid, ListSquares } from "@/components/portal/icons";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { events, fmtDay, today } from "@/lib/sis-data";
+import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
+import { SharpEnvelope } from "@/components/portal/icons";
+import { Button } from "@/components/ui/button";
+import { events, fmtDay, today, type Assignment } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
 import { useInbox, useStudentAssignments , useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -32,18 +34,17 @@ const H2 = "text-[20px] leading-[30px]";
 
 function Home() {
   const COURSES = useMySections().filter((c) => c.status === "current");
-  const { read, links, addLink, removeLink } = usePortal();
+  const { read, links } = usePortal();
   const inbox = useInbox();
   const all = useStudentAssignments();
-  const [open, setOpen] = useState(false);
-  const [label, setLabel] = useState(""); const [url, setUrl] = useState("");
+  const [selected, setSelected] = useState<Assignment | null>(null);
   const unread = inbox.filter((m) => !read.includes(m.id)).length;
   const days = Array.from({ length: 5 }, (_, i) => addDays(today(), i - 1));
   const evs = events();
   return (
     <PortalShell portal="student">
       <div className="border-b border-vc-line px-4 py-[10.5px] text-[18px] leading-[27px]">Home</div>
-      <div className="grid grid-cols-[minmax(0,1fr)_304px] gap-8 px-3 pb-8 pt-[13px]">
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_304px] gap-8 px-3 pb-8 pt-[13px]">
         <section className="min-w-0">
           <h2 className={`mb-[11px] ${H2}`}>Upcoming</h2>
           <div className="grid grid-cols-5 border border-vc-line">
@@ -56,7 +57,7 @@ function Home() {
                     {evs.filter((e) => isSameDay(e.date, d)).map((e) => (
                       <Link key={e.title} to="/calendar" className="block text-vc-event-green hover:underline">{e.time && <b className="text-[10px] text-foreground">{e.time} </b>}{e.title}</Link>
                     ))}
-                    {items.map((a) => <Link key={a.id} to="/grades/$classId" params={{ classId: a.courseId }} className="block truncate text-vc-event hover:underline">{a.courseId.split("-")[0]}-1.{a.short}</Link>)}
+                    {items.map((a) => <Button key={a.id} variant="ghost" onClick={() => setSelected(a)} className="block h-auto w-full truncate rounded-none p-0 text-left text-[12px] font-normal leading-[15px] text-vc-event hover:underline">{a.courseId}.{a.short}</Button>)}
                   </div>
                 </div>
               );
@@ -68,11 +69,11 @@ function Home() {
         <aside>
           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>
           <Link to="/messages" className="flex h-[62px] items-center gap-1.5 border border-vc-line px-1.5 text-[16px] hover:bg-vc-panel">
-            <Mail className="size-[42px] shrink-0 text-vc-gray-light" strokeWidth={1.3} />
+            <SharpEnvelope className="size-[42px] shrink-0 text-vc-gray-light [--cut:var(--background)]" />
             <span>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</span>
           </Link>
           <Link to="/assignments" className="mt-[8.5px] flex h-[35px] items-center justify-center gap-2 border-b-[3px] border-foreground/20 bg-vc-success text-[14px] font-semibold text-primary-foreground hover:opacity-90">
-            <CirclePlay className="size-[14px] fill-current stroke-vc-success" /> Submit Assignments
+            <CirclePlay className="size-[14px] stroke-current" /> Submit Assignments
           </Link>
           <div className="mt-[8.5px] grid grid-cols-2 gap-2">
             <Tile to="/schedule" label="Daily Schedule" icon={ClockSolid} warm />
@@ -82,14 +83,13 @@ function Home() {
           </div>
           <div className="mt-3 flex items-center justify-between">
             <h2 className={H2}>Student Links</h2>
-            <button onClick={() => setOpen(true)} className="text-[12px] text-vc-link-strong hover:underline">+ Add link</button>
+
           </div>
           {links.length === 0 ? (
             <div className="flex flex-col items-center gap-[6.5px] pb-[15.5px] pt-[23px] text-[14px] leading-5 text-vc-link"><Link2 className="size-4" strokeWidth={1.75} />No links to display</div>
           ) : (
             <ul className="space-y-1.5 py-3 text-[14px]">{links.map((l) => (
-              <li key={l.url} className="flex items-center justify-between"><a href={l.url} target="_blank" rel="noreferrer" className="text-vc-link-strong hover:underline">{l.label}</a>
-                <button onClick={() => removeLink(l.url)} aria-label="Remove link"><X className="size-3.5 text-muted-foreground" /></button></li>))}
+              <li key={l.url} className="flex items-center justify-between"><a href={l.url} target="_blank" rel="noreferrer" className="text-vc-link-strong hover:underline">{l.label}</a></li>))}
             </ul>
           )}
           <h2 className={`mb-[11px] ${links.length ? "mt-3" : ""} ${H2}`}>School Links</h2>
@@ -104,20 +104,7 @@ function Home() {
           </Link>
         </aside>
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Student Link</DialogTitle></DialogHeader>
-          <form className="space-y-3 text-[14px]" onSubmit={(e) => {
-            e.preventDefault();
-            if (!label.trim() || !/^https?:\/\/\S+\.\S+/.test(url)) { toast.error("Enter a name and a full web address (https://…)"); return; }
-            addLink({ label: label.trim(), url }); setLabel(""); setUrl(""); setOpen(false); toast.success("Link added");
-          }}>
-            <input className="w-full border border-vc-line px-3 py-2" placeholder="Name" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} />
-            <input className="w-full border border-vc-line px-3 py-2" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={300} />
-            <button className="w-full bg-vc-link-strong py-2 text-primary-foreground">Save</button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AssignmentDialog assignment={selected} onClose={() => setSelected(null)} />
     </PortalShell>
   );
 }

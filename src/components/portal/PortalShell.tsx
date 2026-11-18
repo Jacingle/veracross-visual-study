@@ -6,7 +6,7 @@ import { ImageCropper } from "@/components/common/ImageCropper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { VcLogo } from "@/components/portal/VcLogo";
-import { BookRibbon, ClockSolid, DeskPhone, ListSquares } from "@/components/portal/icons";
+import { BookRibbon, ClockSolid, DeskPhone, ListSquares, SharpEnvelope, ResourcesIcon } from "@/components/portal/icons";
 import { ROLE_LABEL, type Area } from "@/lib/auth-rules";
 import { SCHOOL } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
@@ -25,7 +25,7 @@ const NAV = {
     { to: "/schedule", label: "Daily Schedule", icon: ClockSolid, kind: "custom" },
     { to: "/assignments", label: "Assignments", icon: BookRibbon, kind: "custom" },
     { to: "/calendar", label: "My Calendar", icon: CalendarDays, kind: "solid" },
-    { to: "/resources", label: "Resources", icon: Library, kind: "solid" },
+    { to: "/resources", label: "Resources", icon: ResourcesIcon, kind: "custom" },
     { to: "/directories", label: "Directories", icon: DeskPhone, kind: "custom" },
   ],
   teacher: [
@@ -68,19 +68,19 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
       <header className="sticky top-0 z-30">
         <div className="relative flex h-[34px] items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
           <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
-          <div className="flex h-[34px] min-w-0 items-stretch lg:absolute lg:left-1/2 lg:top-0 lg:-translate-x-1/2">
-            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2.5 whitespace-nowrap bg-vc-navbar pl-8 pr-7 text-[16px] font-semibold [clip-path:polygon(14px_0,100%_0,calc(100%-10px)_100%,0_100%)]">
+          <div className="flex h-[34px] min-w-0 items-stretch sm:absolute sm:left-1/2 sm:top-0 sm:-translate-x-1/2">
+            <Link to={p === "student" ? "/student" : "/teacher"} className="portal-title flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-7 text-[16px] font-semibold">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="my-1 -ml-1 flex h-[26px] w-[59px] shrink-0 items-center justify-center gap-1 rounded-none border border-primary-foreground/30 bg-vc-navbar/70 p-0 text-primary-foreground [clip-path:polygon(6px_0,100%_0,calc(100%-6px)_100%,0_100%)] hover:bg-primary-foreground/20 hover:text-primary-foreground">
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="portal-switch my-1 ml-0.5 flex h-[26px] w-[59px] shrink-0 items-center justify-center gap-1 rounded-none bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
                 <VcLogo className="h-5 w-6" /><ChevronDown className="size-3" />
               </Button>
           </div>
           <div className="ml-auto flex h-full items-center">
             <Link to="/messages" className={TOP_LINK}>
-              <Mail className="size-6 fill-current stroke-(--cut)" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
+              <SharpEnvelope className="size-[21px]" /><span className="hidden lg:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
             </Link>
-            <Link to="/calendar" className={TOP_LINK}><CalendarDays className="size-[21px] fill-current stroke-(--cut)" /><span className="hidden md:inline">My Calendar</span></Link>
+            <Link to="/calendar" className={TOP_LINK}><CalendarDays className="size-[21px] fill-current stroke-(--cut)" /><span className="hidden lg:inline">My Calendar</span></Link>
             <DropdownMenu>
               <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="ml-2.5 grid size-6 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-6" /></Button>
               <DropdownMenuContent align="end" className="text-[13px]">
@@ -114,7 +114,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
 }
 
 const TABS = [
-  { to: "/classes", label: "Student Overview", icon: ClipboardList, solid: true },
+  { to: "/classes", label: "Student Overview", icon: ListSquares, solid: false },
   { to: "/schedule", label: "Daily Schedule", icon: Timer, solid: true },
   { to: "/updates", label: "Recent Updates", icon: Megaphone, solid: true },
   { to: "/assignments", label: "Assignments", icon: AlignLeft, solid: false },
@@ -122,9 +122,9 @@ const TABS = [
 
 export function StudentTabs() {
   return (
-    <div className="flex justify-end border-b border-vc-line bg-vc-panel">
+    <div className="grid grid-cols-4 border-b border-vc-line bg-vc-panel sm:flex sm:justify-end">
       {TABS.map(({ to, label, icon: Icon, solid }) => (
-        <Link key={to} to={to} className="flex min-w-[125px] flex-col items-center gap-2 border-l border-vc-line px-5 pb-[11px] pt-[19px] text-[12.5px] leading-[18.75px] text-foreground/75 [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]"
+        <Link key={to} to={to} className="flex min-w-0 flex-col items-center gap-2 border-l border-vc-line px-2 pb-[11px] pt-[19px] sm:min-w-[125px] sm:px-5 text-[12.5px] leading-[18.75px] text-foreground/75 [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]"
           activeProps={{ className: "!bg-background !text-vc-link -mb-px [--cut:var(--background)]" }}>
           <Icon className={solid ? "size-[18px] fill-current stroke-(--cut)" : "size-[18px]"} strokeWidth={solid ? 2 : 1.5} />{label}
         </Link>

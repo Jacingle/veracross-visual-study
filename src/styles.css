@@ -135,7 +135,7 @@
   --vc-tile-hover: oklch(0.91 0.025 247);
   --vc-tile-warm: oklch(0.98 0.024 94);
   --vc-tile-warm-fg: oklch(0.76 0.14 71);
-  --vc-success: oklch(0.67 0.131 148);
+  --vc-success: oklch(0.658 0.157 153.9);
   --vc-classbar: oklch(0.45 0.09 262);
   --vc-panel: oklch(0.965 0.002 250);
   --vc-line: oklch(0.9 0.004 250);
@@ -244,3 +244,11 @@
   --vc-topbar: oklch(0.43 0.1 145);
   --vc-navbar: oklch(0.53 0.12 145);
 }
+
+/* Matching trapezoid and parallelogram share a 10px slope. */
+.portal-title { clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%); }
+.portal-switch { position: relative; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%); }
+.portal-switch::after { content: ""; position: absolute; inset: 1px 5px; border: 1px solid color-mix(in oklab, var(--primary-foreground) 35%, transparent); transform: skewX(17deg); pointer-events: none; }
+.grade-print { font-family: Arial, sans-serif; }
+.grade-print th { border: 1px solid var(--vc-line); vertical-align: bottom; line-height: 1.1; }
+@media print { header, .grade-toolbar, .grade-print-action { display: none !important; } .grade-print { box-shadow: none; border: 0; } }

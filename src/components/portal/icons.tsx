@@ -10,6 +10,14 @@ const solid = { viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": true 
 const cutFill = { fill: "var(--cut, var(--background))" };
 const cutStroke = { stroke: "var(--cut, var(--background))", fill: "none" };
 
+export function SharpEnvelope(p: P) {
+  return <svg {...solid} {...p}><rect x="1" y="4" width="22" height="16" /><path d="M2 5l10 8L22 5M2 19l7-7M22 19l-7-7" style={cutStroke} strokeWidth="1.7" /></svg>;
+}
+
+export function ResourcesIcon(p: P) {
+  return <svg {...solid} {...p}><path d="M2 2h20v20H2z" /><circle cx="12" cy="7" r="3" style={cutFill} /><path d="M7 20v-5c0-5 10-5 10 0v5M4 4v16M20 4v16" style={cutStroke} strokeWidth="2" /></svg>;
+}
+
 /** Square bullets with bold rules (Classes & Reports). */
 export function ListSquares(p: P) {
   return (
