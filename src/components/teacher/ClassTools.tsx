@@ -4,7 +4,7 @@ import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { meetingsOn } from "@/lib/scheduling";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { CheckCircle2, Settings } from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type Assignment, type Course, type Student } from "@/lib/sis-data";
@@ -32,43 +32,49 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
   const meets = Boolean(term) && meetings.length > 0;
   const status = (sid: string) => attendance[key(sid)] ?? "Present";
   const notExpected = roster.filter((s) => status(s.id) === "Not Expected").length;
-  const meet = meetings[0];
+  const setNote = (k: string, v: string) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [k]: v } }));
+  const ghost = "h-8 rounded-[3px] border border-vc-line bg-background px-3 text-[12px] shadow-sm";
   return (
     <div className="text-[13px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-[22px] font-light leading-8">Class Attendance <span className={`px-2 py-0.5 text-[12px] font-normal leading-4 ${done ? "bg-vc-success/15 text-vc-success" : "bg-vc-line text-foreground/70"}`}>{done ? "Taken" : "Not Taken"}</span></h2>
+        <h2 className="flex items-center gap-2 text-[20px] font-semibold leading-8 text-foreground/80">Daily Attendance <span className={`rounded-[3px] px-2 py-0.5 text-[13px] font-normal leading-5 ${done ? "bg-vc-success/20 text-vc-done" : "bg-vc-chip text-foreground/70"}`}>{done ? "Taken" : "Not Taken"}</span></h2>
         <div className="flex items-center gap-3">
-          {!done && <button onClick={() => { update((x) => ({ ...x, attDone: [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!meets} className="h-8 rounded-[3px] bg-vc-link-strong px-4 text-[12px] font-semibold text-primary-foreground disabled:opacity-40">✓ Mark Complete</button>}
-          <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "website" }} className="flex h-8 items-center gap-1.5 rounded-[3px] border border-vc-line bg-background px-3 text-[12px] shadow-sm"><Settings className="size-3.5 fill-current" />Settings</Link>
+          {!done && <button onClick={() => { update((x) => ({ ...x, attDone: [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!meets} className="flex h-8 items-center gap-1.5 rounded-[3px] bg-vc-site-blue px-3.5 text-[13px] font-semibold text-primary-foreground disabled:opacity-40"><Check className="size-3.5" strokeWidth={3.5} />Mark Complete</button>}
+          <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "website" }} className={`flex items-center gap-1.5 ${ghost}`}><Settings className="size-3.5 fill-current" />Settings</Link>
         </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <div className="flex h-8 items-center border border-vc-line text-vc-gray">
-          <button aria-label="Previous day" className="px-2.5 text-[16px]" onClick={() => go(-1)}>‹</button>
-          <label className="relative flex h-full items-center border-x border-vc-line px-2 text-[12px]"><span aria-hidden>{format(parseISO(date), "MMMM d, yyyy")}</span><input type="date" aria-label="Attendance date" className="absolute inset-0 cursor-pointer opacity-0" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></label>
-          <button aria-label="Next day" className="px-2.5 text-[16px]" onClick={() => go(1)}>›</button>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="flex h-8 items-center rounded-[3px] border border-vc-line text-vc-gray shadow-sm">
+          <button aria-label="Previous day" className="px-2.5" onClick={() => go(-1)}><ChevronLeft className="size-4" /></button>
+          <label className="relative flex h-full min-w-[120px] items-center justify-center border-x border-vc-line px-2 text-[12px]"><span aria-hidden>{format(parseISO(date), "MMMM d, yyyy")}</span><input type="date" aria-label="Attendance date" className="absolute inset-0 cursor-pointer opacity-0" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></label>
+          <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}><ChevronRight className="size-4" /></button>
         </div>
-        <select aria-label="Attendance block" className="h-8 w-[200px] border border-vc-line bg-background px-2 text-[12px] text-vc-gray">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>Not scheduled</option>}</select>
+        <div className="relative">
+          <select aria-label="Attendance block" className="h-8 w-[210px] appearance-none rounded-[3px] border border-vc-line bg-background pl-3 pr-8 text-[12px] text-vc-gray shadow-sm">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>No Block Specified</option>}</select>
+          <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-vc-gray-light" />
+        </div>
       </div>
       {!meets ? <p className="my-6 border border-vc-line bg-vc-panel p-4">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <>
-        <div className="mt-2 text-[11px]">Total: {roster.length} (Expected: {roster.length - notExpected}, Not Expected: {notExpected})</div>
+        <div className="mt-2.5 text-[11px] text-foreground/80">Total: {roster.length} (Expected: {roster.length - notExpected}, Not Expected: {notExpected})</div>
         <div className="mt-6 overflow-x-auto"><table className="w-full">
-          <thead><tr className="text-left"><th className="w-[26%]" /><th className="w-[24%]" /><th className={`${COL} w-[28%] pb-1 font-semibold`}>Class Attendance Notes</th><th className={`${COL} pb-1 font-semibold`}>Daily Notes</th></tr></thead>
-          <tbody>{roster.map((s) => { const v = status(s.id); const note = attNotes[key(s.id)] ?? ""; return (
-            <tr key={s.id} className="align-middle">
-              <td className="py-3.5 pr-3"><div className="flex items-center gap-3"><PersonPhoto personId={s.id} fit={{ w: 60, h: 60 }} className="rounded-full" alt={`${s.first} ${s.last}`} /><span className="text-[16px] leading-[19px]">{s.first}<br /><span className="text-vc-gray-dark">{s.last}</span></span></div></td>
-              <td className="pr-4"><div className="relative w-[150px]"><span aria-hidden className={`pointer-events-none absolute left-2.5 top-1/2 size-2 -translate-y-1/2 rounded-full ${DOT(v)}`} />
-                <select aria-label={`Attendance for ${s.first}`} className="h-8 w-full appearance-none rounded-[3px] border border-vc-line bg-background pl-6 pr-6 text-[11px] text-foreground/70 shadow-sm" value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select>
-                <span aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-vc-gray-light">⌵</span></div></td>
-              <td className="pr-4 align-middle text-[11px] leading-[17px]">
-                {meet && <div>In class: {c.name}{meet.start ? ` (${meet.start}${meet.end ? `–${meet.end}` : ""})` : ""}</div>}
-                {editing === s.id ? <input autoFocus aria-label={`Note for ${s.first}`} className="mt-1 h-7 w-full border border-vc-line bg-background px-1.5" maxLength={200} value={note} onBlur={() => setEditing(null)} onChange={(e) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [key(s.id)]: e.target.value } }))} />
-                  : <>{note && <div className="mt-0.5">{note}</div>}<button onClick={() => setEditing(s.id)} className="mt-1.5 h-6 rounded-[3px] border border-vc-line bg-background px-2.5 text-[10px] shadow-sm">Edit</button></>}</td>
-              <td />
+          <thead><tr className="text-left"><th className="w-[30%]" /><th className="w-[210px]" /><th className={`${COL} pb-1 pl-2`}>Daily Notes</th></tr></thead>
+          <tbody>{roster.map((s) => { const v = status(s.id); const note = attNotes[key(s.id)] ?? ""; const lateKey = `${key(s.id)}|late`; return (
+            <tr key={s.id} className="align-top hover:bg-vc-sky">
+              <td className="py-[7px] pl-2 pr-3"><div className="flex items-center gap-3"><PersonPhoto personId={s.id} fit={{ w: 50, h: 50 }} className="rounded-full" alt={`${s.first} ${s.last}`} /><span className="text-[16px] leading-[19px]">{s.first}<br /><span className="text-vc-gray-dark">{s.last}</span></span></div></td>
+              <td className="pr-4 pt-[15px]">
+                <div className="relative w-[150px]"><span aria-hidden className={`pointer-events-none absolute left-2.5 top-1/2 size-2 -translate-y-1/2 rounded-full ${DOT(v)}`} />
+                  <select aria-label={`Attendance for ${s.first}`} className="h-8 w-full appearance-none rounded-[3px] border border-vc-line bg-background pl-6 pr-8 text-[11px] text-foreground/70 shadow-sm" value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select>
+                  <span aria-hidden className="pointer-events-none absolute inset-y-1 right-7 border-l border-vc-line" /><ChevronDown aria-hidden className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-foreground/60" /></div>
+                {v.startsWith("Tardy") && <div className="mt-2 w-[150px]"><div className="text-[9.5px] uppercase tracking-wide text-vc-gray">Late arrival time</div><input type="time" aria-label={`Late arrival time for ${s.first}`} className="mt-1 h-9 w-full rounded-[3px] border border-vc-line bg-background px-2 text-[12px] text-foreground/80" value={attNotes[lateKey] ?? ""} onChange={(e) => setNote(lateKey, e.target.value)} /></div>}
+              </td>
+              <td className="pl-2 pt-[15px] text-[11px] leading-[17px]">
+                {editing === s.id ? <input autoFocus aria-label={`Note for ${s.first}`} className="h-7 w-full max-w-[240px] border border-vc-line bg-background px-1.5" maxLength={200} value={note} onBlur={() => setEditing(null)} onChange={(e) => setNote(key(s.id), e.target.value)} />
+                  : <>{note && <div className="mb-1">{note}</div>}<button onClick={() => setEditing(s.id)} className="h-6 rounded-[3px] border border-vc-line bg-background px-2.5 text-[10px] font-semibold shadow-sm">{note ? "Edit" : "Add Notes"}</button></>}
+              </td>
             </tr>); })}</tbody>
         </table></div>
         <div className="mt-3 flex justify-end">
-          <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className="h-8 rounded-[3px] border border-vc-line bg-background px-3 text-[12px] shadow-sm">Mark All Present</button>
+          <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className={ghost}>Mark All Present</button>
         </div>
       </>}
     </div>

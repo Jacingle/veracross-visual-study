@@ -23,7 +23,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
     : <span>-</span>;
   const updates = (
     <Link to="/updates" className="flex items-center gap-2 text-[14px] leading-[19px] text-vc-gray-light hover:underline">
-      <span className={`grid h-[18px] min-w-[18px] place-items-center rounded-sm px-1 text-[13px] font-semibold leading-none ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-chip text-foreground"}`}>{fresh}</span> new updates
+      <span className={`grid h-[15px] min-w-[17px] place-items-center rounded-[3px] px-1 text-[12px] font-semibold leading-none ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-chip text-foreground/80"}`}>{fresh}</span> new updates
     </Link>
   );
   const tools = (

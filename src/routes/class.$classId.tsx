@@ -79,9 +79,9 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
         <h1 className={`pb-[18px] pt-[28px] text-[35px] font-light leading-[44px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
         <div className="grid grid-cols-1 items-start gap-[15px] md:grid-cols-[minmax(0,1fr)_290px]">
           <div className="min-h-[740px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
-            <div role="tablist" className="grid grid-cols-4 bg-[#f1f1f1] sm:grid-cols-8">{TABS.map(({ id, label, icon: Icon }) => (
+            <div role="tablist" className="grid grid-cols-4 border-b border-vc-line bg-background px-6 sm:grid-cols-8">{TABS.map(({ id, label, icon: Icon }) => (
               <Link key={id} role="tab" aria-selected={active === id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
-                className={`flex h-[78px] flex-col items-center justify-center gap-[5px] border-b-2 text-[16px] leading-5 ${active === id ? "border-vc-site-blue bg-[#f7f7f7] text-vc-site-blue" : "border-transparent text-foreground hover:bg-[#f7f7f7]"}`}>
+                className={`-mb-px flex h-[74px] flex-col items-center justify-center gap-[5px] border-b-[3px] text-[16px] leading-5 ${active === id ? "border-vc-site-blue bg-vc-panel text-vc-site-blue" : "border-transparent text-foreground hover:bg-vc-panel"}`}>
                 <Icon className="size-[25px]" />{label}</Link>))}</div>
             {body}
           </div>
@@ -90,7 +90,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
               <div className="text-[20px] leading-7">Teacher</div>
               {c.teacherIds.map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
                 <div key={id} className="mt-1.5 flex items-start gap-3">
-                  <PersonPhoto personId={id} full fit={{ w: 50, h: 75 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
+                  <PersonPhoto personId={id} full fit={{ w: 54, h: 81 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
                   <div className="min-w-0 text-[16px] leading-[27px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
                     {phone && <div>{phone}</div>}<a href={`mailto:${f.email}`} className="text-vc-site-blue">Email</a></div>
                 </div>); })}

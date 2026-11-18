@@ -93,6 +93,7 @@
   --color-vc-select: var(--vc-select);
   --color-vc-note: var(--vc-note);
   --color-vc-bar: var(--vc-bar);
+  --color-vc-toggle: var(--vc-toggle);
   --color-vc-paper: var(--vc-paper);
   --color-vc-submit: var(--vc-submit);
   --color-vc-done: var(--vc-done);
@@ -153,6 +154,7 @@
   --vc-attn: oklch(0.95 0.08 95);
   --vc-select: oklch(0.9 0.04 240);
   --vc-bar: oklch(0.949 0 0);
+  --vc-toggle: oklch(0.72 0.13 248);
   --vc-paper: oklch(0.96 0.006 90);
   --vc-submit: oklch(0.46 0.07 262);
   --vc-done: oklch(0.52 0.12 145);

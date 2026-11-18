@@ -34,14 +34,14 @@ function Schedule() {
   return <PortalShell portal="student">
     <StudentTabs />
     <div className="grid grid-cols-1 items-start gap-3 px-5 pt-6 sm:grid-cols-[1fr_auto_1fr] sm:pr-8">
-      <div className="flex justify-self-start border border-vc-line shadow-sm">
-        <Button variant="ghost" aria-label="Previous Day" title="Previous Day" onClick={() => go(-1)} className="h-8 rounded-none px-3.5 text-vc-gray"><ChevronLeft className="size-4" /></Button>
-        <label className="relative flex cursor-pointer items-center gap-1 border-x border-vc-line px-3.5 text-vc-gray-dark [--cut:var(--background)] hover:bg-vc-panel hover:[--cut:var(--vc-panel)]"><CalendarDays className="size-4 fill-current stroke-(--cut)" /><ChevronDown className="size-3" /><input aria-label="Schedule date" type="date" className="absolute inset-0 w-full opacity-0" value={format(d, 'yyyy-MM-dd')} onChange={(e) => e.target.value && nav({ search: (p) => ({ ...p, date: e.target.value }) })} /></label>
-        <Button variant="ghost" aria-label="Next Day" title="Next Day" onClick={() => go(1)} className="h-8 rounded-none px-3.5 text-vc-gray"><ChevronRight className="size-4" /></Button>
+      <div className="flex h-[34px] justify-self-start overflow-hidden rounded-[4px] border border-vc-gray-light bg-gradient-to-b from-background to-vc-panel shadow-[0_1px_1px_rgba(0,0,0,.22)]">
+        <Button variant="ghost" aria-label="Previous Day" title="Previous Day" onClick={() => go(-1)} className="h-full w-[45px] rounded-none px-0 text-foreground/70 hover:bg-transparent hover:text-foreground"><ChevronLeft className="size-5" strokeWidth={1.25} /></Button>
+        <label className="relative flex w-[62px] cursor-pointer items-center justify-center gap-1 border-x border-vc-gray-light/70 px-0 text-foreground/70 [--cut:var(--background)] hover:bg-vc-panel hover:[--cut:var(--vc-panel)]"><CalendarDays className="size-4 fill-current stroke-(--cut)" /><ChevronDown className="size-3" /><input aria-label="Schedule date" type="date" className="absolute inset-0 w-full opacity-0" value={format(d, 'yyyy-MM-dd')} onChange={(e) => e.target.value && nav({ search: (p) => ({ ...p, date: e.target.value }) })} /></label>
+        <Button variant="ghost" aria-label="Next Day" title="Next Day" onClick={() => go(1)} className="h-full w-[45px] rounded-none px-0 text-foreground/70 hover:bg-transparent hover:text-foreground"><ChevronRight className="size-5" strokeWidth={1.25} /></Button>
       </div>
-      <div className="text-center sm:order-none"><div className="text-[19px] font-semibold text-foreground/80">{format(d, 'EEEE, MMM d')}</div>{periods.length > 0 && <div className="mt-1 text-[15px] text-foreground/75">{format(d, 'EEEE')}</div>}</div>
-      <div className="flex justify-self-center border border-vc-line text-[13px] shadow-sm sm:justify-self-end">
-        {(['student', 'school'] as const).map((v) => <Button key={v} variant="ghost" onClick={() => nav({ search: (p) => ({ ...p, view: v }) })} className={`h-8 rounded-none px-3.5 text-[13px] font-semibold ${view === v ? 'bg-vc-link text-primary-foreground hover:bg-vc-link hover:text-primary-foreground' : ''}`}>{v === 'student' ? 'Student Schedule' : 'School Schedule'}</Button>)}
+      <div className="text-center sm:order-none"><div className="text-[20px] font-semibold leading-7 text-foreground/80">{format(d, 'EEEE, MMM d')}</div>{periods.length > 0 && <div className="text-[19px] leading-7 text-foreground/75">{format(d, 'EEEE')}</div>}</div>
+      <div className="flex h-[34px] justify-self-center overflow-hidden rounded-[4px] border border-vc-gray-light bg-gradient-to-b from-background to-vc-panel shadow-[0_1px_1px_rgba(0,0,0,.22)] sm:justify-self-end">
+        {(['student', 'school'] as const).map((v) => <Button key={v} variant="ghost" onClick={() => nav({ search: (p) => ({ ...p, view: v }) })} className={`h-full rounded-none px-[17px] text-[15px] font-semibold ${view === v ? 'bg-vc-toggle text-primary-foreground hover:bg-vc-toggle hover:text-primary-foreground' : 'text-foreground/80 hover:bg-transparent'}`}>{v === 'student' ? 'Student Schedule' : 'School Schedule'}</Button>)}
       </div>
     </div>
     <div className="px-5 pb-8 pt-[35px] sm:px-[46px]">

@@ -159,3 +159,36 @@ export function Crest(p: P) {
     </svg>
   );
 }
+
+/** Solid clipboard with check-list cut-outs (Student Overview tab). */
+export function OverviewClipboard(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <rect x="3.5" y="2" width="17" height="20.5" rx="2" />
+      <path d="M6.4 7.2l1.2 1.2 2.1-2.3M6.4 12.2l1.2 1.2 2.1-2.3" style={cutStroke} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 7.3h5.3M12 12.3h5.3M6.6 17.3h2.2M12 17.3h5.3" style={cutStroke} strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Solid stopwatch with an L-shaped pair of hands (Daily Schedule tab). */
+export function Stopwatch(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <rect x="10.4" y="1.6" width="3.2" height="2.2" />
+      <rect x="11.3" y="3.6" width="1.4" height="2" />
+      <circle cx="12" cy="14" r="8.6" />
+      <path d="M12 8.6V14h4.4" style={cutStroke} strokeWidth="2" strokeLinecap="square" />
+    </svg>
+  );
+}
+
+/** Solid megaphone with three spark lines (Recent Updates tab). */
+export function MegaphoneSparks(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <path d="M2 9.4h4.6L14.6 5v13.6L6.6 14.6H5.4l1.3 5.2H4.2L2.9 14.6H2z" />
+      <path d="M17.3 7.6l2.4-1.3M17.6 11.9h2.9M17.3 16.2l2.4 1.3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}

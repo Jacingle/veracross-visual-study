@@ -1,11 +1,11 @@
 import { format } from 'date-fns';
-import { Calendar, ChartNoAxesColumn, ChartPie, NotepadText, SquarePlus } from 'lucide-react';
+import { Calendar, CalendarDays, ChartNoAxesColumn, ChartPie, FileText, Info, NotepadText, SquarePlus, X } from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { categoryColor } from '@/lib/category-colors';
 import { useSchool } from '@/lib/school-store';
 import { courseTitle, type Assignment } from '@/lib/sis-data';
-import { teacherNames } from '@/lib/student-presentation';
+import { teacherFullNames, teacherNames } from '@/lib/student-presentation';
 
 type Glyph = ComponentType<{ className?: string; strokeWidth?: number }>;
 
@@ -23,16 +23,46 @@ function Fact({ icon: Icon, label, wide = false, children }: { icon: Glyph; labe
 }
 
 /**
+ * The compact assignment card used by the assignment center and the class website: a bar in the
+ * type's color with a close mark, the title, the due date, the notes and the class with its teacher.
+ */
+export function AssignmentMini({ assignment, closable = false, close }: { assignment: Assignment; closable?: boolean; close?: ReactNode }) {
+  const { sections, users, weights } = useSchool();
+  const section = sections.find((s) => s.id === assignment.courseId);
+  const color = categoryColor(weights[assignment.courseId], assignment.category);
+  const row = 'flex items-start gap-[18px] border-t border-vc-line px-[18px]';
+  return (
+    <div className="bg-background">
+      <div className="flex h-[30px] items-center justify-between px-[18px] text-[13.5px] uppercase text-primary-foreground" style={{ background: color }}>
+        <span>{assignment.category}</span>
+        {closable ? <DialogClose aria-label="Close" className="grid size-5 place-items-center outline-none"><X className="size-4" strokeWidth={4} /></DialogClose> : close}
+      </div>
+      <div className="px-[18px] pb-4 pt-3.5 text-[22px] leading-7">{assignment.title}</div>
+      <div className={`${row} min-h-[32px] items-center py-1`}><CalendarDays className="size-[22px] shrink-0" strokeWidth={1.6} /><span className="text-[18px] font-semibold">{format(assignment.due, 'EEE, MMM d')}</span></div>
+      {assignment.notes.trim() !== '' && <div className={`${row} py-3`}><FileText className="size-[22px] shrink-0" strokeWidth={1.6} /><span className="whitespace-pre-wrap text-[15px] leading-[19px]">{assignment.notes}</span></div>}
+      <div className={`${row} items-center py-2.5`}><Info className="size-[18px] shrink-0 fill-current stroke-background" /><span className="text-[15px] italic">{section ? `${courseTitle(section)} - ${teacherFullNames(section.teacherIds, users.map((u) => ({ ...u, id: u.personId })))}` : ''}</span></div>
+    </div>
+  );
+}
+
+/**
  * The assignment pop-up shared by Home, My Calendar, Daily Schedule, the class pages and the assignment
  * center. It opens over the current page (nothing navigates): a gray class header, the type in its
  * category color, the title, then date assigned / due date / max score / weight and the notes.
- * `detailed` is kept for older callers; every caller now gets the same view.
+ * `detailed={false}` swaps in the compact card (class website).
  */
-export function AssignmentDialog({ assignment, onClose }: { assignment: Assignment | null; onClose: () => void; detailed?: boolean }) {
+export function AssignmentDialog({ assignment, onClose, detailed = true }: { assignment: Assignment | null; onClose: () => void; detailed?: boolean }) {
   const { sections, users, weights } = useSchool();
   const section = sections.find((s) => s.id === assignment?.courseId);
   const faculty = users.map((u) => ({ ...u, id: u.personId }));
   const color = assignment ? categoryColor(weights[assignment.courseId], assignment.category) : undefined;
+  if (!detailed) return (
+    <Dialog open={assignment !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent aria-describedby={undefined} showCloseButton={false} overlay={false} className="!top-[16%] w-[calc(100%-2rem)] max-w-[340px] !translate-y-0 gap-0 overflow-hidden rounded-none border-2 border-foreground p-0 shadow-[0_2px_10px_rgba(0,0,0,.35)] sm:rounded-none">
+        {assignment && <><DialogTitle className="sr-only">{assignment.title}</DialogTitle><AssignmentMini assignment={assignment} closable /></>}
+      </DialogContent>
+    </Dialog>
+  );
   return (
     <Dialog open={assignment !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent aria-describedby={undefined} showCloseButton={false} className="!top-[109px] w-[calc(100%-2rem)] max-w-[640px] !translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-background p-0 shadow-[0_2px_10px_rgba(0,0,0,.35)] sm:rounded-none">

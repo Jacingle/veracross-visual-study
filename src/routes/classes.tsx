@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, Clock, SquareCheck } from "lucide-react";
+import { BarChart3, Check, Clock } from "lucide-react";
 import { useState, type ComponentType, type ReactNode } from "react";
 import { toast } from "sonner";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
@@ -38,7 +38,8 @@ const reportLink = "hover:underline";
 function Overview() {
   const [tab, setTab] = useState<"Active" | "Future" | "Past">("Active");
   const allClasses = useMySections();
-  const terms = [...new Set(allClasses.flatMap((c) => c.terms))].sort();
+  // Attendance reports are only offered for the two semesters (for now).
+  const terms = [...new Set(allClasses.flatMap((c) => c.terms))].filter((id) => /-S[12]$/.test(id)).sort();
   const mine = allClasses.filter((c) => c.status === ({ Active: "current", Future: "future", Past: "past" } as const)[tab]);
   const started = (id: string) => { const t = termById(id); return !t || +t.start <= +today(); };
   return (
@@ -52,7 +53,7 @@ function Overview() {
           <Report icon={SproutLine} label="NWEA MAP Growth" boxed={false}>
             <button type="button" className={reportLink} onClick={() => toast.info("NWEA MAP Growth reports are not available in this demo.")}>NWEA MAP Growth Fall 2026</button>
           </Report>
-          <Report icon={SquareCheck} label="Attendance">
+          <Report icon={Check} label="Attendance">
             {terms.map((id, i) => (
               <span key={id}>
                 {i > 0 && <span className="mx-[13px] text-[9px] text-vc-gray-light">•</span>}
@@ -68,7 +69,7 @@ function Overview() {
       <div className="flex items-end justify-between border-b border-vc-line pl-5">
         <h2 className="pb-[3px] text-[24px] font-light leading-9 text-foreground/90">Classes</h2>
         <div className="flex pr-[22px]">{(["Active", "Future", "Past"] as const).map((t) => (
-          <Button variant="ghost" key={t} onClick={() => setTab(t)} className={`h-[39px] w-[89px] rounded-none p-0 text-[14px] font-normal ${tab === t ? "-mb-px border border-vc-line border-b-background bg-background text-vc-navbar hover:bg-background hover:text-vc-navbar" : "text-vc-gray hover:bg-transparent hover:text-vc-gray"}`}>{t}</Button>
+          <Button variant="ghost" key={t} onClick={() => setTab(t)} className={`h-[39px] w-[89px] rounded-none p-0 text-[14px] font-normal ${tab === t ? "relative z-10 -mb-px rounded-b-none rounded-t-[3px] border-x border-t border-b-0 border-vc-line bg-background pb-px text-vc-navbar hover:bg-background hover:text-vc-navbar" : "text-vc-gray hover:bg-transparent hover:text-vc-gray"}`}>{t}</Button>
         ))}</div>
       </div>
       <div className="px-6 pb-8 pt-[21px]">

@@ -1,84 +1,102 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { addDays, format, isSameDay, isWeekend, parseISO, isValid } from "date-fns";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useState } from "react";
-import { z } from "zod";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { addDays, format, isSameDay, isWeekend, startOfDay } from "date-fns";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CATEGORY_TOKEN, courseTitle, teacherFull, today } from "@/lib/sis-data";
+import { AssignmentMini } from "@/components/portal/AssignmentDialog";
+import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { categoryColor } from "@/lib/category-colors";
+import { courseTitle, today } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
-import { useStudentAssignments , useMySections } from "@/lib/school-store";
+import { useMySections, useSchool, useStudentAssignments } from "@/lib/school-store";
+import { teacherFullNames } from "@/lib/student-presentation";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/assignments")({
-  validateSearch: z.object({ start: z.string().optional() }),
-  head: () => pageHead("Assignments", "Week-at-a-glance assignment planner for every class."),
+  head: () => pageHead("Assignments", "Assignment center: every class's work by day, scrolling back and forward in time."),
   component: Planner,
 });
 
+const COL = 158;   // one weekday column
+const LEFT = 178;  // the class column
+
 function Planner() {
-  const COURSES = useMySections().filter((c) => c.status === "current");
-  const { start } = Route.useSearch();
-  const nav = useNavigate({ from: "/assignments" });
-  const { done, toggleDone } = usePortal();
-  const [showDetails, setShowDetails] = useState(true);
-  const ASSIGNMENTS = useStudentAssignments();
-  const s0 = start ? parseISO(start) : addDays(today(), -1);
-  const s = isValid(s0) ? s0 : today();
-  const days: Date[] = []; for (let d = s; days.length < 7; d = addDays(d, 1)) if (!isWeekend(d)) days.push(d);
-  const shift = (n: number) => { let d = s, c = 0; while (c < Math.abs(n)) { d = addDays(d, Math.sign(n)); if (!isWeekend(d)) c++; } nav({ search: { start: format(d, "yyyy-MM-dd") } }); };
+  const classes = useMySections().filter((c) => c.status === "current");
+  const all = useStudentAssignments();
+  const { weights, users } = useSchool();
+  const { done } = usePortal();
+  const [details, setDetails] = useState(true);
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // Weekdays only, from three weeks back to ten weeks ahead; the scroller starts at yesterday.
+  const days = useMemo(() => {
+    const out: Date[] = [];
+    for (let i = -21; i <= 70; i++) { const d = addDays(startOfDay(today()), i); if (!isWeekend(d)) out.push(d); }
+    return out;
+  }, []);
+  const anchor = Math.max(0, days.findIndex((d) => +d >= +addDays(startOfDay(today()), -1)));
+  const toAnchor = (smooth: boolean) => scroller.current?.scrollTo({ left: anchor * COL, behavior: smooth ? "smooth" : "auto" });
+  useEffect(() => { toAnchor(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const by = (n: number) => scroller.current?.scrollBy({ left: n * COL, behavior: "smooth" });
+
+  const linkBtn = "flex items-center gap-1.5 text-[16px] uppercase text-vc-site-blue hover:underline";
   return (
-    <PortalShell portal="student" wide>
+    <PortalShell portal="student" fullWidth>
       <StudentTabs />
-      <div className="flex justify-end gap-3 px-6 py-2 text-[13px] font-semibold text-vc-link-strong">
-        <button onClick={() => nav({ search: {} })}>TODAY</button>·
-        <button onClick={() => shift(-5)} className="flex items-center gap-1"><ArrowLeft className="size-3.5" />PREVIOUS</button>·
-        <button onClick={() => shift(5)} className="flex items-center gap-1">NEXT<ArrowRight className="size-4" /></button>
+      <div className="flex items-center justify-end gap-3 px-6 pb-8 pt-[22px]">
+        <button onClick={() => toAnchor(true)} className={linkBtn}>Today</button><span className="text-vc-gray">·</span>
+        <button onClick={() => by(-5)} className={linkBtn}><ArrowLeft className="size-4" strokeWidth={3} />Previous</button><span className="text-vc-gray">·</span>
+        <button onClick={() => by(5)} className={linkBtn}>Next<ArrowRight className="size-4" strokeWidth={3} /></button>
       </div>
-      <div className="grid overflow-x-auto pt-4" style={{ gridTemplateColumns: `214px repeat(7, minmax(140px, 1fr))` }}>
-        <div className="border-r border-foreground/80" />
-        {days.map((d) => <div key={+d} className="border-r border-vc-line px-3 pb-1.5 text-[13px]">{format(d, "EEEE, MMM d")}</div>)}
-        <div className="flex justify-between border-b-2 border-r border-b-foreground/80 border-r-foreground/80 border-t border-t-vc-line px-2 py-1.5 text-[10px]">CLASS DETAILS:<button onClick={() => setShowDetails((v) => !v)}>+ SHOW - HIDE</button></div>
-        {days.map((d) => (
-          <div key={+d} className="flex items-center gap-2 border-b-2 border-t border-b-foreground/80 border-t-vc-line px-3 py-1.5 text-[10px]">
-            <span className="border border-vc-line px-1.5 font-semibold">{ASSIGNMENTS.filter((a) => isSameDay(a.due, d)).length}</span> ASSIGNMENTS DUE
-          </div>
-        ))}
-        {COURSES.map((c) => (
-          <Row key={c.id}>
-            <div className="border-b border-r border-b-vc-line border-r-foreground/80 px-2 py-2">
-              <div className="flex items-start gap-2"><span className="mt-1.5 size-2.5 border border-vc-line" />
-                <div className="min-w-0">
-                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block truncate text-[15px] text-vc-link-strong hover:underline">{courseTitle(c)}</Link>
-                  {showDetails && <div className="mt-1 space-y-1 text-[12px]"><div className="italic text-muted-foreground">{teacherFull(c.teacherId)}</div>
-                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block text-foreground/70 hover:underline">view website</Link>
-                    <Link to="/grades/$classId" params={{ classId: c.id }} className="block text-foreground/70 hover:underline">view all assignments</Link></div>}
+      <div ref={scroller} className="overflow-x-auto pb-1">
+        <div className="grid" style={{ gridTemplateColumns: `${LEFT}px repeat(${days.length}, ${COL}px)`, width: LEFT + days.length * COL }}>
+          {/* date headings */}
+          <div className="sticky left-0 z-10 border-r-2 border-foreground bg-background" />
+          {days.map((d) => <div key={+d} className="whitespace-nowrap px-3 pb-2 pt-2.5 text-[15px] leading-5 text-foreground/85">{format(d, "EEEE, MMM d")}</div>)}
+          {/* counts */}
+          <div className="sticky left-0 z-10 flex items-center justify-between border-b-2 border-r-2 border-t border-foreground border-t-vc-line bg-background px-2 py-1.5 text-[12px] uppercase text-foreground/85"><span>Class details:</span><button type="button" onClick={() => setDetails((v) => !v)} className="hover:underline">+ Show - Hide</button></div>
+          {days.map((d) => {
+            const n = all.filter((a) => isSameDay(a.due, d)).length;
+            return <div key={+d} className="flex items-center gap-2 whitespace-nowrap border-b-2 border-t border-foreground border-t-vc-line px-3 py-1.5 text-[12px] uppercase text-foreground/85"><span className="grid h-[22px] min-w-[22px] place-items-center rounded-[2px] border border-vc-gray-light bg-background px-1 text-[12px] font-semibold">{n}</span>Assignments due</div>;
+          })}
+          {/* one row per class */}
+          {classes.map((c) => (
+            <ClassCells key={c.id}>
+              <div className="sticky left-0 z-10 min-h-[80px] overflow-hidden border-b border-r-2 border-b-vc-line border-r-foreground bg-background px-2 py-1">
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-1.5 size-3.5 shrink-0 border border-vc-line bg-vc-panel" />
+                  <div className="min-w-0">
+                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block whitespace-nowrap text-[18px] font-light leading-6 text-vc-site-blue">{courseTitle(c)}</Link>
+                    {details && <div className="text-[13.5px] leading-[19px]">
+                      <div className="italic text-vc-gray">{teacherFullNames(c.teacherIds, users.map((u) => ({ ...u, id: u.personId })))}</div>
+                      <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block text-vc-gray-dark hover:underline">view website</Link>
+                      <Link to="/grades/$classId" params={{ classId: c.id }} className="block text-vc-gray-dark hover:underline">view all assignments</Link>
+                    </div>}
+                  </div>
                 </div>
               </div>
-            </div>
-            {days.map((d) => (
-              <div key={+d} className="min-h-[92px] space-y-1.5 border-b border-r border-vc-line p-2">
-                {ASSIGNMENTS.filter((a) => a.courseId === c.id && isSameDay(a.due, d)).map((a) => (
-                  <Popover key={a.id}>
-                    <PopoverTrigger className={`flex w-full items-center border border-l-4 border-vc-line text-left text-[10px] shadow-sm ${CATEGORY_TOKEN[a.category]} ${done.includes(a.id) ? "opacity-50" : ""}`}>
-                      <span className="flex-1 truncate px-1.5 py-1">{a.category}</span>
-                      <span className="bg-vc-tile px-2 py-1 font-semibold text-vc-link-strong">{done.includes(a.id) ? "DONE" : "DUE"}</span>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-72">
-                      <div className="text-xs text-muted-foreground">{a.category} · {courseTitle(c)}</div>
-                      <div className="mt-1 font-semibold">{a.title}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">{a.notes}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">Due {format(a.due, "EEEE, MMM d")} · {a.points} pts</div>
-                      <button onClick={() => toggleDone(a.id)} className="mt-3 w-full bg-vc-success py-1.5 text-sm text-primary-foreground">{done.includes(a.id) ? "Mark as not done" : "Mark as done"}</button>
-                    </PopoverContent>
-                  </Popover>
-                ))}
-              </div>
-            ))}
-          </Row>
-        ))}
+              {days.map((d) => (
+                <div key={+d} className={`min-h-[80px] space-y-1.5 border-b border-vc-line px-[7px] py-[7px] ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
+                  {all.filter((a) => a.courseId === c.id && isSameDay(a.due, d)).map((a) => (
+                    <Popover key={a.id}>
+                      <PopoverTrigger className="flex h-[19px] w-full items-stretch border border-vc-gray-light/70 bg-background text-left text-[12px] uppercase shadow-[0_1px_2px_rgba(0,0,0,.15)]">
+                        <span className="w-1 shrink-0" style={{ background: categoryColor(weights[a.courseId], a.category) }} />
+                        <span className="min-w-0 flex-1 truncate px-1.5 leading-[17px]">{a.category}</span>
+                        <span className="bg-vc-sky px-3 text-[12px] font-bold leading-[17px] text-vc-site-blue">{done.includes(a.id) ? "Done" : "Due"}</span>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" sideOffset={6} className="w-[330px] max-w-[calc(100vw-2rem)] rounded-none border-2 border-foreground bg-background p-0 shadow-[0_2px_10px_rgba(0,0,0,.35)]">
+                        <AssignmentMini assignment={a} close={<PopoverClose aria-label="Close" className="grid size-5 place-items-center outline-none"><X className="size-4" strokeWidth={4} /></PopoverClose>} />
+                      </PopoverContent>
+                    </Popover>
+                  ))}
+                </div>
+              ))}
+            </ClassCells>
+          ))}
+        </div>
       </div>
     </PortalShell>
   );
 }
-const Row = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
+const ClassCells = ({ children }: { children: React.ReactNode }) => <>{children}</>;
