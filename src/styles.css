@@ -67,6 +67,7 @@
   --color-vc-navbar: var(--vc-navbar);
   --color-vc-link: var(--vc-link);
   --color-vc-link-strong: var(--vc-link-strong);
+  --color-vc-site-blue: var(--vc-site-blue);
   --color-vc-event: var(--vc-event);
   --color-vc-event-green: var(--vc-event-green);
   --color-vc-today: var(--vc-today);
@@ -123,6 +124,7 @@
   --vc-navbar: oklch(0.35 0.096 256);
   --vc-link: oklch(0.725 0.155 243);
   --vc-link-strong: oklch(0.55 0.13 252);
+  --vc-site-blue: #007DDE;
   --vc-event: oklch(0.55 0.24 296);
   --vc-event-green: oklch(0.51 0.106 148);
   --vc-today: oklch(0.96 0.027 78);

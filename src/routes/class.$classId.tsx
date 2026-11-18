@@ -1,25 +1,27 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { format, isAfter } from "date-fns";
-import { ArrowRight, CalendarDays, Clock, FolderOpen, Home, Image, Megaphone, MessagesSquare, User } from "lucide-react";
-import { toast } from "sonner";
+import { isAfter } from "date-fns";
+import { ArrowRight } from "lucide-react";
+import { useState, type ComponentType, type CSSProperties } from "react";
 import { z } from "zod";
 import { RoleGate } from "@/components/auth/RoleGate";
-import { StudentCard } from "@/components/portal/StudentCard";
+import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
+import { CalendarIcon, DirectoryIcon, DiscussionsIcon, FolderIcon, HomeIcon, PhotosIcon, PostsIcon, TimelineIcon } from "@/components/site/SiteIcons";
+import { CalendarView, ClassPicker, DirectoryView, HomeView, InfoView, PageListView, PagesPlaceholder, PageView, PostsView, ResourcesView, TimelineView } from "@/components/site/SiteViews";
 import { courseTitle, teacher, today, type Assignment } from "@/lib/sis-data";
-import { rosterOf, useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
+import { useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
-import type { CSSProperties } from "react";
 
-const TABS = [
-  { id: "home", label: "Home", icon: Home }, { id: "posts", label: "Posts", icon: Megaphone }, { id: "timeline", label: "Timeline", icon: Clock },
-  { id: "calendar", label: "Calendar", icon: CalendarDays }, { id: "resources", label: "Resources", icon: FolderOpen }, { id: "photos", label: "Photos", icon: Image },
-  { id: "discussions", label: "Discussions", icon: MessagesSquare }, { id: "directory", label: "Directory", icon: User },
-] as const;
-type Tab = (typeof TABS)[number]["id"];
+const TABS: { id: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
+  { id: "home", label: "Home", icon: HomeIcon }, { id: "posts", label: "Posts", icon: PostsIcon }, { id: "timeline", label: "Timeline", icon: TimelineIcon },
+  { id: "calendar", label: "Calendar", icon: CalendarIcon }, { id: "resources", label: "Resources", icon: FolderIcon }, { id: "photos", label: "Photos", icon: PhotosIcon },
+  { id: "discussions", label: "Discussions", icon: DiscussionsIcon }, { id: "directory", label: "Directory", icon: DirectoryIcon },
+];
+const TAB_IDS = ["home", "posts", "timeline", "calendar", "resources", "photos", "discussions", "directory", "info", "pages"] as const;
+type Tab = (typeof TAB_IDS)[number];
 
 export const Route = createFileRoute("/class/$classId")({
-  validateSearch: z.object({ tab: z.enum(["home", "posts", "timeline", "calendar", "resources", "photos", "discussions", "directory"]).optional(), page: z.string().optional() }),
+  validateSearch: z.object({ tab: z.enum(TAB_IDS).optional(), page: z.string().optional() }),
   head: ({ params }) => pageHead(`Class Website · ${params.classId}`, "Class website with assignments, resources and directory."),
   component: () => <RoleGate area="shared"><ClassSite /></RoleGate>,
 });
@@ -28,78 +30,81 @@ function ClassSite() {
   const { classId } = Route.useParams();
   const options = useMySections();
   const c = options.find((x) => x.id === classId);
-  if (!c) return <div className="p-10 text-[14px]">This class website isn't available to you. <Link to="/" className="text-vc-link-strong">Go home</Link></div>;
+  if (!c) return <div className="p-10 text-[14px]">This class website isn't available to you. <Link to="/" className="text-vc-site-blue">Go home</Link></div>;
   return <Site c={c} options={options} />;
 }
+
 function Site({ c, options }: { c: Section; options: Section[] }) {
   const { tab = "home", page } = Route.useSearch();
   const nav = useNavigate();
-  const { user, logout, photos } = useSchool();
-  const t = teacher(c.teacherIds[0] ?? c.teacherId);
+  const { user, logout, users, courses, schedulingSets } = useSchool();
+  const student = user?.role === "student";
   const sect = useSectionAssignments(c.id);
   const mine = useStudentAssignments();
-  const all = user?.role === "student" ? mine.filter((a) => a.courseId === c.id) : sect;
-  const upcoming = all.filter((a) => !isAfter(today(), a.due)).slice(0, 5);
+  const all = student ? mine.filter((a) => a.courseId === c.id) : sect;
+  const upcoming = all.filter((a) => !isAfter(today(), a.due)).sort((a, b) => +a.due - +b.due).slice(0, 5);
+  const [selected, setSelected] = useState<Assignment | null>(null);
   const ws = c.website;
+  const styled = ws.bg !== "none";
+  const pageName = page && ws.pages.includes(page) && (!student || ws.pageContent?.[page]?.published) ? page : undefined;
+  const active: Tab | undefined = pageName ? "posts" : tab === "info" || tab === "pages" ? undefined : tab;
+  const description = courses.find((x) => x.id === c.courseNo)?.description || ws.sections.find((s) => s.title === "Course Description")?.body || "";
+  const shownPages = ws.pages.filter((p) => !student || ws.pageContent?.[p]?.published);
+  const vars = { ...(ws.barColor ? { "--vc-classbar": ws.barColor } : {}), ...(ws.linkColor ? { "--vc-site-blue": ws.linkColor } : {}) } as CSSProperties;
+  const go = (search: { tab?: Tab; page?: string }) => nav({ to: "/class/$classId", params: { classId: c.id }, search });
+
+  let body;
+  if (pageName) body = <PageView name={pageName} ws={ws} />;
+  else if (tab === "info") body = <InfoView c={c} sets={schedulingSets} description={description} />;
+  else if (tab === "pages") body = <PageListView c={c} student={student} />;
+  else if (tab === "home") body = <HomeView c={c} upcoming={upcoming} onOpen={setSelected} />;
+  else if (tab === "posts") body = <PostsView ws={ws} student={student} />;
+  else if (tab === "timeline") body = <TimelineView list={all} onOpen={setSelected} />;
+  else if (tab === "calendar") body = <CalendarView c={c} sets={schedulingSets} list={all} onOpen={setSelected} />;
+  else if (tab === "resources") body = <ResourcesView ws={ws} />;
+  else if (tab === "directory") body = <DirectoryView c={c} />;
+  else body = <PagesPlaceholder what={TABS.find((x) => x.id === tab)?.label ?? "this page"} />;
+
   return (
-    <div className="relative min-h-screen" style={{ ...(ws.barColor ? { '--vc-classbar': ws.barColor } : {}), ...(ws.linkColor ? { '--vc-link-strong': ws.linkColor } : {}) } as CSSProperties}>
+    <div className="relative min-h-screen" style={vars}>
       {ws.bg === "photo" && ws.photo ? <img src={ws.photo} alt="" width={1600} height={900} className="fixed inset-0 h-full w-full object-cover" />
-        : <div className="fixed inset-0 bg-vc-panel" style={ws.bg === "color" ? { background: ws.color } : undefined} />}
-      <div className="relative z-10 flex h-10 items-center justify-between bg-vc-classbar px-6 shadow-sm text-primary-foreground">
-        <select aria-label="Change Class" value={c.id} onChange={(e) => nav({ to: "/class/$classId", params: { classId: e.target.value } })} className="h-[26px] w-[320px] rounded-sm bg-background px-1.5 text-[12px] text-foreground">
-          <optgroup label={user?.first ?? ""}>{options.map((x) => <option key={x.id} value={x.id}>{x.id}: {courseTitle(x)}</option>)}</optgroup>
-        </select>
-        <div className="text-[13px]">{user?.email} <button onClick={() => { logout(); nav({ to: "/", replace: true }); }} className="ml-2 underline">log out</button></div>
+        : <div className="fixed inset-0 bg-[#eeeeee]" style={ws.bg === "color" ? { background: ws.color } : undefined} />}
+      {/* A color or photo gets a soft dark shadow across the top, like the original. */}
+      {styled && <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 h-[430px]" style={{ background: "linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.28) 45%, rgba(0,0,0,0))" }} />}
+      <div className="relative z-20 flex h-10 items-center justify-between border-b border-white/25 bg-vc-classbar px-6 text-[14px] text-primary-foreground shadow-sm">
+        <ClassPicker current={c.id} options={options} onPick={(id) => nav({ to: "/class/$classId", params: { classId: id } })} />
+        <div className="whitespace-nowrap">{user?.email} <button onClick={() => { logout(); nav({ to: "/", replace: true }); }} className="ml-1.5 underline">log out</button></div>
       </div>
-      <div className="relative mx-auto flex w-[calc(100%-2rem)] max-w-[1045px] gap-3 pb-12">
-        <div className="min-w-0 flex-1">
-          <h1 className={`py-5 text-[34px] font-light ${ws.bg === "none" ? "text-foreground" : "inline-block mt-4 mb-3 rounded-sm bg-background/90 px-3 py-1 text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
-          <div className="min-h-[640px] rounded-t-sm bg-background shadow-sm">
-            <div className="flex justify-center border-b border-vc-line bg-background px-5">{TABS.map(({ id, label, icon: Icon }) => (
-              <Link key={id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
-                className={`flex w-[100px] flex-col items-center gap-1 border-b-2 pb-2 pt-3 text-[15px] ${tab === id ? "border-vc-link-strong text-vc-link-strong" : "border-transparent"}`}>
-                <Icon className="size-6" strokeWidth={2} />{label}</Link>))}</div>
-            <div className="px-4 py-4">{page && ws.pages.includes(page) && (user?.role !== 'student' || ws.pageContent?.[page]?.published) ? <section><h2 className="text-[24px] font-semibold">{page}</h2><p className="mt-4 whitespace-pre-wrap text-[14px] leading-6">{ws.pageContent?.[page]?.body ?? ''}</p></section> : <Body tab={tab} c={c} upcoming={upcoming} />}</div>
+      <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1215px] pb-12">
+        <h1 className={`pb-[18px] pt-[28px] text-[35px] font-light leading-[44px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
+        <div className="grid grid-cols-1 items-start gap-[15px] md:grid-cols-[minmax(0,1fr)_290px]">
+          <div className="min-h-[740px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
+            <div role="tablist" className="grid grid-cols-4 bg-[#f1f1f1] sm:grid-cols-8">{TABS.map(({ id, label, icon: Icon }) => (
+              <Link key={id} role="tab" aria-selected={active === id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
+                className={`flex h-[78px] flex-col items-center justify-center gap-[5px] border-b-2 text-[16px] leading-5 ${active === id ? "border-vc-site-blue bg-[#f7f7f7] text-vc-site-blue" : "border-transparent text-foreground hover:bg-[#f7f7f7]"}`}>
+                <Icon className="size-[25px]" />{label}</Link>))}</div>
+            {body}
           </div>
+          <aside className="space-y-[15px] text-[15px]">
+            <div className="rounded-[4px] bg-background px-[15px] pb-[14px] pt-[12px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
+              <div className="text-[20px] leading-7">Teacher</div>
+              {c.teacherIds.map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
+                <div key={id} className="mt-1.5 flex items-start gap-3">
+                  <PersonPhoto personId={id} full className="!h-[92px] !w-[64px] !rounded-none !object-cover" alt={`${f.prefix} ${f.last}`.trim()} />
+                  <div className="min-w-0 text-[16px] leading-[27px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
+                    {phone && <div>{phone}</div>}<a href={`mailto:${f.email}`} className="text-vc-site-blue">Email</a></div>
+                </div>); })}
+              <button onClick={() => go({ tab: "info" })} className="mt-[12px] flex items-center gap-1 text-[16px] text-vc-site-blue">More class information <ArrowRight className="size-3.5" strokeWidth={3} /></button>
+            </div>
+            <div className="rounded-[4px] bg-background px-[15px] pb-[12px] pt-[14px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
+              <button onClick={() => go({ tab: "pages" })} className="flex items-center gap-1.5 text-[20px] leading-7">All Pages <ArrowRight className="size-4 text-vc-site-blue" strokeWidth={3} /></button>
+              {shownPages.length ? <div className="mt-[10px] space-y-[17px] pt-1">{shownPages.map((pg) => <button key={pg} onClick={() => go({ page: pg })} className="block text-left text-[16px] leading-5 text-vc-site-blue">{pg}</button>)}</div>
+                : <p className="mt-2 text-muted-foreground">No pages yet.</p>}
+            </div>
+          </aside>
         </div>
-        <aside className="mt-[94px] w-[290px] shrink-0 space-y-3 text-[13px]">
-          <div className="rounded-sm bg-background p-3 shadow-sm">
-            <div className="text-[18px]">Teacher</div>
-            {c.teacherIds.map((id) => { const faculty = teacher(id); return <div key={id} className="mt-3 flex items-start gap-2.5"><PersonPhoto personId={id} full className="!w-[56px] !h-[83px] !object-cover !rounded-none" alt={`${faculty.prefix} ${faculty.last}`.trim()} /><div className="text-[15px]"><div className="text-[16px] font-semibold">{faculty.prefix ? `${faculty.prefix} ${faculty.last}` : faculty.last}</div><a href={`mailto:${faculty.email}`} className="text-vc-link-strong">Email</a></div></div>; })}
-            <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-3 flex items-center gap-1 text-vc-link-strong">More class information <ArrowRight className="size-3.5" /></Link>
-          </div>
-          <div className="rounded-sm bg-background p-3 shadow-sm">
-            <Link to="/class/$classId" params={{ classId: c.id }} search={{ tab: "resources" }} className="flex items-center gap-1 text-[16px]">All Pages <ArrowRight className="size-4 text-vc-link-strong" /></Link>
-            {ws.pages.length ? ws.pages.filter((pg) => user?.role !== 'student' || ws.pageContent?.[pg]?.published).map((pg) => <Link key={pg} to="/class/$classId" params={{ classId: c.id }} search={{ page: pg }} className="mt-3 block text-left text-vc-link-strong">{pg}</Link>)
-              : <p className="mt-2 text-muted-foreground">No pages yet.</p>}
-          </div>
-        </aside>
       </div>
+      <AssignmentDialog assignment={selected} onClose={() => setSelected(null)} detailed={false} />
     </div>
   );
-}
-
-function Body({ tab, c, upcoming }: { tab: Tab; c: Section; upcoming: Assignment[] }) {
-  if (tab === "home") return (
-    <>
-      <div className="w-[300px] border-b border-muted-foreground/60 text-[14px] font-semibold text-muted-foreground">Assignments</div>
-      <div className="mt-2 space-y-1.5">{upcoming.length ? upcoming.map((a) => (
-        <Link key={a.id} to="/grades/$classId" params={{ classId: c.id }} className="flex gap-3 text-[15px] text-vc-link-strong hover:underline">
-          <span className="w-8">{format(a.due, "EEE").toUpperCase()}</span><span className="w-12">{format(a.due, "MMM d")}</span><span>{a.title.length > 30 ? a.category[0] + a.category.slice(1).toLowerCase() : a.title}</span></Link>))
-        : <p className="text-[13px] text-muted-foreground">No upcoming assignments.</p>}</div>
-      {c.website.sections.map((sec, i) => (
-        <section key={i} className="mx-auto mt-6 w-[92%]">
-          <h3 className="bg-vc-classbar px-10 py-5 text-[24px] font-bold text-destructive">{sec.title}</h3>
-          <p className="whitespace-pre-line px-10 py-5 text-justify text-[15px] leading-7">{sec.body}</p>
-        </section>))}
-    </>
-  );
-  if (tab === "directory") return (
-    <>
-      <h2 className="text-[30px] font-bold">Student Directory</h2>
-      <div className="mt-3 text-right"><button onClick={() => window.print()} className="text-[14px] text-vc-link-strong">Download Directory (PDF)</button></div>
-      <div className="mt-4 space-y-4 px-3">{rosterOf(c).map((s) => <StudentCard key={s.id} s={s} />)}</div>
-    </>
-  );
-  return <p className="py-16 text-center text-[13px] text-muted-foreground">Nothing has been posted to {TABS.find((x) => x.id === tab)?.label} yet.</p>;
 }

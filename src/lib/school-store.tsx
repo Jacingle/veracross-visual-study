@@ -13,6 +13,7 @@ import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
 import { readSchool, saveSchool } from "./browser-save";
 import { toast } from "sonner";
+import type { ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
 
 export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
@@ -25,7 +26,7 @@ export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
 export const bgSrc = (v: string) => (v === "none" ? null : BACKGROUNDS.find((b) => b.key === v)?.src ?? (/^(https?:\/\/|data:image\/)/.test(v) ? v : null));
 
 /** Class website look, set by the class's teacher: blank, a solid color, or an uploaded (cropped) photo. */
-export type Website = { bg: "none" | "color" | "photo"; color: string; photo: string; sections: { title: string; body: string }[]; pages: string[]; pageContent?: Record<string, { body: string; published: boolean }>; barColor?: string; linkColor?: string };
+export type Website = { bg: "none" | "color" | "photo"; color: string; photo: string; sections: { title: string; body: string }[]; pages: string[]; pageContent?: Record<string, { body: string; published: boolean; date?: string | undefined; button?: { label: string; url: string } }>; barColor?: string; linkColor?: string; posts?: SitePost[]; resources?: ResourceTopic[] };
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };

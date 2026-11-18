@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Class website matched to Veracross screenshots: tabs, teacher card, More class information, All Pages, page view, shared assignment pop-up, timeline, calendar, resources, posts; #007DDE site blue, top shadow on color/photo backgrounds, more background colors, teacher editors for pages/posts/resources
+- [ ] Class website: Photos and Discussions tabs, school events on the class calendar
 - [ ] Match Classes & Reports top, teacher lists, all assignments and grade calculation hover to new references
 - [ ] Match daily schedule; share assignment popup across schedule, calendar and home
 - [ ] Match trapezoid header and sharp envelope/resources icons; green submit action; remove student link editing
