@@ -13,7 +13,6 @@ import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
 import { setTypeColors } from "./type-colors";
 import { readSchool, saveSchool } from "./browser-save";
-import { setTypeColors } from "./category-colors";
 import { toast } from "sonner";
 import type { ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
