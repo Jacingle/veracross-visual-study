@@ -75,29 +75,29 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
         <ClassPicker current={c.id} options={options} onPick={(id) => nav({ to: "/class/$classId", params: { classId: id } })} />
         <div className="whitespace-nowrap">{user?.email} <button onClick={() => { logout(); nav({ to: "/", replace: true }); }} className="ml-1.5 underline">log out</button></div>
       </div>
-      <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1160px] pb-12">
-        <h1 className={`pb-[18px] pt-[28px] text-[30px] font-light leading-[38px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
-        <div className="grid grid-cols-1 items-start gap-[15px] md:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="min-h-[740px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
+      <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1070px] pb-12">
+        <h1 className={`pb-[8px] pt-[22px] text-[30px] font-light leading-[38px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
+        <div className="grid grid-cols-1 items-start gap-[11px] md:grid-cols-[minmax(0,1fr)_256px]">
+          <div className="min-h-[680px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
             <div role="tablist" className={`grid grid-cols-4 border-b border-vc-line px-6 sm:grid-cols-8 ${styled ? "bg-vc-panel" : "bg-background"}`}>{TABS.map(({ id, label, icon: Icon }) => (
               <Link key={id} role="tab" aria-selected={active === id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
-                className={`-mb-px flex h-[74px] flex-col items-center justify-center gap-[5px] border-b-[3px] text-[16px] leading-5 ${active === id ? `border-vc-site-blue ${styled ? "bg-background" : "bg-vc-panel"} text-vc-site-blue` : "border-transparent text-foreground hover:bg-background"}`}>
-                <Icon className="size-[25px]" />{label}</Link>))}</div>
+                className={`-mb-px flex h-[67px] flex-col items-center justify-center gap-[4px] border-b-[3px] text-[15px] leading-5 ${active === id ? `border-vc-site-blue ${styled ? "bg-background" : "bg-vc-panel"} text-vc-site-blue` : "border-transparent text-foreground hover:bg-background"}`}>
+                <Icon className="size-[23px]" />{label}</Link>))}</div>
             {body}
           </div>
-          <aside className="space-y-[15px] text-[15px]">
-            <div className="rounded-[4px] bg-background px-[15px] pb-[14px] pt-[12px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
-              <div className="text-[20px] leading-7">Teacher</div>
+          <aside className="space-y-[11px] text-[15px]">
+            <div className="rounded-[3px] bg-background px-3 pb-[9px] pt-[9px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
+              <div className="text-[18px] leading-6">Teacher</div>
               {c.teacherIds.map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
                 <div key={id} className="mt-1.5 flex items-start gap-3">
-                  <PersonPhoto personId={id} full fit={{ w: 54, h: 81 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
-                  <div className="min-w-0 text-[16px] leading-[27px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
+                  <PersonPhoto personId={id} full fit={{ w: 55, h: 83 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
+                  <div className="min-w-0 text-[15px] leading-[20px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
                     {phone && <div>{phone}</div>}<a href={`mailto:${f.email}`} className="text-vc-site-blue">Email</a></div>
                 </div>); })}
-              <button onClick={() => go({ tab: "info" })} className="mt-[12px] flex items-center gap-1 text-[16px] text-vc-site-blue">More class information <ArrowRight className="size-3.5" strokeWidth={3} /></button>
+              <button onClick={() => go({ tab: "info" })} className="mt-[9px] flex items-center gap-1 text-[15px] text-vc-site-blue">More class information <ArrowRight className="size-3.5" strokeWidth={3} /></button>
             </div>
-            <div className="rounded-[4px] bg-background px-[15px] pb-[12px] pt-[14px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
-              <button onClick={() => go({ tab: "pages" })} className="flex items-center gap-1.5 text-[20px] leading-7">All Pages <ArrowRight className="size-4 text-vc-site-blue" strokeWidth={3} /></button>
+            <div className="rounded-[3px] bg-background px-3 pb-[22px] pt-[16px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
+              <button onClick={() => go({ tab: "pages" })} className="flex items-center gap-1.5 text-[18px] leading-6">All Pages <ArrowRight className="size-4 text-vc-site-blue" strokeWidth={3} /></button>
               {shownPages.length ? <div className="mt-[10px] space-y-[17px] pt-1">{shownPages.map((pg) => <button key={pg} onClick={() => go({ page: pg })} className="block text-left text-[16px] leading-5 text-vc-site-blue">{pg}</button>)}</div>
                 : <p className="mt-2 text-muted-foreground">No pages yet.</p>}
             </div>

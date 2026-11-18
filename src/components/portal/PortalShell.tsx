@@ -120,13 +120,13 @@ const TABS = [
   { to: "/assignments", label: "Assignments", icon: AlignLeft, solid: false },
 ] as const;
 
-export function StudentTabs() {
+export function StudentTabs({ compact = false }: { compact?: boolean }) {
   return (
     <div className="grid grid-cols-4 border-b border-vc-line bg-vc-panel sm:flex sm:justify-end">
       {TABS.map(({ to, label, icon: Icon, solid }) => (
-        <Link key={to} to={to} className="flex min-w-0 flex-col items-center gap-1 border-l border-vc-line px-2 pb-[11px] pt-[19px] sm:min-w-[125px] sm:px-5 text-[12.5px] leading-[18.75px] text-foreground/75 [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]"
+        <Link key={to} to={to} className={`flex min-w-0 flex-col items-center border-l border-vc-line text-foreground/75 ${compact ? "gap-[5px] px-[15px] pb-px pt-[17px] text-[13px] leading-[18px]" : "gap-1 px-2 pb-[11px] pt-[19px] sm:min-w-[125px] sm:px-5 text-[12.5px] leading-[18.75px]"} [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]`}
           activeProps={{ className: "!bg-background !text-vc-link -mb-px [--cut:var(--background)]" }}>
-          <Icon className="size-[22px]" strokeWidth={1.5} />{label}
+          <Icon className={compact ? "size-[18px]" : "size-[22px]"} strokeWidth={1.5} />{label}
         </Link>
       ))}
     </div>

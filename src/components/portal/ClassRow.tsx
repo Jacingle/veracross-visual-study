@@ -22,8 +22,8 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
     ? <>{variant === "overview" ? <span className="w-[22px] text-right">{letterFor(av)}</span> : <span className="w-9">{letterFor(av)}</span>}<span>{av.toFixed(2)}%</span></>
     : <span>-</span>;
   const updates = (
-    <Link to="/updates" className="flex items-center gap-2 text-[14px] leading-[19px] text-vc-gray-light hover:underline">
-      <span className={`grid h-[18px] min-w-[20px] place-items-center rounded-[3px] px-1 text-[13px] font-medium leading-none ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-chip text-foreground/80"}`}>{fresh}</span> new updates
+    <Link to="/updates" className={`flex items-center text-[16px] leading-[22px] hover:underline ${fresh ? "text-vc-tile-warm-fg" : "text-vc-gray-light"}`}>
+      <span className={`mr-[5px] inline-grid h-[18px] min-w-[18px] place-items-center rounded-[4px] px-[5px] text-[14px] font-semibold leading-none ${fresh ? "bg-vc-badge-warm text-vc-badge-warm-fg" : "bg-vc-badge font-medium text-vc-badge-fg"}`}>{fresh}</span><span className={fresh ? "bg-vc-chip/80" : ""}>new updates</span>
     </Link>
   );
   const tools = (

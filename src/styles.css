@@ -92,6 +92,11 @@
   --color-vc-attn: var(--vc-attn);
   --color-vc-select: var(--vc-select);
   --color-vc-note: var(--vc-note);
+  --color-vc-hint: var(--vc-hint);
+  --color-vc-badge: var(--vc-badge);
+  --color-vc-badge-fg: var(--vc-badge-fg);
+  --color-vc-badge-warm: var(--vc-badge-warm);
+  --color-vc-badge-warm-fg: var(--vc-badge-warm-fg);
   --color-vc-bar: var(--vc-bar);
   --color-vc-tile-fg: var(--vc-tile-fg);
   --color-vc-success-edge: var(--vc-success-edge);
@@ -165,6 +170,11 @@
   --vc-submit: oklch(0.46 0.07 262);
   --vc-done: oklch(0.52 0.12 145);
   --vc-note: oklch(0.97 0.04 90);
+  --vc-hint: #ffffcc;
+  --vc-badge: #d6d6d6;
+  --vc-badge-fg: #3b3b3b;
+  --vc-badge-warm: #ffe3c7;
+  --vc-badge-warm-fg: #5c2e00;
   --vc-danger-soft: oklch(0.88 0.06 15);
   --ax-top: oklch(0.47 0.07 252);
   --ax-bar: oklch(0.56 0.06 252);

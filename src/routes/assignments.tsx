@@ -42,7 +42,7 @@ function Planner() {
   const linkBtn = "flex items-center gap-1.5 text-[14.5px] uppercase text-vc-site-blue hover:underline";
   return (
     <PortalShell portal="student" fullWidth>
-      <StudentTabs />
+      <StudentTabs compact />
       <div className="flex items-center justify-end gap-3 px-6 pb-[22px] pt-[7px]">
         <button onClick={() => toAnchor(true)} className={linkBtn}>Today</button><span className="text-vc-gray">·</span>
         <button onClick={() => by(-5)} className={linkBtn}><ArrowLeft className="size-4" strokeWidth={3} />Previous</button><span className="text-vc-gray">·</span>
@@ -52,12 +52,12 @@ function Planner() {
         <div className="grid" style={{ gridTemplateColumns: `${LEFT}px repeat(${days.length}, ${COL}px)`, width: LEFT + days.length * COL }}>
           {/* date headings */}
           <div className="sticky left-0 z-10 border-r-2 border-foreground bg-background" />
-          {days.map((d) => <div key={+d} className="whitespace-nowrap px-3 pb-[3px] pt-[3px] text-[14px] leading-[17px] text-foreground/85">{format(d, "EEEE, MMM d")}</div>)}
+          {days.map((d) => <div key={+d} className={`whitespace-nowrap px-3 pb-[3px] pt-[3px] text-[15px] leading-[17px] text-foreground/85 ${d.getDay() === 5 ? "border-r border-vc-line" : ""}`}>{format(d, "EEEE, MMM d")}</div>)}
           {/* counts */}
           <div className="sticky left-0 z-10 flex items-center justify-between border-b-2 border-r-2 border-t border-foreground border-t-vc-line bg-background px-2 py-1.5 text-[12px] uppercase text-foreground/85"><span>Class details:</span><button type="button" onClick={() => setDetails((v) => !v)} className="hover:underline">+ Show - Hide</button></div>
           {days.map((d) => {
             const n = all.filter((a) => isSameDay(a.due, d)).length;
-            return <div key={+d} className="flex items-center gap-2 whitespace-nowrap border-b-2 border-t border-foreground border-t-vc-line px-3 py-1.5 text-[12px] uppercase text-foreground/85"><span className="grid h-[22px] min-w-[22px] place-items-center rounded-[2px] border border-vc-gray-light bg-background px-1 text-[12px] font-semibold">{n}</span>Assignments due</div>;
+            return <div key={+d} className={`flex items-center gap-2 whitespace-nowrap border-b-2 border-t border-foreground border-t-vc-line px-3 py-1.5 text-[12px] uppercase text-foreground/85 ${d.getDay() === 5 ? "border-r border-r-vc-line" : ""}`}><span className="grid h-[22px] min-w-[22px] place-items-center rounded-[2px] border border-vc-gray-light bg-background px-1 text-[12px] font-semibold">{n}</span>Assignments due</div>;
           })}
           {/* one row per class */}
           {classes.map((c) => (
