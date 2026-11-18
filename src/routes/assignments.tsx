@@ -49,9 +49,9 @@ function Planner() {
             <div className="border-b border-r border-b-vc-line border-r-foreground/80 px-2 py-2">
               <div className="flex items-start gap-2"><span className="mt-1.5 size-2.5 border border-vc-line" />
                 <div className="min-w-0">
-                  <Link to="/class/$classId" params={{ classId: c.id }} className="block truncate text-[15px] text-vc-link-strong hover:underline">{courseTitle(c)}</Link>
+                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block truncate text-[15px] text-vc-link-strong hover:underline">{courseTitle(c)}</Link>
                   {showDetails && <div className="mt-1 space-y-1 text-[12px]"><div className="italic text-muted-foreground">{teacherFull(c.teacherId)}</div>
-                    <Link to="/class/$classId" params={{ classId: c.id }} className="block text-foreground/70 hover:underline">view website</Link>
+                    <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block text-foreground/70 hover:underline">view website</Link>
                     <Link to="/grades/$classId" params={{ classId: c.id }} className="block text-foreground/70 hover:underline">view all assignments</Link></div>}
                 </div>
               </div>

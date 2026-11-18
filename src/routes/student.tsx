@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { addDays, isSameDay } from "date-fns";
-import { BookUser, CalendarCheck, CalendarDays, CirclePlay, CloudDownload, Link2, Mail, X } from "lucide-react";
+import { BookUser, CalendarCheck, CalendarDays, CloudDownload, Link2 } from "lucide-react";
 import { useState, type ComponentType } from "react";
 
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ClassRow } from "@/components/portal/ClassRow";
 import { Basketball, BookRibbon, ClockSolid, ListSquares } from "@/components/portal/icons";
 import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
-import { SharpEnvelope } from "@/components/portal/icons";
+import { MailOutline, PlayDisc } from "@/components/portal/icons";
 import { Button } from "@/components/ui/button";
 import { events, fmtDay, today, type Assignment } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
@@ -68,12 +68,12 @@ function Home() {
         </section>
         <aside>
           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>
-          <Link to="/messages" className="flex h-[62px] items-center gap-1.5 border border-vc-line px-1.5 text-[16px] hover:bg-vc-panel">
-            <SharpEnvelope className="size-[42px] shrink-0 text-vc-gray-light [--cut:var(--background)]" />
+          <Link to="/messages" className="flex h-[62px] items-center gap-3 border-2 border-vc-line px-2 text-[17px] hover:bg-vc-panel">
+            <MailOutline className="size-[42px] shrink-0 text-vc-gray-light" />
             <span>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</span>
           </Link>
-          <Link to="/assignments" className="mt-[8.5px] flex h-[35px] items-center justify-center gap-2 border-b-[3px] border-foreground/20 bg-vc-success text-[14px] font-semibold text-primary-foreground hover:opacity-90">
-            <CirclePlay className="size-[14px] stroke-current" /> Submit Assignments
+          <Link to="/assignments" className="mt-[8.5px] flex h-[38px] items-center justify-center gap-2.5 rounded-[3px] border-b-[4px] border-b-[color-mix(in_oklab,var(--vc-success)_75%,black)] bg-vc-success text-[16px] font-semibold text-primary-foreground [--cut:var(--vc-success)] hover:opacity-90">
+            <PlayDisc className="size-[22px]" /> Submit Assignments
           </Link>
           <div className="mt-[8.5px] grid grid-cols-2 gap-2">
             <Tile to="/schedule" label="Daily Schedule" icon={ClockSolid} warm />

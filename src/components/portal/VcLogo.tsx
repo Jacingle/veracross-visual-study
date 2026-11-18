@@ -1,6 +1,6 @@
-import { Landmark } from "lucide-react";
+import { Crest } from "@/components/portal/icons";
 
-/** Original school portal mark. */
+/** School portal crest (Ionic column capital). */
 export function VcLogo({ className = "h-5 w-6" }: { className?: string }) {
-  return <Landmark className={className} strokeWidth={1.5} aria-hidden />;
+  return <Crest className={className} />;
 }

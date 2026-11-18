@@ -249,8 +249,6 @@
 
 /* Matching trapezoid and parallelogram share a 10px slope. */
 .portal-title { clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%); }
-.portal-switch { position: relative; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%); }
-.portal-switch::after { content: ""; position: absolute; inset: 1px 5px; border: 1px solid color-mix(in oklab, var(--primary-foreground) 35%, transparent); transform: skewX(17deg); pointer-events: none; }
 .grade-print { font-family: Arial, sans-serif; }
 .grade-print th { border: 1px solid var(--vc-line); vertical-align: bottom; line-height: 1.1; }
 @media print { header, .grade-toolbar, .grade-print-action { display: none !important; } .grade-print { box-shadow: none; border: 0; } }

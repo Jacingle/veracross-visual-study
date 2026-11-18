@@ -1,12 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AlignLeft, BookUser, CalendarDays, ChevronDown, ClipboardList, Home, IdCard, Library, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
+import { AlignLeft, CalendarDays, ChevronDown, Home, Megaphone, Timer } from "lucide-react";
 import { useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { VcLogo } from "@/components/portal/VcLogo";
-import { BookRibbon, ClockSolid, DeskPhone, ListSquares, SharpEnvelope, ResourcesIcon } from "@/components/portal/icons";
+import { BookRibbon, BriefcaseSolid, BuildingSolid, ClockSolid, DeskPhone, ListSquares, ReceiptSolid, SharpEnvelope, ResourcesIcon } from "@/components/portal/icons";
 import { ROLE_LABEL, type Area } from "@/lib/auth-rules";
 import { SCHOOL } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
@@ -29,10 +29,10 @@ const NAV = {
     { to: "/directories", label: "Directories", icon: DeskPhone, kind: "custom" },
   ],
   teacher: [
-    { to: "/teacher", label: "Grade & Student Management", icon: IdCard, kind: "line" },
-    { to: "/teacher/news", label: "School News & Events", icon: Newspaper, kind: "line" },
-    { to: "/directories", label: "Directories", icon: BookUser, kind: "line" },
-    { to: "/teacher/purchases", label: "Purchase Requests", icon: Receipt, kind: "line" },
+    { to: "/teacher", label: "Grade & Student Management", icon: BriefcaseSolid, kind: "custom" },
+    { to: "/teacher/news", label: "School News & Events", icon: BuildingSolid, kind: "custom" },
+    { to: "/directories", label: "Directories", icon: DeskPhone, kind: "custom" },
+    { to: "/teacher/purchases", label: "Purchase Requests", icon: ReceiptSolid, kind: "custom" },
   ],
 } as const satisfies Record<Portal, readonly NavItem[]>;
 
@@ -72,8 +72,8 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             <Link to={p === "student" ? "/student" : "/teacher"} className="portal-title flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-7 text-[16px] font-semibold">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="portal-switch my-1 ml-0.5 flex h-[26px] w-[59px] shrink-0 items-center justify-center gap-1 rounded-none bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
-                <VcLogo className="h-5 w-6" /><ChevronDown className="size-3" />
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="ml-[18px] mb-1 mt-[6px] h-6 w-[54px] shrink-0 skew-x-[14deg] rounded-none border border-primary-foreground/30 bg-vc-navbar p-0 text-primary-foreground hover:bg-vc-navbar hover:text-primary-foreground">
+                <span className="flex -skew-x-[14deg] items-center justify-center gap-[7px]"><VcLogo className="h-[18px] w-5" /><ChevronDown className="size-[13px]" /></span>
               </Button>
           </div>
           <div className="ml-auto flex h-full items-center">
@@ -82,7 +82,7 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             </Link>
             <Link to="/calendar" className={TOP_LINK}><CalendarDays className="size-[21px] fill-current stroke-(--cut)" /><span className="hidden lg:inline">My Calendar</span></Link>
             <DropdownMenu>
-              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="ml-2.5 grid size-6 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-6" /></Button>
+              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="ml-2.5 grid size-6 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[11px] font-semibold text-primary-foreground outline-none hover:bg-primary-foreground/25 hover:text-primary-foreground">{user?.personId && photos[user.personId] ? <PersonPhoto personId={user.personId} fit={{ w: 24, h: 24 }} className="size-6 rounded-full" /> : initials}</Button>
               <DropdownMenuContent align="end" className="text-[13px]">
                 <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · {user ? ROLE_LABEL[user.role] : ""}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -95,8 +95,8 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
         </div>
         <nav className="flex min-h-[45px] flex-wrap items-stretch justify-center bg-vc-navbar text-[14px] text-primary-foreground shadow-md">
           {NAV[p].map(({ to, label, icon: Icon, kind }) => (
-            <Link key={to} to={to} className="flex items-center gap-2 px-[15px] py-2 [--cut:var(--vc-navbar)] hover:bg-primary-foreground hover:text-vc-navbar hover:[--cut:var(--primary-foreground)]">
-              <Icon className={kind === "solid" ? "size-4 fill-current stroke-(--cut)" : "size-4"} />{label}
+            <Link key={to} to={to} className="flex items-center gap-2 px-[15px] py-2 text-[13px] [--cut:var(--vc-navbar)] hover:bg-primary-foreground hover:text-vc-navbar hover:[--cut:var(--primary-foreground)]">
+              <Icon className={kind === "solid" ? "size-[17px] fill-current stroke-(--cut)" : "size-[17px]"} />{label}
             </Link>
           ))}
         </nav>

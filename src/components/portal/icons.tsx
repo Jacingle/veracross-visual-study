@@ -86,3 +86,76 @@ export function SproutLine(p: P) {
     </svg>
   );
 }
+
+/** Light outlined envelope with corner ticks (empty inbox on Student Home). */
+export function MailOutline(p: P) {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p}>
+      <rect x="2" y="6" width="44" height="36" />
+      <path d="M3 9l21 17L45 9" />
+      <path d="M10 36l5-5M38 36l-5-5" />
+    </svg>
+  );
+}
+
+/** White disc with a play triangle cut out (Submit Assignments). */
+export function PlayDisc(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <circle cx="12" cy="12" r="11" />
+      <path d="M9.6 6.8v10.4L17.4 12z" style={cutFill} />
+    </svg>
+  );
+}
+
+/** Solid house (Veracross Online School / Home). */
+export function HomeSolid(p: P) {
+  return <svg {...solid} {...p}><path d="M12 2.5 1 12.2h3V21h6.2v-6h3.6v6H20v-8.8h3z" /></svg>;
+}
+
+/** Solid building with window cut-outs (School News & Events). */
+export function BuildingSolid(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <path d="M4 2h11v20H4zM16.5 8H21v14h-4.5z" />
+      <path d="M7 5h2v2H7zm4 0h2v2h-2zM7 9h2v2H7zm4 0h2v2h-2zM7 13h2v2H7zm4 0h2v2h-2z" style={cutFill} />
+    </svg>
+  );
+}
+
+/** Solid open folder (Faculty Resource Page). */
+export function FolderSolid(p: P) {
+  return <svg {...solid} {...p}><path d="M2 4h7.5l2 2.5H20V10H6.5L3.5 19H2zM7.4 11.5H23l-3.2 8.5H4.2z" /></svg>;
+}
+
+/** Solid briefcase (My Classes Page / Grade & Student Management). */
+export function BriefcaseSolid(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <path d="M2 7h20v13H2z" />
+      <path d="M8.5 7V4.5h7V7" style={cutStroke} strokeWidth="1.8" />
+      <path d="M2 12.5h20" style={cutStroke} strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+/** Solid receipt (Purchase Requests). */
+export function ReceiptSolid(p: P) {
+  return (
+    <svg {...solid} {...p}>
+      <path d="M5 2h14v20l-2.3-1.6L14.3 22 12 20.4 9.7 22l-2.4-1.6L5 22z" />
+      <path d="M8.5 7.5h7M8.5 11.5h7M8.5 15.5h4.5" style={cutStroke} strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+/** School crest: an Ionic column capital with a scrolled volute and three fluted shafts. */
+export function Crest(p: P) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p}>
+      <path d="M4 6.5h33" />
+      <path d="M13 11.5H5.8C2.5 11.5 2 16 5 17.5c3 1.400 6-.6 4.700-3.200-1-1.800-3.800-1-3.400.9" />
+      <path d="M17 11.5h18M15 17v19M22 17v19M29 17v19" />
+    </svg>
+  );
+}

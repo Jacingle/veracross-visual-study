@@ -28,9 +28,9 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
   );
   const tools = (
     <>
-      <Link to="/class/$classId" params={{ classId: c.id }} className="hover:underline">Website</Link>
+      <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="hover:underline">Website</Link>
       <Link to="/calendar" className="hover:underline">Calendar</Link>
-      <Link to="/class/$classId" params={{ classId: c.id }} search={{ tab: "directory" }} className="hover:underline">Directory</Link>
+      <Link to="/class/$classId" params={{ classId: c.id }} search={{ tab: "directory" }} target="_blank" rel="noopener noreferrer" className="hover:underline">Directory</Link>
     </>
   );
   // Class names and grades have no hover effect; only the small links underline on hover.
@@ -38,7 +38,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
     <div className="flex justify-between border-b border-vc-line px-5 pb-6 pt-[18px] last:border-b-0">
       <div className="min-w-0">
         <div className="flex items-center gap-3.5">
-          <Link to="/class/$classId" params={{ classId: c.id }} className="text-[22px] font-light leading-[26px] text-foreground/90">{courseTitle(c)}</Link>
+          <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="text-[22px] font-light leading-[26px] text-foreground/90">{courseTitle(c)}</Link>
           <span className="border border-foreground/80 px-[5px] py-[3px] text-[10px] leading-[15px] tracking-wide text-foreground/80">{c.type}</span>
         </div>
         <div className="mt-[9px] text-[16px] font-light leading-6 text-vc-gray-dark">{faculty}</div>
@@ -56,7 +56,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
     <div className="flex justify-between border-b border-vc-line pb-[25px] pt-[16.5px] last:border-b-0">
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
-          <Link to="/class/$classId" params={{ classId: c.id }} className="text-[22px] font-light leading-[26px] text-vc-link">{courseTitle(c)}</Link>
+          <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="text-[22px] font-light leading-[26px] text-vc-link">{courseTitle(c)}</Link>
           <span className="text-[12.5px] italic text-vc-gray">{faculty}</span>
         </div>
         <div className="mt-[5.5px]">

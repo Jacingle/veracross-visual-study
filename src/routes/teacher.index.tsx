@@ -38,7 +38,7 @@ function TeacherHome() {
               <div key={c.id} className="border-l-2 border-vc-link pl-3.5">
                 <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[15px] text-vc-link hover:underline"><b>{c.id}</b>: {c.name}</Link>
                 <div className="text-[11px] text-muted-foreground">{c.block}: {c.time}</div>
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "attendance" }} className={`text-[12px] ${done ? "text-vc-success" : "text-destructive"}`}>● {done ? "Attendance taken" : "Attendance"} →</Link>
+                <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "attendance" }} target="_blank" rel="noopener noreferrer" className={`text-[12px] ${done ? "text-vc-success" : "text-destructive"}`}>● {done ? "Attendance taken" : "Attendance"} →</Link>
               </div>); })}
             {!mine.length && <p className="col-span-2 text-[13px] text-muted-foreground">No published classes this term. Classes appear here once the school office schedules and publishes them.</p>}
           </div>

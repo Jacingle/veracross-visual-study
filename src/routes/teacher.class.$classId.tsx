@@ -44,21 +44,20 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const roster = rosterOf(c);
   const w = weights[c.id] ?? [];
   return (
-    <PortalShell portal="teacher" area="teacher" wide={tab !== 'attendance'}>
-      {tab === 'attendance' && <div className="bg-vc-panel"><div className="px-5 py-3 text-[17px]"><select aria-label="Change class" className="max-w-full bg-transparent" value={c.id} onChange={(e) => nav({ to: '/teacher/class/$classId', params: { classId: e.target.value }, search: { tab } })}>{mine.map((x) => <option key={x.id} value={x.id}>{x.id}: {x.name}</option>)}</select></div><div className="flex overflow-x-auto border-b border-vc-line px-4">{TABS.map(({ id, label }) => <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} className={`shrink-0 px-4 py-4 text-[13px] ${tab === id ? 'border-x border-t border-vc-line bg-background text-vc-link-strong' : 'text-muted-foreground'}`}>{label}</Link>)}</div></div>}
-      <div className={`min-h-[640px] ${tab === 'attendance' ? '' : 'grid grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[230px_minmax(0,1fr)]'}`}>
-      {tab !== 'attendance' && <aside className="border-r border-vc-line bg-vc-panel py-4">
+    <PortalShell portal="teacher" area="teacher" wide>
+      <div className="grid min-h-[640px] grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[230px_minmax(0,1fr)]">
+      <aside className="border-r border-vc-line bg-vc-panel py-4">
         <div className="mb-4 flex gap-2.5 px-4"><Globe className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
           <div className="min-w-0"><div className="text-[14px] font-semibold leading-tight">{c.id}: {c.name}</div>
             <select aria-label="Change class" className="mt-0.5 w-full bg-transparent text-[12px] text-muted-foreground" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab } })}>
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</select></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }}
-            className={`mx-2 flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] ${tab === id ? "bg-vc-select" : "hover:bg-background"}`}><Icon className="size-5 text-foreground/70" strokeWidth={1.5} />{label}</Link>))}
+            className={`mx-2 flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] ${tab === id ? "bg-vc-select text-vc-link-strong" : "hover:bg-background"}`}><Icon className="size-5 text-foreground/70" strokeWidth={1.5} />{label}</Link>))}
         <div className="mt-4 px-5 text-[11px] text-muted-foreground">{c.teacherIds.map(teacherFull).join(", ")}<br />{c.block} · Room {c.room} · {roster.length} students<br />{c.terms.map(termLabel).join(", ")}</div>
-      </aside>}
+      </aside>
       <div className="min-w-0">
-      <div className="px-4 py-4">
+      <div className={tab === "attendance" ? "px-6 py-6" : "px-4 py-4"}>
         {tab === "overview" && (
           <table className="w-full text-[13px]">
             <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Grade</th><th>Current Average</th><th>Missing</th><th /></tr></thead>

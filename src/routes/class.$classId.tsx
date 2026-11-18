@@ -66,7 +66,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
   else body = <PagesPlaceholder what={TABS.find((x) => x.id === tab)?.label ?? "this page"} />;
 
   return (
-    <div className="relative min-h-screen" style={vars}>
+    <div className="relative min-h-screen" style={{ ...vars, zoom: 0.9 }}>
       {ws.bg === "photo" && ws.photo ? <img src={ws.photo} alt="" width={1600} height={900} className="fixed inset-0 h-full w-full object-cover" />
         : <div className="fixed inset-0 bg-[#eeeeee]" style={ws.bg === "color" ? { background: ws.color } : undefined} />}
       {/* A color or photo gets a soft dark shadow across the top, like the original. */}
@@ -90,7 +90,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
               <div className="text-[20px] leading-7">Teacher</div>
               {c.teacherIds.map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
                 <div key={id} className="mt-1.5 flex items-start gap-3">
-                  <PersonPhoto personId={id} full className="!h-[92px] !w-[64px] !rounded-none !object-cover" alt={`${f.prefix} ${f.last}`.trim()} />
+                  <PersonPhoto personId={id} full fit={{ w: 50, h: 75 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
                   <div className="min-w-0 text-[16px] leading-[27px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
                     {phone && <div>{phone}</div>}<a href={`mailto:${f.email}`} className="text-vc-site-blue">Email</a></div>
                 </div>); })}

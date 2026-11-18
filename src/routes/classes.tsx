@@ -47,7 +47,7 @@ function Overview() {
       <div className="px-5 pt-5">
         <h2 className="text-[24px] font-light leading-9 text-foreground/90">Reports</h2>
         <div className="grid grid-cols-1 gap-x-8 gap-y-[25px] px-[12.5px] pb-[60px] pt-[26px] sm:grid-cols-2">
-          <Report icon={BarChart3} label="Progress Report"><Link to="/report-card" className={reportLink}>Mid-Semester 1</Link></Report>
+          <Report icon={BarChart3} label="Progress Report"><Link to="/report-card" target="_blank" rel="noopener noreferrer" className={reportLink}>Mid-Semester 1</Link></Report>
           <Report icon={Clock} label="Schedule"><Link to="/schedule-report" className={reportLink}>Current Class Schedule</Link></Report>
           <Report icon={SproutLine} label="NWEA MAP Growth" boxed={false}>
             <button type="button" className={reportLink} onClick={() => toast.info("NWEA MAP Growth reports are not available in this demo.")}>NWEA MAP Growth Fall 2026</button>
@@ -57,7 +57,7 @@ function Overview() {
               <span key={id}>
                 {i > 0 && <span className="mx-[13px] text-[9px] text-vc-gray-light">•</span>}
                 {started(id)
-                  ? <Link to="/attendance" search={{ term: id }} className={reportLink}>{termById(id)?.label ?? id}</Link>
+                  ? <Link to="/attendance" search={{ term: id }} target="_blank" rel="noopener noreferrer" className={reportLink}>{termById(id)?.label ?? id}</Link>
                   : <span className="text-vc-gray-light">{termById(id)?.label ?? id}</span>}
               </span>
             ))}

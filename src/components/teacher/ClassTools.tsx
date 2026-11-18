@@ -2,9 +2,9 @@ import { ATT_STATUSES } from "@/lib/attendance";
 import { categoryColor } from "@/lib/category-colors";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { meetingsOn } from "@/lib/scheduling";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type Assignment, type Course, type Student } from "@/lib/sis-data";
@@ -16,9 +16,13 @@ import { Button } from '@/components/ui/button';
 
 const ATT = ATT_STATUSES;
 
+const DOT = (v: string) => (v === "Present" ? "bg-vc-success" : v === "Not Expected" || v.startsWith("Absent") ? "bg-destructive" : "bg-vc-tile-warm-fg");
+const COL = "text-[10px] font-semibold uppercase tracking-wide text-vc-gray";
+
 export function Attendance({ c, roster, date }: { c: Section; roster: Student[]; date: string }) {
-  const { attendance, attNotes, attDone, update, photos, schedulingSets } = useSchool();
+  const { attendance, attNotes, attDone, update, schedulingSets } = useSchool();
   const nav = useNavigate();
+  const [editing, setEditing] = useState<string | null>(null);
   const key = (sid: string) => `${c.id}|${date}|${sid}`;
   const done = attDone.includes(`${c.id}|${date}`);
   const setDate = (d: string) => nav({ to: "/teacher/class/$classId", params: { classId: c.id }, search: { tab: "attendance", date: d } });
@@ -26,34 +30,46 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
   const term = termOn(c.terms, parseISO(date));
   const meetings = meetingsOn(c, schedulingSets, parseISO(date));
   const meets = Boolean(term) && meetings.length > 0;
-  const counts = ATT.map((st) => [st, roster.filter((s) => (attendance[key(s.id)] ?? "Present") === st).length] as const).filter(([, n]) => n > 0);
+  const status = (sid: string) => attendance[key(sid)] ?? "Present";
+  const notExpected = roster.filter((s) => status(s.id) === "Not Expected").length;
+  const meet = meetings[0];
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-[22px] font-light">Class Attendance <span className={`ml-1 px-1.5 py-0.5 align-middle text-[12px] ${done ? "bg-vc-tile text-vc-success" : "bg-vc-line"}`}>{done ? "Complete" : "Not Taken"}</span></h2>
-        <button onClick={() => { update((x) => ({ ...x, attDone: done ? x.attDone : [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!meets} className="disabled:opacity-40 h-8 rounded-sm bg-vc-link-strong px-4 text-[13px] text-primary-foreground">✓ Mark Complete</button>
-      </div>
-      <div className="mt-2 flex items-center gap-3 text-[13px]">
-        <div className="flex h-8 items-center border border-vc-line">
-          <button aria-label="Previous day" className="px-2.5" onClick={() => go(-1)}>‹</button>
-          <input type="date" className="h-full border-x border-vc-line px-2" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-          <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}>›</button>
+    <div className="text-[13px]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-1.5 text-[22px] font-light leading-8">Class Attendance <span className={`px-2 py-0.5 text-[12px] font-normal leading-4 ${done ? "bg-vc-success/15 text-vc-success" : "bg-vc-line text-foreground/70"}`}>{done ? "Taken" : "Not Taken"}</span></h2>
+        <div className="flex items-center gap-3">
+          {!done && <button onClick={() => { update((x) => ({ ...x, attDone: [...x.attDone, `${c.id}|${date}`] })); toast.success("Attendance marked complete"); }} disabled={!meets} className="h-8 rounded-[3px] bg-vc-link-strong px-4 text-[12px] font-semibold text-primary-foreground disabled:opacity-40">✓ Mark Complete</button>}
+          <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "website" }} className="flex h-8 items-center gap-1.5 rounded-[3px] border border-vc-line bg-background px-3 text-[12px] shadow-sm"><Settings className="size-3.5 fill-current" />Settings</Link>
         </div>
-        <select aria-label="Attendance block" className="h-8 w-[200px] border border-vc-line bg-background px-2">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block} · {b.start}{b.end ? `–${b.end}` : ""}</option>) : <option>Not scheduled</option>}</select>
       </div>
-      {!meets ? <p className="my-6 border border-vc-line bg-vc-panel p-4 text-[13px]">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <><div className="mb-3 mt-2 text-[13px]">Total: {roster.length} ({counts.map(([st, n]) => `${st}: ${n}`).join(", ")})</div>
-      <div className="overflow-x-auto"><table className="w-full text-[13px]">
-        <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Status</th><th>Class Attendance Notes</th></tr></thead>
-        <tbody>{roster.map((s) => { const v = attendance[key(s.id)] ?? "Present"; return (
-          <tr key={s.id} className="border-b border-vc-line">
-            <td className="py-2"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-10" /><span className="text-[14px] leading-tight">{s.first}<br />{s.last}</span></div></td>
-            <td><select aria-label={`Attendance for ${s.first}`} className={`h-8 w-[190px] rounded-sm border border-vc-line bg-background px-2 ${v === "Present" ? "text-vc-success" : "text-destructive"}`} value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select></td>
-            <td><input aria-label={`Note for ${s.first}`} className="h-7 w-full border border-vc-line bg-background px-1.5" maxLength={200} value={attNotes[key(s.id)] ?? ""} onChange={(e) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [key(s.id)]: e.target.value } }))} /></td>
-          </tr>); })}</tbody>
-      </table></div>
-      <div className="mt-3 flex justify-end gap-2">
-        <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className="h-8 border border-vc-line px-3 text-[13px]">Mark All Present</button>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <div className="flex h-8 items-center border border-vc-line text-vc-gray">
+          <button aria-label="Previous day" className="px-2.5 text-[16px]" onClick={() => go(-1)}>‹</button>
+          <label className="relative flex h-full items-center border-x border-vc-line px-2 text-[12px]"><span aria-hidden>{format(parseISO(date), "MMMM d, yyyy")}</span><input type="date" aria-label="Attendance date" className="absolute inset-0 cursor-pointer opacity-0" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></label>
+          <button aria-label="Next day" className="px-2.5 text-[16px]" onClick={() => go(1)}>›</button>
+        </div>
+        <select aria-label="Attendance block" className="h-8 w-[200px] border border-vc-line bg-background px-2 text-[12px] text-vc-gray">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>Not scheduled</option>}</select>
       </div>
+      {!meets ? <p className="my-6 border border-vc-line bg-vc-panel p-4">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <>
+        <div className="mt-2 text-[11px]">Total: {roster.length} (Expected: {roster.length - notExpected}, Not Expected: {notExpected})</div>
+        <div className="mt-6 overflow-x-auto"><table className="w-full">
+          <thead><tr className="text-left"><th className="w-[26%]" /><th className="w-[24%]" /><th className={`${COL} w-[28%] pb-1 font-semibold`}>Class Attendance Notes</th><th className={`${COL} pb-1 font-semibold`}>Daily Notes</th></tr></thead>
+          <tbody>{roster.map((s) => { const v = status(s.id); const note = attNotes[key(s.id)] ?? ""; return (
+            <tr key={s.id} className="align-middle">
+              <td className="py-3.5 pr-3"><div className="flex items-center gap-3"><PersonPhoto personId={s.id} fit={{ w: 60, h: 60 }} className="rounded-full" alt={`${s.first} ${s.last}`} /><span className="text-[16px] leading-[19px]">{s.first}<br /><span className="text-vc-gray-dark">{s.last}</span></span></div></td>
+              <td className="pr-4"><div className="relative w-[150px]"><span aria-hidden className={`pointer-events-none absolute left-2.5 top-1/2 size-2 -translate-y-1/2 rounded-full ${DOT(v)}`} />
+                <select aria-label={`Attendance for ${s.first}`} className="h-8 w-full appearance-none rounded-[3px] border border-vc-line bg-background pl-6 pr-6 text-[11px] text-foreground/70 shadow-sm" value={v} onChange={(e) => update((x) => ({ ...x, attendance: { ...x.attendance, [key(s.id)]: e.target.value } }))}>{ATT.map((a) => <option key={a}>{a}</option>)}</select>
+                <span aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-vc-gray-light">⌵</span></div></td>
+              <td className="pr-4 align-middle text-[11px] leading-[17px]">
+                {meet && <div>In class: {c.name}{meet.start ? ` (${meet.start}${meet.end ? `–${meet.end}` : ""})` : ""}</div>}
+                {editing === s.id ? <input autoFocus aria-label={`Note for ${s.first}`} className="mt-1 h-7 w-full border border-vc-line bg-background px-1.5" maxLength={200} value={note} onBlur={() => setEditing(null)} onChange={(e) => update((x) => ({ ...x, attNotes: { ...x.attNotes, [key(s.id)]: e.target.value } }))} />
+                  : <>{note && <div className="mt-0.5">{note}</div>}<button onClick={() => setEditing(s.id)} className="mt-1.5 h-6 rounded-[3px] border border-vc-line bg-background px-2.5 text-[10px] shadow-sm">Edit</button></>}</td>
+              <td />
+            </tr>); })}</tbody>
+        </table></div>
+        <div className="mt-3 flex justify-end">
+          <button onClick={() => update((x) => { const a = { ...x.attendance }; roster.forEach((s) => { a[key(s.id)] = "Present"; }); return { ...x, attendance: a }; })} className="h-8 rounded-[3px] border border-vc-line bg-background px-3 text-[12px] shadow-sm">Mark All Present</button>
+        </div>
       </>}
     </div>
   );

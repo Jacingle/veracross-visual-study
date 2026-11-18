@@ -48,7 +48,7 @@ export function WebsiteSettings({ c }: { c: Section }) {
     <div className="max-w-[820px] text-[13px]">
       <div className="flex items-center justify-between border-b border-vc-line pb-2">
         <h2 className="text-[22px]">Class Website</h2>
-        <div className="flex gap-2"><Link to="/class/$classId" params={{ classId: c.id }} className="flex h-8 items-center border border-vc-line px-3 text-vc-link-strong">View Website</Link>
+        <div className="flex gap-2"><Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="flex h-8 items-center border border-vc-line px-3 text-vc-link-strong">View Website</Link>
           <button onClick={() => save()} className="h-8 bg-vc-link-strong px-4 font-semibold text-primary-foreground">Save</button></div>
       </div>
 
