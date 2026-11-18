@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { addDays, format, startOfWeek } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { usePortal } from '@/lib/portal-store';
 import { updateKey } from '@/components/portal/ClassRow';
-import { ArrowRight, Printer, MessageCircle, Check, Paperclip } from 'lucide-react';
+import { ArrowRight, Printer, MessageCircle } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { Button } from '@/components/ui/button';
 import { GradeCalculation } from "@/components/portal/GradeCalculation";
@@ -17,22 +17,20 @@ import { termById, termOn } from '@/lib/terms';
 import { pageHead } from '@/lib/head';
 
 export const Route = createFileRoute('/grades/$classId')({
-  validateSearch: (s: Record<string, unknown>): { tab?: 'detail' } => s['tab'] === 'detail' ? { tab: 'detail' } : {},
+  validateSearch: (s: Record<string, unknown>): { tab?: 'detail'; filter?: 'updates' } => ({ ...(s['tab'] === 'detail' ? { tab: 'detail' as const } : {}), ...(s['filter'] === 'updates' ? { filter: 'updates' as const } : {}) }),
   head: ({ params }) => pageHead(`Class ${params.classId} · Grades`, 'Published assignment scores, feedback and term grade details.'),
   component: Grades,
 });
 const pct = (a: Assignment) => a.score !== undefined && a.points > 0 ? a.score / a.points * 100 : null;
 const category = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 function Grades() {
-  const { classId } = Route.useParams(); const { tab } = Route.useSearch();
+  const { classId } = Route.useParams(); const { tab, filter: startFilter } = Route.useSearch();
   const c = useMySections().find((x) => x.id === classId);
   const list = useStudentAssignments().filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due);
-  const { read, markRead } = usePortal();
+  const { read } = usePortal();
   const { users } = useSchool();
   const faculty = teacherNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
   const [fresh] = useState(() => new Set(list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => a.id)));
-  const unseen = list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => updateKey(a.id, a.score)).join(',');
-  useEffect(() => { if (unseen) unseen.split(',').forEach(markRead); }, [unseen, markRead]);
   const fullNames = teacherFullNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
   return <PortalShell portal="student" maxWidth={930}>{c ? <>
     <div className="relative px-9 pb-[19px] pt-2.5">
@@ -40,13 +38,12 @@ function Grades() {
       <Link to="/class/$classId" params={{ classId }} className="absolute right-3 top-3 flex items-center gap-1 text-[12px] text-vc-link">View Class Website <ArrowRight className="size-3" /></Link>
     </div>
     <div className="flex pl-[26px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-[15px] py-[9px] text-[14.5px] leading-5 ${Boolean(tab) === Boolean(v) ? 'bg-vc-bar font-semibold text-foreground' : 'text-vc-gray'}`}>{label}</Link>)}</div>
-    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
+    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} startFilter={startFilter ?? 'all'} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
 }
-function AllAssignments({ list, teacherName, fresh }: { list: Assignment[]; teacherName: string; fresh: Set<string> }) {
+function AllAssignments({ list, teacherName, fresh, startFilter }: { list: Assignment[]; teacherName: string; fresh: Set<string>; startFilter: string }) {
   const { comments, aStatus, user, weights } = useSchool();
-  const { done, toggleDone } = usePortal();
-  const [selected, setSelected] = useState<Assignment | null>(null);
-  const [filter, setFilter] = useState('all'); const [sort, setSort] = useState('date'); const [expanded, setExpanded] = useState<string | null>(null);
+  const { read, markRead } = usePortal();
+  const [filter, setFilter] = useState(startFilter); const [sort, setSort] = useState('date'); const [expanded, setExpanded] = useState<string | null>(null);
   const feedback = (a: Assignment) => comments[`a|${a.id}|${user?.personId}`] ?? '';
   const status = (a: Assignment) => aStatus[`${a.id}|${user?.personId}`] ?? '';
   const shown = list.filter((a) => filter === 'all' || (filter === 'updates' ? fresh.has(a.id) : filter === 'feedback' ? Boolean(feedback(a)) : filter === 'problems' ? ['Missing', 'Incomplete', 'Late'].includes(status(a)) : a.score === undefined && a.due >= today()));
@@ -60,37 +57,32 @@ function AllAssignments({ list, teacherName, fresh }: { list: Assignment[]; teac
       <div className="flex items-center gap-2 text-[12.5px]"><span className="text-vc-gray">sort by:</span>{[['date', 'Due Date'], ['type', 'Assignment Type']].map(([v, label]) => <Button key={v} size="sm" variant="ghost" onClick={() => setSort(v ?? 'date')} className={chip(sort === v)}>{label}</Button>)}</div>
     </div>
     {groups.map((g) => <section key={g.key}>
-      <h2 className="border-b border-vc-line px-10 pb-[7px] pt-7 text-[20px] font-light leading-7">{g.label} <span className="text-[12px]">({g.items.length} assignments)</span></h2>
+      <h2 className="border-b border-vc-line px-7 pb-[7px] pt-6 text-[20px] leading-7">{g.label} <span className="text-[14px] font-medium text-vc-gray-dark">({g.items.length} assignments)</span></h2>
       {g.items.map((a) => {
-        const color = categoryColor(weights[a.courseId], a.category); const open = expanded === a.id; const fb = feedback(a);
-        return <div key={a.id} className="border-b border-vc-line">
-          <div className={`flex min-h-[46px] items-center gap-3 pl-3.5 pr-6 ${open ? 'bg-vc-bar' : ''}`}>
-            <span className="grid w-[18px] shrink-0 place-items-center">{fb && <MessageCircle className="size-[17px] fill-current text-vc-link" />}</span>
-            <button type="button" onClick={() => setExpanded(open ? null : a.id)} className="grid min-w-0 flex-1 cursor-pointer grid-cols-[52px_44px_minmax(0,1fr)] items-center py-2 text-left text-[14px]">
-              <b className="font-semibold">{format(a.due, 'MMM dd')}</b><b className="font-semibold">{format(a.due, 'EEE')}</b>
-              <span className="flex min-w-0 items-center gap-2.5"><span className="flex shrink-0 items-stretch"><span className="w-[3px] shrink-0" style={{ background: color }} /><span className="bg-vc-bar px-1.5 text-[14.5px] font-semibold leading-[26px] text-foreground">{category(a.category)}</span></span><span className="min-w-0 break-words text-[15px]">{a.title}</span></span>
-            </button>
-            {done.includes(a.id) && <span className="flex shrink-0 items-center gap-1 bg-vc-done px-2 py-[3px] text-[13px] font-semibold text-primary-foreground"><Check className="size-3.5" strokeWidth={3} />Done!</span>}
-            
-            {a.score === undefined ? <span className="flex min-w-[74px] shrink-0 justify-end text-[14px] italic text-vc-gray-dark">{status(a) || (a.due >= today() ? 'Pending' : '-')}</span> : <span className="flex shrink-0 items-stretch text-[17px] leading-[21px]"><strong className="bg-background px-[6px] font-bold">{a.score}</strong><span className="min-w-[27px] bg-vc-bar px-[5px] text-center font-light text-vc-gray-dark">{a.points}</span></span>}
-          </div>
-          {open && <div className="grid gap-8 bg-[oklch(0.985_0_0)] px-7 pb-6 pt-5 text-[14px] md:grid-cols-[54fr_46fr]">
+        const color = categoryColor(weights[a.courseId], a.category); const open = expanded === a.id; const fb = feedback(a); const flag = status(a);
+        const isNew = a.score !== undefined && !read.includes(updateKey(a.id, a.score));
+        const hasNotes = a.notes.trim() !== '';
+        return <div key={a.id} className={`border-b border-vc-line ${isNew ? 'bg-vc-note' : ''}`}>
+          <button type="button" aria-expanded={open} onClick={() => { setExpanded(open ? null : a.id); if (a.score !== undefined) markRead(updateKey(a.id, a.score)); }} className={`flex min-h-[46px] w-full cursor-pointer items-center pl-7 pr-7 text-left text-[14px] ${open && !isNew ? 'bg-vc-bar' : ''}`}>
+            {fb && <MessageCircle aria-label="Has feedback" className="mr-2 size-[17px] shrink-0 fill-current text-vc-link" />}
+            <b className="w-[52px] shrink-0 font-semibold">{format(a.due, 'MMM dd')}</b><b className="w-[44px] shrink-0 font-semibold">{format(a.due, 'EEE')}</b>
+            <span className="flex min-w-0 flex-1 items-center gap-2.5 py-2"><span className="flex shrink-0 items-stretch"><span className="w-[3px] shrink-0" style={{ background: color }} /><span className="bg-vc-bar px-1.5 text-[14.5px] font-semibold leading-[26px]" style={{ color }}>{category(a.category)}</span></span><span className="min-w-0 break-words text-[15px]">{a.title}</span></span>
+            {a.score === undefined ? <span className={`shrink-0 pl-3 text-[14px] ${flag || a.due >= today() ? 'italic text-vc-gray-dark' : ''}`}>{flag || (a.due >= today() ? 'Pending' : 'Complete')}</span> : <span className="flex shrink-0 items-stretch pl-3 text-[17px] leading-[21px]"><strong className="bg-background px-[6px] font-bold">{a.score}</strong><span className="min-w-[27px] bg-vc-bar px-[5px] text-center font-light text-vc-gray-dark">{a.points}</span></span>}
+          </button>
+          {open && <div className={`grid gap-8 px-7 pb-6 pt-5 text-[14px] ${isNew ? '' : 'bg-background'} ${fb ? 'md:grid-cols-[54fr_46fr]' : ''}`}>
             <div>
               <div className="flex gap-[34px]">{[['DATE ASSIGNED', a.assigned], ['DUE DATE', a.due]].map(([label, d]) => <div key={String(label)}><div className="text-[12px] font-light uppercase leading-5 text-vc-gray-dark">{String(label)}</div><div className="text-[16px] font-semibold leading-5">{format(d as Date, 'EEE, MMM dd')}</div></div>)}</div>
-              <p className="mt-[18px] whitespace-pre-wrap text-[14px] leading-[17px]">{a.notes || '-'}</p>
-              <div className="mt-4 flex gap-2"><Button variant="outline" size="sm" onClick={() => setSelected(a)} className="h-7 rounded-none text-[12px]">Assignment Details</Button><Button variant="outline" size="sm" onClick={() => toggleDone(a.id)} className="h-7 rounded-none text-[12px]"><Check className="size-3" />{done.includes(a.id) ? 'Mark Not Done' : 'Mark Done'}</Button></div>
+              {hasNotes && <p className="mt-[18px] whitespace-pre-wrap text-[14px] leading-[17px]">{a.notes}</p>}
             </div>
-            <div>
+            {fb && <div>
               <h3 className="text-[13px] font-bold uppercase leading-5">Assignment Feedback</h3>
-              {fb ? <div className="mt-2.5"><div className="flex justify-end"><span className="border-r-[3px] border-vc-link-strong bg-vc-sky px-2 text-[14px] font-semibold leading-[20px] text-vc-link-strong">{teacherName}</span></div><p className="mt-5 whitespace-pre-wrap pl-[50px] text-justify text-[14px] leading-[17px]">{fb}</p><div className="mt-4 border-b border-dotted border-vc-gray-light" /></div> : <p className="mt-3">-</p>}
-              {status(a) && <div className="mt-3 flex items-center gap-1.5 text-[13px]"><Paperclip className="size-3.5" />{status(a)}</div>}
-            </div>
+              <div className="mt-2.5 flex justify-end"><span className="border-r-[3px] border-vc-link-strong bg-vc-bar px-2 text-[14px] font-semibold leading-[20px] text-vc-link-strong">{teacherName}</span></div>
+              <p className="mt-5 whitespace-pre-wrap pl-[50px] text-justify text-[14px] leading-[17px]">{fb}</p><div className="mt-4 border-b border-dotted border-vc-gray-light" />
+            </div>}
           </div>}
         </div>;
       })}
     </section>)}
-    {!shown.length && <p className="px-10 py-10 text-[14px] text-vc-gray-dark">No assignments.</p>}
-    <AssignmentDialog assignment={selected} onClose={() => setSelected(null)} />
   </>;
 }
 function Detail({ list, c }: { list: Assignment[]; c: Section }) {

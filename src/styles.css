@@ -278,3 +278,9 @@
 .grade-print { font-family: Arial, sans-serif; }
 .grade-print th { border: 1px solid var(--vc-line); vertical-align: bottom; line-height: 1.1; }
 @media print { header, .grade-toolbar, .grade-print-action { display: none !important; } .grade-print { box-shadow: none; border: 0; } }
+
+/* Veracross feel: state changes are instant (no easing) and a press reads as a firm, darker click. */
+@layer base {
+  a, button, [role="tab"], [role="button"], [role="menuitem"], label { transition: none !important; }
+  a:active, button:not(:disabled):active, [role="tab"]:active, a[data-pressed] { filter: brightness(0.9); }
+}

@@ -22,7 +22,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
     ? <>{variant === "overview" ? <span className="w-[22px] text-right">{letterFor(av)}</span> : <span className="w-9">{letterFor(av)}</span>}<span>{av.toFixed(2)}%</span></>
     : <span>-</span>;
   const updates = (
-    <Link to="/updates" className={`flex items-center text-[16px] leading-[22px] hover:underline ${fresh ? "text-vc-tile-warm-fg" : "text-vc-gray-light"}`}>
+    <Link to="/grades/$classId" params={{ classId: c.id }} search={{ filter: "updates" }} className={`flex items-center text-[16px] leading-[22px] hover:underline ${fresh ? "text-vc-tile-warm-fg" : "text-vc-gray-light"}`}>
       <span className={`mr-[5px] inline-grid h-[20px] min-w-[19px] place-items-center rounded-[4px] px-[5px] text-[14px] font-semibold leading-none ${fresh ? "bg-vc-badge-warm text-vc-badge-warm-fg" : "bg-vc-badge font-medium text-vc-badge-fg"}`}>{fresh}</span>new updates
     </Link>
   );
