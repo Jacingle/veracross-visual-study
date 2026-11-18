@@ -35,34 +35,33 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
       <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-2 justify-self-end text-[13px] text-foreground/80 hover:text-vc-link">View All Assignments</Link>
     </div>
   );
+  // "home" variant: Student Home "My Classes" list.
   return (
-    <div className="flex justify-between border-b border-vc-line mx-1 px-4 py-6 last:border-b-0">
+    <div className="flex justify-between border-b border-vc-line pb-[25px] pt-[16.5px] last:border-b-0">
       <div className="min-w-0">
-        <div className="flex items-baseline gap-2.5">
-          <Link to="/class/$classId" params={{ classId: c.id }}
-            className={variant === "home" ? "text-[22px] font-light text-vc-link hover:underline" : "text-[24px] font-light text-foreground/80 hover:text-vc-link"}>
-            {courseTitle(c)}
-          </Link>
-          {variant === "home" ? <span className="text-[13px] italic text-muted-foreground">{teacherShort(c.teacherId)}</span>
-            : <span className="border border-foreground/70 px-1 py-px text-[10px] tracking-wide text-foreground/80">{c.type}</span>}
+        <div className="flex items-baseline gap-2">
+          <Link to="/class/$classId" params={{ classId: c.id }} className="text-[22px] font-light leading-[26px] text-vc-link hover:underline">{courseTitle(c)}</Link>
+          <span className="text-[12.5px] italic text-vc-gray">{teacherShort(c.teacherId)}</span>
         </div>
-        {variant === "home"
-          ? <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground"><Clock className="size-3.5" /> {meets ? `${c.time} • ${c.block} • ${c.room}` : "Not Scheduled Today"}</div>
-          : <div className="mt-2.5 text-[16px] font-light text-muted-foreground">{teacherShort(c.teacherId)}</div>}
-        <div className="mt-3 flex gap-5 text-[14px] text-foreground/80">
+        <div className="mt-[5.5px]">
+          {meets
+            ? <div className="inline-flex h-[21px] items-center gap-[7px] bg-vc-now pr-3.5 text-[13px] leading-[21px] text-foreground/90"><Clock className="size-3.5 shrink-0 text-vc-gray-dark" /><span><b className="font-semibold">{c.block}:</b> {c.time}</span></div>
+            : <div className="flex h-[21px] items-center gap-[7px] text-[13px] leading-[21px] text-vc-gray-light"><Clock className="size-3.5 shrink-0" />Not Scheduled Today</div>}
+        </div>
+        <div className="mt-1.5 flex gap-[18px] text-[12.5px] leading-[18px] text-vc-gray-dark">
           <Link to="/class/$classId" params={{ classId: c.id }} className="hover:text-vc-link">Website</Link>
           <Link to="/calendar" className="hover:text-vc-link">Calendar</Link>
           <Link to="/class/$classId" params={{ classId: c.id }} search={{ tab: "directory" }} className="hover:text-vc-link">Directory</Link>
         </div>
       </div>
       <div className="flex shrink-0 flex-col items-end">
-        <Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: "detail" }} className="flex gap-8 text-[24px] font-light text-foreground/85 hover:text-vc-link">
-          {av !== null ? <><span>{letterFor(av)}</span><span>{av.toFixed(2)}%</span></> : <span>-</span>}
+        <Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: "detail" }} className="-mr-1.5 flex text-[22px] font-light leading-[26px] text-foreground hover:text-vc-link">
+          {av !== null ? <><span className="w-9">{letterFor(av)}</span><span>{av.toFixed(2)}%</span></> : <span>-</span>}
         </Link>
-        <div className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
-          <span className={`rounded-sm px-1 text-[12px] font-semibold ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-line text-foreground"}`}>{fresh}</span> new updates
+        <div className="mt-[6.5px] flex items-center gap-2 text-[14px] leading-[17px] text-vc-gray-light">
+          <span className={`grid h-[17px] min-w-[17px] place-items-center rounded-sm px-1 text-[13px] font-semibold leading-none ${fresh ? "bg-vc-tile-warm-fg text-primary-foreground" : "bg-vc-chip text-foreground"}`}>{fresh}</span> new updates
         </div>
-        <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-2.5 text-[13px] text-foreground/80 hover:text-vc-link">View All Assignments</Link>
+        <Link to="/grades/$classId" params={{ classId: c.id }} className="mt-[11.5px] text-[12.5px] leading-[18px] text-vc-gray-dark hover:text-vc-link">View All Assignments</Link>
       </div>
     </div>
   );

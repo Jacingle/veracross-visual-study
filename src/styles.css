@@ -68,6 +68,13 @@
   --color-vc-link: var(--vc-link);
   --color-vc-link-strong: var(--vc-link-strong);
   --color-vc-event: var(--vc-event);
+  --color-vc-event-green: var(--vc-event-green);
+  --color-vc-today: var(--vc-today);
+  --color-vc-now: var(--vc-now);
+  --color-vc-chip: var(--vc-chip);
+  --color-vc-gray-dark: var(--vc-gray-dark);
+  --color-vc-gray: var(--vc-gray);
+  --color-vc-gray-light: var(--vc-gray-light);
   --color-vc-tile: var(--vc-tile);
   --color-vc-tile-hover: var(--vc-tile-hover);
   --color-vc-tile-warm: var(--vc-tile-warm);
@@ -112,16 +119,23 @@
 
 :root {
   --radius: 0.125rem;
-  --vc-topbar: oklch(0.27 0.07 252);
-  --vc-navbar: oklch(0.36 0.1 252);
+  --vc-topbar: oklch(0.31 0.08 257);
+  --vc-navbar: oklch(0.35 0.096 256);
   --vc-link: oklch(0.68 0.13 236);
-  --vc-link-strong: oklch(0.52 0.15 250);
-  --vc-event: oklch(0.47 0.2 305);
-  --vc-tile: oklch(0.93 0.03 245);
-  --vc-tile-hover: oklch(0.89 0.045 245);
-  --vc-tile-warm: oklch(0.95 0.07 95);
-  --vc-tile-warm-fg: oklch(0.73 0.16 65);
-  --vc-success: oklch(0.62 0.17 148);
+  --vc-link-strong: oklch(0.55 0.13 252);
+  --vc-event: oklch(0.55 0.24 296);
+  --vc-event-green: oklch(0.51 0.106 148);
+  --vc-today: oklch(0.96 0.027 78);
+  --vc-now: oklch(0.99 0.04 107);
+  --vc-chip: oklch(0.88 0 89);
+  --vc-gray-dark: oklch(0.51 0 0);
+  --vc-gray: oklch(0.68 0 0);
+  --vc-gray-light: oklch(0.76 0 0);
+  --vc-tile: oklch(0.95 0.012 247);
+  --vc-tile-hover: oklch(0.91 0.025 247);
+  --vc-tile-warm: oklch(0.98 0.024 94);
+  --vc-tile-warm-fg: oklch(0.76 0.14 71);
+  --vc-success: oklch(0.67 0.131 148);
   --vc-classbar: oklch(0.45 0.09 262);
   --vc-panel: oklch(0.965 0.002 250);
   --vc-line: oklch(0.9 0.004 250);

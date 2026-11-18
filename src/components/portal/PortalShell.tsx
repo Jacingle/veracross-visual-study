@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AlignLeft, BookUser, Bookmark, CalendarDays, ChevronDown, ClipboardList, Clock, Home, IdCard, Landmark, List, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
+import { AlignLeft, BookMarked, BookUser, CalendarDays, ChevronDown, ClipboardList, Clock, Home, IdCard, Library, List, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { ImageCropper } from "@/components/common/ImageCropper";
@@ -17,18 +17,18 @@ export type Portal = "student" | "teacher";
 
 const NAV = {
   student: [
-    { to: "/classes", label: "Classes & Reports", icon: List },
-    { to: "/schedule", label: "Daily Schedule", icon: Clock },
-    { to: "/assignments", label: "Assignments", icon: Bookmark },
-    { to: "/calendar", label: "My Calendar", icon: CalendarDays },
-    { to: "/resources", label: "Resources", icon: Landmark },
-    { to: "/directories", label: "Directories", icon: BookUser },
+    { to: "/classes", label: "Classes & Reports", icon: List, solid: false },
+    { to: "/schedule", label: "Daily Schedule", icon: Clock, solid: true },
+    { to: "/assignments", label: "Assignments", icon: BookMarked, solid: true },
+    { to: "/calendar", label: "My Calendar", icon: CalendarDays, solid: true },
+    { to: "/resources", label: "Resources", icon: Library, solid: true },
+    { to: "/directories", label: "Directories", icon: BookUser, solid: true },
   ],
   teacher: [
-    { to: "/teacher", label: "Grade & Student Management", icon: IdCard },
-    { to: "/teacher/news", label: "School News & Events", icon: Newspaper },
-    { to: "/directories", label: "Directories", icon: BookUser },
-    { to: "/teacher/purchases", label: "Purchase Requests", icon: Receipt },
+    { to: "/teacher", label: "Grade & Student Management", icon: IdCard, solid: false },
+    { to: "/teacher/news", label: "School News & Events", icon: Newspaper, solid: false },
+    { to: "/directories", label: "Directories", icon: BookUser, solid: false },
+    { to: "/teacher/purchases", label: "Purchase Requests", icon: Receipt, solid: false },
   ],
 } as const;
 
@@ -59,23 +59,23 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
   return (
     <div className={`min-h-screen bg-vc-panel ${p === "teacher" ? "portal-faculty" : ""}`} style={style}>
       <header className="sticky top-0 z-30">
-        <div className="relative flex h-10 items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
+        <div className="relative flex h-[34px] items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
           <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
-          <div className="flex h-10 min-w-0 items-stretch lg:absolute lg:left-1/2 lg:top-0 lg:-translate-x-1/2">
-            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2.5 whitespace-nowrap bg-vc-navbar pl-8 pr-7 text-[17px] font-semibold [clip-path:polygon(14px_0,100%_0,calc(100%-10px)_100%,0_100%)]">
+          <div className="flex h-[34px] min-w-0 items-stretch lg:absolute lg:left-1/2 lg:top-0 lg:-translate-x-1/2">
+            <Link to={p === "student" ? "/student" : "/teacher"} className="flex items-center gap-2.5 whitespace-nowrap bg-vc-navbar pl-8 pr-7 text-[16px] font-semibold [clip-path:polygon(14px_0,100%_0,calc(100%-10px)_100%,0_100%)]">
               <Home className="size-4 fill-current" /> {p === "student" ? "Student Portal" : "Faculty Portal"}
             </Link>
-            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="my-1 -ml-1 flex h-8 w-16 shrink-0 items-center justify-center gap-1 rounded-none border border-primary-foreground/30 bg-vc-navbar/70 p-0 text-primary-foreground [clip-path:polygon(6px_0,100%_0,calc(100%-6px)_100%,0_100%)] hover:bg-primary-foreground/20 hover:text-primary-foreground">
+            <Button variant="ghost" aria-label="Switch portal" onClick={() => setChooser(true)} className="my-1 -ml-1 flex h-[26px] w-[59px] shrink-0 items-center justify-center gap-1 rounded-none border border-primary-foreground/30 bg-vc-navbar/70 p-0 text-primary-foreground [clip-path:polygon(6px_0,100%_0,calc(100%-6px)_100%,0_100%)] hover:bg-primary-foreground/20 hover:text-primary-foreground">
                 <VcLogo className="h-5 w-6" /><ChevronDown className="size-3" />
               </Button>
           </div>
-          <div className="ml-auto flex items-center gap-3">
-            <Link to="/messages" className="flex items-center gap-1.5 hover:underline">
-              <Mail className="size-5" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
+          <div className="ml-auto flex items-center gap-5">
+            <Link to="/messages" className="flex items-center gap-2 hover:underline">
+              <Mail className="size-6 fill-current stroke-vc-topbar" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
             </Link>
-            <Link to="/calendar" className="flex items-center gap-1.5 hover:underline"><CalendarDays className="size-5" /><span className="hidden md:inline">My Calendar</span></Link>
+            <Link to="/calendar" className="flex items-center gap-2 hover:underline"><CalendarDays className="size-[21px] fill-current stroke-vc-topbar" /><span className="hidden md:inline">My Calendar</span></Link>
             <DropdownMenu>
-              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-7 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-7" /></Button>
+              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-6 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-6" /></Button>
               <DropdownMenuContent align="end" className="text-[13px]">
                 <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · {user ? ROLE_LABEL[user.role] : ""}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -86,16 +86,16 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             </DropdownMenu>
           </div>
         </div>
-        <nav className="flex min-h-[50px] flex-wrap items-center justify-center gap-x-9 gap-y-2 bg-vc-navbar px-3 py-2 text-[15px] text-primary-foreground shadow-md">
-          {NAV[p].map(({ to, label, icon: Icon }) => (
+        <nav className="flex min-h-[45px] flex-wrap items-center justify-center gap-x-[30px] gap-y-2 bg-vc-navbar px-3 py-2 text-[14px] text-primary-foreground shadow-md">
+          {NAV[p].map(({ to, label, icon: Icon, solid }) => (
             <Link key={to} to={to} activeOptions={{ exact: to === "/teacher" }} className="flex items-center gap-2 border-b-2 border-transparent py-0.5 hover:border-primary-foreground/60" activeProps={{ className: "border-primary-foreground/80" }}>
-              <Icon className="size-[18px]" /> {label}
+              <Icon className={solid ? "size-4 fill-current stroke-vc-navbar" : "size-4"} strokeWidth={solid || p === "teacher" ? 2 : 2.6} /> {label}
             </Link>
           ))}
         </nav>
       </header>
       {impersonatorId && <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-b border-vc-line bg-vc-note px-4 py-1 text-[12px]"><span>Impersonating: <strong>{user?.first} {user?.last}</strong> · {user ? ROLE_LABEL[user.role] : ""}</span><Button variant="ghost" size="sm" className="h-6 text-vc-link-strong" onClick={() => { stopImpersonating(); nav({ to: '/admin/users' }); }}>Return to Administration</Button></div>}
-      <main className="relative min-h-[calc(100vh-80px)] pb-12 pt-7">
+      <main className="relative min-h-[calc(100vh-79px)] pb-12 pt-[30px]">
         {src && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
         {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
           : <div className={`relative mx-auto overflow-hidden bg-background shadow-xl ${wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
