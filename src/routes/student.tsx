@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { addDays, isSameDay } from "date-fns";
-import { BookMarked, BookUser, CalendarCheck, CalendarDays, CirclePlay, Clock, Link2, List, Mail, Volleyball, X } from "lucide-react";
-import { useState } from "react";
+import { BookUser, CalendarCheck, CalendarDays, CirclePlay, CloudDownload, Link2, Mail, X } from "lucide-react";
+import { useState, type ComponentType } from "react";
 import { toast } from "sonner";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ClassRow } from "@/components/portal/ClassRow";
+import { Basketball, BookRibbon, ClockSolid, ListSquares } from "@/components/portal/icons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { events, fmtDay, today } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
@@ -16,10 +17,13 @@ export const Route = createFileRoute("/student")({
   component: Home,
 });
 
-function Tile({ to, label, icon: Icon, warm, line }: { to: "/schedule" | "/assignments" | "/classes" | "/calendar" | "/directories"; label: string; icon: typeof Clock; warm?: boolean; line?: boolean }) {
+type TileIcon = ComponentType<{ className?: string }>;
+
+/** `solid` lucide icons are filled and stroke their details with --cut; custom icons read --cut themselves. */
+function Tile({ to, label, icon: Icon, warm, solid }: { to: "/schedule" | "/assignments" | "/classes" | "/calendar" | "/directories"; label: string; icon: TileIcon; warm?: boolean; solid?: boolean }) {
   return (
-    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-3 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg" : "bg-vc-tile text-vc-link-strong hover:bg-vc-tile-hover"}`}>
-      <Icon className={line ? "size-6" : `size-6 fill-current ${warm ? "stroke-vc-tile-warm" : "stroke-vc-tile"}`} strokeWidth={line ? 2.6 : 2} />{label}
+    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)]" : "bg-vc-tile text-vc-link-strong [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]"}`}>
+      <Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}
     </Link>
   );
 }
@@ -64,24 +68,24 @@ function Home() {
         <aside>
           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>
           <Link to="/messages" className="flex h-[62px] items-center gap-1.5 border border-vc-line px-1.5 text-[16px] hover:bg-vc-panel">
-            <Mail className="size-[42px] shrink-0 text-vc-gray-light" strokeWidth={1} />
+            <Mail className="size-[42px] shrink-0 text-vc-gray-light" strokeWidth={1.3} />
             <span>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</span>
           </Link>
           <Link to="/assignments" className="mt-[8.5px] flex h-[35px] items-center justify-center gap-2 border-b-[3px] border-foreground/20 bg-vc-success text-[14px] font-semibold text-primary-foreground hover:opacity-90">
             <CirclePlay className="size-[14px] fill-current stroke-vc-success" /> Submit Assignments
           </Link>
           <div className="mt-[8.5px] grid grid-cols-2 gap-2">
-            <Tile to="/schedule" label="Daily Schedule" icon={Clock} warm />
-            <Tile to="/assignments" label="Assignment Planner" icon={BookMarked} />
-            <Tile to="/classes" label="Classes & Reports" icon={List} line />
-            <Tile to="/schedule" label="My Schedule" icon={CalendarCheck} />
+            <Tile to="/schedule" label="Daily Schedule" icon={ClockSolid} warm />
+            <Tile to="/assignments" label="Assignment Planner" icon={BookRibbon} />
+            <Tile to="/classes" label="Classes & Reports" icon={ListSquares} />
+            <Tile to="/schedule" label="My Schedule" icon={CalendarCheck} solid />
           </div>
           <div className="mt-3 flex items-center justify-between">
             <h2 className={H2}>Student Links</h2>
             <button onClick={() => setOpen(true)} className="text-[12px] text-vc-link-strong hover:underline">+ Add link</button>
           </div>
           {links.length === 0 ? (
-            <div className="flex flex-col items-center gap-[6.5px] pb-[15.5px] pt-[23px] text-[14px] leading-5 text-vc-link-strong"><Link2 className="size-4" />No links to display</div>
+            <div className="flex flex-col items-center gap-[6.5px] pb-[15.5px] pt-[23px] text-[14px] leading-5 text-vc-link"><Link2 className="size-4" strokeWidth={1.75} />No links to display</div>
           ) : (
             <ul className="space-y-1.5 py-3 text-[14px]">{links.map((l) => (
               <li key={l.url} className="flex items-center justify-between"><a href={l.url} target="_blank" rel="noreferrer" className="text-vc-link-strong hover:underline">{l.label}</a>
@@ -90,11 +94,14 @@ function Home() {
           )}
           <h2 className={`mb-[11px] ${links.length ? "mt-3" : ""} ${H2}`}>School Links</h2>
           <div className="grid grid-cols-2 gap-2">
-            <Tile to="/calendar" label="School Calendar" icon={CalendarDays} />
-            <Tile to="/calendar" label="Athletic Calendar" icon={Volleyball} />
-            <Tile to="/directories" label="Student Directory" icon={BookUser} />
-            <Tile to="/directories" label="Faculty/Staff Directory" icon={BookUser} />
+            <Tile to="/calendar" label="School Calendar" icon={CalendarDays} solid />
+            <Tile to="/calendar" label="Athletic Calendar" icon={Basketball} />
+            <Tile to="/directories" label="Student Directory" icon={BookUser} solid />
+            <Tile to="/directories" label="Faculty/Staff Directory" icon={BookUser} solid />
           </div>
+          <Link to="/calendar" className="mt-2 flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-link-strong [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]">
+            <CloudDownload className="size-[18px] fill-current stroke-(--cut)" /> Subscribe to Calendars
+          </Link>
         </aside>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>

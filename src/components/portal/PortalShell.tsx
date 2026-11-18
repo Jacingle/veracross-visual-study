@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AlignLeft, BookMarked, BookUser, CalendarDays, ChevronDown, ClipboardList, Clock, Home, IdCard, Library, List, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { AlignLeft, BookUser, CalendarDays, ChevronDown, ClipboardList, Home, IdCard, Library, Mail, Megaphone, Newspaper, Receipt, Timer } from "lucide-react";
+import { useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { VcLogo } from "@/components/portal/VcLogo";
+import { BookRibbon, ClockSolid, DeskPhone, ListSquares } from "@/components/portal/icons";
 import { ROLE_LABEL, type Area } from "@/lib/auth-rules";
 import { SCHOOL } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
@@ -15,22 +16,28 @@ import { Button } from '@/components/ui/button';
 
 export type Portal = "student" | "teacher";
 
+type NavIcon = ComponentType<{ className?: string }>;
+/** kind: "custom" icons paint themselves, "solid" lucide icons are filled, "line" icons stay outlined. */
+type NavItem = { to: string; label: string; icon: NavIcon; kind: "custom" | "solid" | "line" };
 const NAV = {
   student: [
-    { to: "/classes", label: "Classes & Reports", icon: List, solid: false },
-    { to: "/schedule", label: "Daily Schedule", icon: Clock, solid: true },
-    { to: "/assignments", label: "Assignments", icon: BookMarked, solid: true },
-    { to: "/calendar", label: "My Calendar", icon: CalendarDays, solid: true },
-    { to: "/resources", label: "Resources", icon: Library, solid: true },
-    { to: "/directories", label: "Directories", icon: BookUser, solid: true },
+    { to: "/classes", label: "Classes & Reports", icon: ListSquares, kind: "custom" },
+    { to: "/schedule", label: "Daily Schedule", icon: ClockSolid, kind: "custom" },
+    { to: "/assignments", label: "Assignments", icon: BookRibbon, kind: "custom" },
+    { to: "/calendar", label: "My Calendar", icon: CalendarDays, kind: "solid" },
+    { to: "/resources", label: "Resources", icon: Library, kind: "solid" },
+    { to: "/directories", label: "Directories", icon: DeskPhone, kind: "custom" },
   ],
   teacher: [
-    { to: "/teacher", label: "Grade & Student Management", icon: IdCard, solid: false },
-    { to: "/teacher/news", label: "School News & Events", icon: Newspaper, solid: false },
-    { to: "/directories", label: "Directories", icon: BookUser, solid: false },
-    { to: "/teacher/purchases", label: "Purchase Requests", icon: Receipt, solid: false },
+    { to: "/teacher", label: "Grade & Student Management", icon: IdCard, kind: "line" },
+    { to: "/teacher/news", label: "School News & Events", icon: Newspaper, kind: "line" },
+    { to: "/directories", label: "Directories", icon: BookUser, kind: "line" },
+    { to: "/teacher/purchases", label: "Purchase Requests", icon: Receipt, kind: "line" },
   ],
-} as const;
+} as const satisfies Record<Portal, readonly NavItem[]>;
+
+/** Top-bar links: the hover block fills the bar height with a 20% white wash. */
+const TOP_LINK = "flex h-full items-center gap-2 px-2.5 [--cut:var(--vc-topbar)] hover:bg-primary-foreground/20 hover:[--cut:color-mix(in_oklab,var(--vc-topbar)_80%,white)]";
 
 /** Portal frame: two-row top bar + customizable background + white content card. */
 export function PortalShell({ children, portal, area, wide = false, bare = false }: { children: ReactNode; portal?: Portal; area?: Area; wide?: boolean; bare?: boolean }) {
@@ -69,13 +76,13 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
                 <VcLogo className="h-5 w-6" /><ChevronDown className="size-3" />
               </Button>
           </div>
-          <div className="ml-auto flex items-center gap-5">
-            <Link to="/messages" className="flex items-center gap-2 hover:underline">
-              <Mail className="size-6 fill-current stroke-vc-topbar" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
+          <div className="ml-auto flex h-full items-center">
+            <Link to="/messages" className={TOP_LINK}>
+              <Mail className="size-6 fill-current stroke-(--cut)" /><span className="hidden md:inline">Messages</span>{unread > 0 && <span className="rounded-full bg-vc-link px-1.5 text-[11px] font-semibold">{unread}</span>}
             </Link>
-            <Link to="/calendar" className="flex items-center gap-2 hover:underline"><CalendarDays className="size-[21px] fill-current stroke-vc-topbar" /><span className="hidden md:inline">My Calendar</span></Link>
+            <Link to="/calendar" className={TOP_LINK}><CalendarDays className="size-[21px] fill-current stroke-(--cut)" /><span className="hidden md:inline">My Calendar</span></Link>
             <DropdownMenu>
-              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-6 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-6" /></Button>
+              <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="ml-2.5 grid size-6 overflow-hidden place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-6" /></Button>
               <DropdownMenuContent align="end" className="text-[13px]">
                 <DropdownMenuLabel>{user?.first} {user?.last}<div className="text-xs font-normal text-muted-foreground">{user?.email} · {user ? ROLE_LABEL[user.role] : ""}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -86,10 +93,10 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
             </DropdownMenu>
           </div>
         </div>
-        <nav className="flex min-h-[45px] flex-wrap items-center justify-center gap-x-[30px] gap-y-2 bg-vc-navbar px-3 py-2 text-[14px] text-primary-foreground shadow-md">
-          {NAV[p].map(({ to, label, icon: Icon, solid }) => (
-            <Link key={to} to={to} activeOptions={{ exact: to === "/teacher" }} className="flex items-center gap-2 border-b-2 border-transparent py-0.5 hover:border-primary-foreground/60" activeProps={{ className: "border-primary-foreground/80" }}>
-              <Icon className={solid ? "size-4 fill-current stroke-vc-navbar" : "size-4"} strokeWidth={solid || p === "teacher" ? 2 : 2.6} /> {label}
+        <nav className="flex min-h-[45px] flex-wrap items-stretch justify-center bg-vc-navbar text-[14px] text-primary-foreground shadow-md">
+          {NAV[p].map(({ to, label, icon: Icon, kind }) => (
+            <Link key={to} to={to} className="flex items-center gap-2 px-[15px] py-2 [--cut:var(--vc-navbar)] hover:bg-primary-foreground hover:text-vc-navbar hover:[--cut:var(--primary-foreground)]">
+              <Icon className={kind === "solid" ? "size-4 fill-current stroke-(--cut)" : "size-4"} />{label}
             </Link>
           ))}
         </nav>
@@ -107,19 +114,19 @@ function Frame({ children, portal, wide, bare }: { children: ReactNode; portal: 
 }
 
 const TABS = [
-  { to: "/classes", label: "Student Overview", icon: ClipboardList },
-  { to: "/schedule", label: "Daily Schedule", icon: Timer },
-  { to: "/updates", label: "Recent Updates", icon: Megaphone },
-  { to: "/assignments", label: "Assignments", icon: AlignLeft },
+  { to: "/classes", label: "Student Overview", icon: ClipboardList, solid: true },
+  { to: "/schedule", label: "Daily Schedule", icon: Timer, solid: true },
+  { to: "/updates", label: "Recent Updates", icon: Megaphone, solid: true },
+  { to: "/assignments", label: "Assignments", icon: AlignLeft, solid: false },
 ] as const;
 
 export function StudentTabs() {
   return (
     <div className="flex justify-end border-b border-vc-line bg-vc-panel">
-      {TABS.map(({ to, label, icon: Icon }) => (
-        <Link key={to} to={to} className="flex w-[130px] flex-col items-center gap-1.5 border-l border-vc-line py-3.5 text-[13px] text-muted-foreground hover:bg-background"
-          activeProps={{ className: "!bg-background !text-vc-link -mb-px" }}>
-          <Icon className="size-5" />{label}
+      {TABS.map(({ to, label, icon: Icon, solid }) => (
+        <Link key={to} to={to} className="flex min-w-[125px] flex-col items-center gap-2 border-l border-vc-line px-5 pb-[11px] pt-[19px] text-[12.5px] leading-[18.75px] text-foreground/75 [--cut:var(--vc-panel)] hover:bg-background hover:[--cut:var(--background)]"
+          activeProps={{ className: "!bg-background !text-vc-link -mb-px [--cut:var(--background)]" }}>
+          <Icon className={solid ? "size-[18px] fill-current stroke-(--cut)" : "size-[18px]"} strokeWidth={solid ? 2 : 1.5} />{label}
         </Link>
       ))}
     </div>
