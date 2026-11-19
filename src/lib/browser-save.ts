@@ -34,3 +34,5 @@ export function saveSchool(value: string): Promise<void> {
   });
   return pending;
 }
+/** Resolves once every queued save has reached browser storage (used before a full page load). */
+export const savesSettled = (): Promise<void> => pending.catch(() => {});

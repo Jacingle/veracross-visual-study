@@ -27,6 +27,16 @@ export function gradeFraction(items: Scored[], weights: Weight[]) {
   return stats.length ? { numerator: stats.map(({ w, s }) => `(${s.pct?.toFixed(2)} × ${w.weight})`).join(' + '), denominator: stats.map(({ w }) => String(w.weight)).join(' + ') } : null;
 }
 
+/** The weighted-average formula Veracross shows on hover: each category's weight (as a share of 1) times its average. */
+export function gradeFormula(items: Scored[], weights: Weight[]) {
+  if (!weights.length) return null;
+  const cats = [...new Set(items.map((a) => a.category))].sort();
+  const effective = [...weights, ...cats.filter((cat) => !weights.some((w) => w.cat === cat)).map((cat) => ({ cat, weight: 1, drop: false }))];
+  const stats = effective.map((w) => ({ w, s: categoryStats(items.filter((a) => a.category === w.cat), w.drop) })).filter(({ w, s }) => w.weight > 0 && s.pct !== null);
+  const total = stats.reduce((sum, { w }) => sum + w.weight, 0);
+  return stats.length && total > 0 ? stats.map(({ w, s }) => `( ${(w.weight / total).toFixed(2)} × ${s.pct?.toFixed(2)} )`).join(' + ') : null;
+}
+
 export function scheduleTime(value: string) {
   const match = /^(\d{1,2}):(\d{2})$/.exec(value);
   if (!match) return value;

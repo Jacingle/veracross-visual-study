@@ -179,7 +179,7 @@
   --vc-paper: oklch(0.96 0.006 90);
   --vc-submit: oklch(0.46 0.07 262);
   --vc-done: oklch(0.52 0.12 145);
-  --vc-note: oklch(0.97 0.04 90);
+  --vc-note: #ffffcc;
   --vc-hint: #ffffcc;
   --vc-badge: #d6d6d6;
   --vc-badge-fg: #3b3b3b;
