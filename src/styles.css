@@ -117,9 +117,6 @@
   --color-ax-side: var(--ax-side);
   --color-ax-go: var(--ax-go);
   --color-ax-head: var(--ax-head);
-  --color-ax-panel: var(--ax-panel);
-  --color-ax-unpub: var(--ax-unpub);
-  --color-ax-save: var(--ax-save);
   --color-cat-paper: oklch(0.58 0.15 35);
   --color-cat-blue: oklch(0.6 0.13 245);
   --color-cat-portfolio: oklch(0.27 0.07 260);
@@ -195,9 +192,6 @@
   --ax-side: oklch(0.955 0.004 250);
   --ax-go: oklch(0.65 0.16 145);
   --ax-head: oklch(0.94 0.004 250);
-  --ax-panel: #4b6e9f;
-  --ax-unpub: #fbdcae;
-  --ax-save: #5cb85c;
   --background: oklch(1 0 0);
   --foreground: oklch(0.22 0.01 250);
   --card: oklch(1 0 0);

@@ -17,7 +17,6 @@ import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
-import { DEFAULT_DOC_LAYOUT, defaultPortals, type DocLayout, type PortalRec } from './axiom';
 
 export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
   { key: "graduation", label: "Graduation", src: graduation },
@@ -46,7 +45,7 @@ const SEED_SECTIONS: Section[] = ALL_SECTIONS.map((c) => ({
 }));
 export const yearLabel = (id: string) => makeYear(Number(id)).label;
 
-export type PortalTheme = { bg: string; topbar: string; navbar: string; blur: boolean; fullscreen?: boolean };
+export type PortalTheme = { bg: string; topbar: string; navbar: string; blur: boolean };
 export type Settings = { student: PortalTheme; teacher: PortalTheme; login: { bg: string; message: string } };
 export const DEFAULT_SETTINGS: Settings = {
   student: { bg: "none", topbar: "", navbar: "", blur: false },
@@ -87,13 +86,12 @@ type State = {
   sampleCleared?: boolean;
   impersonatorId?: string | null;
   schedulingSets: SchedulingSet[];
-  portals: PortalRec[]; docLayout: DocLayout;
   assignmentTypes: AssignmentType[];
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
   scores: {}, aStatus: {}, pub: {}, attendance: {}, attNotes: {}, attDone: [], comments: {}, termGrades: {},
-  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, fullPhotos: {}, schedulingSets: [], portals: defaultPortals(), docLayout: DEFAULT_DOC_LAYOUT, assignmentTypes: SEED_TYPES,
+  weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, fullPhotos: {}, schedulingSets: [], assignmentTypes: SEED_TYPES,
 };
 const KEY = "cra-school-v2";
 
