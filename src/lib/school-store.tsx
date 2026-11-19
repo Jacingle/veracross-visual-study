@@ -112,6 +112,7 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const lastRaw = useRef("");
+  const readyRef = useRef(false);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -132,9 +133,10 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
       }
       const users = v.users?.length ? v.users : INITIAL.users;
       const st = { ...DEFAULT_SETTINGS, ...v.settings };
-      setS({ ...INITIAL, ...v, users, settings: { student: { ...DEFAULT_SETTINGS.student, ...st.student }, teacher: { ...DEFAULT_SETTINGS.teacher, ...st.teacher }, login: { ...DEFAULT_SETTINGS.login, ...st.login } } });
+      const first = !readyRef.current;
+      setS((prev) => ({ ...INITIAL, ...v, users, settings: { student: { ...DEFAULT_SETTINGS.student, ...st.student }, teacher: { ...DEFAULT_SETTINGS.teacher, ...st.teacher }, login: { ...DEFAULT_SETTINGS.login, ...st.login } } , ...(first ? {} : { sessionId: prev.sessionId, impersonatorId: prev.impersonatorId }) }));
     } catch { /* corrupt storage: start fresh */ }
-    if (!cancelled) setReady(true);
+    if (!cancelled) { readyRef.current = true; setReady(true); }
     })();
     return () => { cancelled = true; };
   }, [pathname]);
