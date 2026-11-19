@@ -20,14 +20,17 @@ export const AXIOM_LINKS = [
   { to: "/admin/courses", label: "Courses & Enrollment", icon: BookOpen },
   { to: "/admin/settings", label: "Portal Settings", icon: Palette },
   { to: "/admin/assignment-types", label: "Class Assignment Types", icon: Palette },
+  { to: "/admin/portals", label: "Portals", icon: LayoutGrid },
+  { to: "/admin/report-layouts", label: "Report Card Layouts", icon: FileText },
   { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock },
   { to: "/admin/messages", label: "Communications", icon: Mail },
   { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt },
 ] as const;
 
 /** Axiom (admin) frame: Launchpad, global search, breadcrumb bar, grey workspace. */
-export function AxiomShell({ title, crumbs = [], actions, compactRail = false, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; compactRail?: boolean; children: ReactNode }) {
-  return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={actions} compactRail={compactRail}>{children}</Frame></RoleGate>;
+export function AxiomShell({ title, crumbs = [], actions, compactRail = false, side, onUpdate, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; compactRail?: boolean; /** Left section menu for detail screens. */ side?: ReactNode; /** Shows the green UPDATE button in the toolbar. */ onUpdate?: (() => void) | undefined; children: ReactNode }) {
+  const bar = <>{actions}{onUpdate && <button type="button" onClick={onUpdate} className="h-[30px] rounded-[3px] bg-ax-save px-5 text-[13px] font-bold tracking-wide text-primary-foreground active:brightness-90">UPDATE</button>}</>;
+  return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={bar} compactRail={compactRail}>{side ? <div className="flex bg-background">{side}<main className="min-w-0 flex-1">{children}</main></div> : children}</Frame></RoleGate>;
 }
 
 function Frame({ title, crumbs, actions, compactRail, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; compactRail: boolean; children: ReactNode }) {
