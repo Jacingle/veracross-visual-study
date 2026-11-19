@@ -284,3 +284,10 @@
   a, button, [role="tab"], [role="button"], [role="menuitem"], label { transition: none !important; }
   a:active, button:not(:disabled):active, [role="tab"]:active, a[data-pressed] { filter: brightness(0.9); }
 }
+
+/* Dense administrator result grids, following the supplied course record reference. */
+.admin-grid { font-size: 12px; border-collapse: collapse; }
+.admin-grid th { background: var(--ax-head); text-align: left; font-weight: 600; }
+.admin-grid th, .admin-grid td { border-right: 1px solid var(--vc-line); border-bottom: 1px solid var(--vc-line); padding: 7px 9px; }
+.admin-grid tbody tr:nth-child(even) { background: var(--vc-panel); }
+.admin-grid tbody tr:hover { background: var(--vc-select); }

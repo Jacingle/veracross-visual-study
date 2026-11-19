@@ -23,8 +23,10 @@ import { Route as ScheduleReportRouteImport } from './routes/schedule-report'
 import { Route as StudentRouteImport } from './routes/student'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAssignmentTypesRouteImport } from './routes/admin.assignment-types'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminPurchasesRouteImport } from './routes/admin.purchases'
+import { Route as AdminQueriesRouteImport } from './routes/admin.queries'
 import { Route as AdminSchedulingRouteImport } from './routes/admin.scheduling'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
@@ -108,6 +110,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAssignmentTypesRoute = AdminAssignmentTypesRouteImport.update({
+  id: '/admin/assignment-types',
+  path: '/admin/assignment-types',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMessagesRoute = AdminMessagesRouteImport.update({
   id: '/admin/messages',
   path: '/admin/messages',
@@ -116,6 +123,11 @@ const AdminMessagesRoute = AdminMessagesRouteImport.update({
 const AdminPurchasesRoute = AdminPurchasesRouteImport.update({
   id: '/admin/purchases',
   path: '/admin/purchases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminQueriesRoute = AdminQueriesRouteImport.update({
+  id: '/admin/queries',
+  path: '/admin/queries',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSchedulingRoute = AdminSchedulingRouteImport.update({
@@ -194,8 +206,10 @@ export interface FileRoutesByFullPath {
   '/schedule-report': typeof ScheduleReportRoute
   '/student': typeof StudentRoute
   '/updates': typeof UpdatesRoute
+  '/admin/assignment-types': typeof AdminAssignmentTypesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
+  '/admin/queries': typeof AdminQueriesRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -224,8 +238,10 @@ export interface FileRoutesByTo {
   '/schedule-report': typeof ScheduleReportRoute
   '/student': typeof StudentRoute
   '/updates': typeof UpdatesRoute
+  '/admin/assignment-types': typeof AdminAssignmentTypesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
+  '/admin/queries': typeof AdminQueriesRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -255,8 +271,10 @@ export interface FileRoutesById {
   '/schedule-report': typeof ScheduleReportRoute
   '/student': typeof StudentRoute
   '/updates': typeof UpdatesRoute
+  '/admin/assignment-types': typeof AdminAssignmentTypesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
+  '/admin/queries': typeof AdminQueriesRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -287,8 +305,10 @@ export interface FileRouteTypes {
     | '/schedule-report'
     | '/student'
     | '/updates'
+    | '/admin/assignment-types'
     | '/admin/messages'
     | '/admin/purchases'
+    | '/admin/queries'
     | '/admin/scheduling'
     | '/admin/settings'
     | '/admin/users'
@@ -317,8 +337,10 @@ export interface FileRouteTypes {
     | '/schedule-report'
     | '/student'
     | '/updates'
+    | '/admin/assignment-types'
     | '/admin/messages'
     | '/admin/purchases'
+    | '/admin/queries'
     | '/admin/scheduling'
     | '/admin/settings'
     | '/admin/users'
@@ -347,8 +369,10 @@ export interface FileRouteTypes {
     | '/schedule-report'
     | '/student'
     | '/updates'
+    | '/admin/assignment-types'
     | '/admin/messages'
     | '/admin/purchases'
+    | '/admin/queries'
     | '/admin/scheduling'
     | '/admin/settings'
     | '/admin/users'
@@ -378,8 +402,10 @@ export interface RootRouteChildren {
   ScheduleReportRoute: typeof ScheduleReportRoute
   StudentRoute: typeof StudentRoute
   UpdatesRoute: typeof UpdatesRoute
+  AdminAssignmentTypesRoute: typeof AdminAssignmentTypesRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminPurchasesRoute: typeof AdminPurchasesRoute
+  AdminQueriesRoute: typeof AdminQueriesRoute
   AdminSchedulingRoute: typeof AdminSchedulingRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -495,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/assignment-types': {
+      id: '/admin/assignment-types'
+      path: '/admin/assignment-types'
+      fullPath: '/admin/assignment-types'
+      preLoaderRoute: typeof AdminAssignmentTypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/messages': {
       id: '/admin/messages'
       path: '/admin/messages'
@@ -507,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/purchases'
       fullPath: '/admin/purchases'
       preLoaderRoute: typeof AdminPurchasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/queries': {
+      id: '/admin/queries'
+      path: '/admin/queries'
+      fullPath: '/admin/queries'
+      preLoaderRoute: typeof AdminQueriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/scheduling': {
@@ -610,8 +650,10 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleReportRoute: ScheduleReportRoute,
   StudentRoute: StudentRoute,
   UpdatesRoute: UpdatesRoute,
+  AdminAssignmentTypesRoute: AdminAssignmentTypesRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminPurchasesRoute: AdminPurchasesRoute,
+  AdminQueriesRoute: AdminQueriesRoute,
   AdminSchedulingRoute: AdminSchedulingRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,

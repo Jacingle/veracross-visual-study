@@ -30,6 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 ## Project rules
+- Administrator exports and publication checks use shared admin-tools helpers; navigation favorites/history are per-user browser preferences, not school records, to preserve one record source.
 - All school data comes from `src/lib/sis-data.ts` (single shared dataset) so every page shows the same records; replace with Lovable Cloud tables later without changing page structure.
 - Pages wrap content in `PortalShell` (portal) or the class-site layout; colors come only from `--vc-*` / `cat-*` tokens in `src/styles.css`.
 - Classes (sections) live in the school store (`sections`), seeded from `sis-data`; pages read them via `useMySections`/`useSection`, never static `COURSES`/`ALL_SECTIONS`, so admin-created classes work everywhere.

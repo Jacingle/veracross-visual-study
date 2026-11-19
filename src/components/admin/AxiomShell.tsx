@@ -1,19 +1,21 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { BookOpen, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
 import { PortalChooser } from '@/components/portal/PortalChooser';
+import { useAdminWorkspace } from "@/lib/admin-workspace";
 import { Button } from '@/components/ui/button';
 
 type Crumb = { label: string; to?: "/admin/courses" | "/admin/users" | "/admin/settings" };
 
 export const AXIOM_LINKS = [
   { to: "/admin", label: "System Administrator Homepage", icon: Home },
+  { to: "/admin/queries", label: "Queries & Records", icon: Search },
   { to: "/admin/users", label: "Users & Security", icon: Users },
   { to: "/admin/courses", label: "Courses & Enrollment", icon: BookOpen },
   { to: "/admin/settings", label: "Portal Settings", icon: Palette },
@@ -32,6 +34,10 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
   const { user, logout, users, sections } = useSchool();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"homepages" | "favorites" | "history">("homepages");
+  const workspace = useAdminWorkspace(user?.id);
+  const path = typeof window === "undefined" ? "" : window.location.pathname + window.location.search;
+  useEffect(() => { if (workspace.ready && path) workspace.visit({ title, path }); }, [title, path, workspace.ready]);
   const [chooser, setChooser] = useState(false);
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
@@ -39,12 +45,13 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
     const t = q.trim().toLowerCase();
     if (t.length < 2) return [];
     return [
+      ...AXIOM_LINKS.filter((l) => l.label.toLowerCase().includes(t)).map((l) => ({ kind: "Homepage", label: l.label, go: () => nav({ to: l.to }) })),
       ...sections.filter((c) => courseTitle(c).toLowerCase().includes(t) || c.id.includes(t)).slice(0, 5).map((c) => ({ kind: "Class", label: courseTitle(c), go: () => nav({ to: "/admin/courses/$courseId", params: { courseId: c.id } }) })),
       ...users.filter((u) => `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(t)).slice(0, 4).map((u) => ({ kind: "User", label: `${u.first} ${u.last} (${u.email})`, go: () => nav({ to: "/admin/users", search: { q: u.email } }) })),
       ...TEACHERS.filter((x) => `${x.first} ${x.last}`.toLowerCase().includes(t)).slice(0, 4).map((x) => ({ kind: "Faculty", label: `${x.prefix} ${x.first} ${x.last}`, go: () => nav({ to: "/directories", search: { type: "faculty", last: x.last } }) })),
       ...STUDENTS.filter((x) => `${x.first} ${x.last}`.toLowerCase().includes(t)).slice(0, 5).map((x) => ({ kind: "Student", label: `${x.first} ${x.last} · Grade ${x.grade}`, go: () => nav({ to: "/directories", search: { type: "students", first: x.first, last: x.last } }) })),
     ];
-  }, [q, users, nav]);
+  }, [q, users, sections, nav]);
   return (
     <div className="min-h-screen bg-ax-side text-[13px]">
       <header className="sticky top-0 z-30">
@@ -57,16 +64,16 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
             <button onClick={() => { logout(); nav({ to: "/", replace: true }); }} className="hover:underline">[log out]</button>
           </span>
         </div>
-        <div className="flex h-[56px] items-center gap-3 bg-ax-bar px-4 text-primary-foreground shadow-[0_1px_2px_rgba(0,0,0,.25)]">
-          <button onClick={() => setOpen(true)} aria-label="Open Launchpad" title="Launchpad" className="grid size-9 place-items-center hover:bg-primary-foreground/10"><Rocket className="size-6 fill-current" /></button>
-          <button onClick={() => setOpen(true)} aria-label="Favorites" title="Favorites" className="grid size-9 place-items-center hover:bg-primary-foreground/10"><Star className="size-6 fill-current" /></button>
-          <div className="relative flex h-[40px] min-w-0 max-w-[640px] flex-1 items-stretch border border-primary-foreground/60">
+        <div className="flex min-h-[46px] flex-wrap items-center gap-1 bg-ax-bar px-2 py-1 text-primary-foreground shadow-sm sm:flex-nowrap">
+          <Button variant="ghost" size="icon" onClick={() => { setMode("homepages"); setOpen(true); }} aria-label="Open Launchpad" title="Launchpad" className="size-9 shrink-0 rounded-none text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Rocket className="size-6 fill-current" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => { setMode("favorites"); setOpen(true); }} aria-label="Favorites" title="Favorites" className="size-9 shrink-0 rounded-none text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Star className="size-6 fill-current" /></Button>
+          <div className="relative flex h-[34px] min-w-0 flex-1 items-stretch border border-primary-foreground/60">
             <button onClick={() => setSearching((v) => !v)} aria-label="Search Axiom" className="grid w-[46px] shrink-0 place-items-center border-r border-primary-foreground/60 hover:bg-primary-foreground/10"><Search className="size-5" /></button>
             {searching ? (
               <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => { if (!q) setSearching(false); }} placeholder="Search people, classes and users" aria-label="Search people, classes and users" className="min-w-0 flex-1 bg-background px-3 text-[14px] text-foreground outline-none" />
             ) : (
-              <div className="flex min-w-0 items-center gap-4 px-4 text-[20px] leading-none">
-                {crumbs.length ? crumbs.map((c) => (c.to ? <Link key={c.label} to={c.to} className="shrink-0 font-semibold hover:underline">{c.label}</Link> : <span key={c.label} className="shrink-0 font-semibold">{c.label}</span>)) : <Link to="/admin" className="shrink-0 font-semibold hover:underline">System</Link>}
+              <div className="flex min-w-0 items-center gap-2 px-3 text-[16px] leading-none">
+                {crumbs.length ? crumbs.map((c) => (c.to ? <Link key={c.label} to={c.to} className="truncate font-semibold hover:underline">{c.label}</Link> : <span key={c.label} className="truncate font-semibold">{c.label}</span>)) : <Link to="/admin" className="truncate font-semibold hover:underline">System</Link>}
                 <span className="truncate font-light">{title}</span>
               </div>)}
             {searching && results.length > 0 && (
@@ -74,7 +81,7 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
                 {results.map((r, i) => <li key={i}><button onClick={() => { setQ(""); setSearching(false); r.go(); }} className="flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-vc-panel"><span className="w-14 text-[10px] font-semibold uppercase text-muted-foreground">{r.kind}</span>{r.label}</button></li>)}
               </ul>)}
           </div>
-          <div className="ml-auto flex items-center gap-2 text-[13px]">{actions}</div>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2 text-[12px]">{actions}</div>
           <DropdownMenu>
             <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-8" /></Button>
             <DropdownMenuContent align="end" className="text-[13px]">
@@ -83,22 +90,16 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
               <DropdownMenuItem onClick={() => { logout(); nav({ to: "/", replace: true }); }}><LogOut className="size-4" /> Log Out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button onClick={() => setOpen(true)} aria-label="All homepages" title="Homepages" className="grid size-9 place-items-center hover:bg-primary-foreground/10"><LayoutGrid className="size-6" /></button>
+          <Button variant="ghost" size="icon" onClick={() => { setMode("history"); setOpen(true); }} aria-label="Recent history" title="Recent history" className="size-8 shrink-0 rounded-none text-primary-foreground"><History className="size-5" /></Button>
         </div>
       </header>
-      <main className="p-4">{children}</main>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-vc-line bg-background px-4 py-2"><h1 className="text-[18px] font-normal text-ax-top">{title}</h1><div className="flex items-center gap-2"><Button variant="ghost" size="icon" aria-label="Favorite this page" title="Favorite this page" className="size-7" onClick={() => workspace.toggleFavorite({ title, path })}><Star className={`size-4 ${workspace.favorites.some((f) => f.path === path) ? 'fill-current text-vc-tile-warm-fg' : 'text-vc-gray'}`} /></Button><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="h-7 text-[12px]">Related Pages<ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">{AXIOM_LINKS.map((l) => <DropdownMenuItem key={l.to} asChild><Link to={l.to}>{l.label}</Link></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu></div></div>
+      <main className="p-3 sm:p-4">{children}</main>
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0 text-[13px]">
-          <SheetHeader className="bg-ax-top px-4 py-3"><SheetTitle className="text-primary-foreground">Launchpad</SheetTitle></SheetHeader>
-          <div className="px-2 py-2">
-            <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Homepages</div>
-            {AXIOM_LINKS.map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}
-            <div className="px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Favorites</div>
-            {([{ to: "/admin/users", l: "Add a User" }, { to: "/admin/settings", l: "Backgrounds & Colors" }] as const).map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Star className="size-4 text-vc-tile-warm-fg" />{f.l}</Link>)}
-            <div className="px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Portals</div>
-            {([{ to: "/teacher", l: "Faculty Portal" }, { to: "/student", l: "Student Portal" }] as const).map((f) => <Link key={f.l} to={f.to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-vc-panel"><Clock className="size-4 text-muted-foreground" />{f.l}</Link>)}
-          </div>
+          <SheetHeader className="bg-ax-top px-4 py-3"><SheetTitle className="text-primary-foreground">{mode === "homepages" ? "Homepages" : mode === "favorites" ? "Favorites" : "Recent History"}</SheetTitle></SheetHeader>
+          <div className="px-2 py-2">{mode === 'homepages' ? AXIOM_LINKS.map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-3 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
         </SheetContent>
       </Sheet>
     </div>
