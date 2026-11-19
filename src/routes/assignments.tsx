@@ -68,7 +68,7 @@ function Planner() {
                   <div className="min-w-0">
                     <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block max-w-[131px] overflow-hidden whitespace-nowrap text-[16px] font-light leading-6 text-vc-site-blue">{courseTitle(c)}</Link>
                     {details && <div className="text-[12.5px] leading-[18px]">
-                      <div className="italic text-vc-gray">{teacherFullNames(c.teacherIds.slice(0, 1), users.map((u) => ({ ...u, id: u.personId, first: u.preferred || u.first })))}</div>
+                      <div className="italic text-vc-gray">{teacherFullNames(c.teacherIds, users.map((u) => ({ ...u, id: u.personId })))}</div>
                       <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="block text-vc-gray-dark hover:underline">view website</Link>
                       <Link to="/grades/$classId" params={{ classId: c.id }} className="block text-vc-gray-dark hover:underline">view all assignments</Link>
                     </div>}

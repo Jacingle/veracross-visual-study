@@ -91,7 +91,7 @@ function Editor({ c }: { c: Section }) {
               <AxField label="Course" required><div className={`${axInput} flex items-center bg-vc-panel`}>{c.courseNo} · {courseRecord?.name ?? c.name}</div></AxField>
               <AxField label="Class ID" required><input aria-label="Class identifier" className={axInput} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></AxField>
               <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
-              <AxField label="Section"><input className={axInput} value={d.section} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
+              <AxField label="Section"><input className={axInput} value={d.section} maxLength={4} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
               <AxField label="Room"><input className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
               <AxField label="Status" required><div className={`${axInput} flex items-center bg-vc-panel capitalize`}>{status}</div></AxField>
             </div>
