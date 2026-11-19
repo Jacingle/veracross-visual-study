@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
 import { BookOpen, ClipboardList, Image, Clock, Search, Mail, Palette, Receipt, UserPlus, Users } from "lucide-react";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
+import { AxAction } from "@/components/admin/AxiomDetail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -23,12 +24,30 @@ const TILES = [
   { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
 ] as const;
 
+/** The green ADD button on the System homepage: hover (or focus) to choose what to add. */
+function AddMenu() {
+  const items = [
+    { label: "Course", to: "/admin/courses", search: { add: "course" as const } },
+    { label: "Class", to: "/admin/courses", search: {} },
+    { label: "Person / Account", to: "/admin/users", search: {} },
+    { label: "Assignment Type", to: "/admin/assignment-types", search: {} },
+  ] as const;
+  return (
+    <div className="group relative">
+      <AxAction aria-haspopup="menu">Add</AxAction>
+      <ul role="menu" className="absolute right-0 top-[34px] z-40 hidden min-w-[220px] border border-vc-line bg-background py-1 text-[15px] text-foreground shadow-lg group-focus-within:block group-hover:block">
+        {items.map((i) => <li key={i.label} role="none"><Link role="menuitem" to={i.to} search={i.search as never} className="block px-4 py-2 hover:bg-vc-tile">{i.label}</Link></li>)}
+      </ul>
+    </div>
+  );
+}
+
 function AdminHome() {
   const { users, purchases, sent, sections } = useSchool();
   const [filter, setFilter] = useState("");
   const pending = purchases.filter((p) => p.status === "Pending").length;
   return (
-    <AxiomShell title="System Administrator Homepage">
+    <AxiomShell title="System Administrator Homepage" actions={<AddMenu />}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Input aria-label="Find a task" placeholder="Find a task…" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-8 max-w-80 bg-background text-[13px]" /><Button asChild size="sm" className="h-8 bg-ax-go text-primary-foreground"><Link to="/admin/queries">Find Records</Link></Button></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[["Portal Accounts", users.length], ["Students", users.filter((u) => u.role === "student").length], ["Faculty & Staff", users.filter((u) => u.role === "teacher").length], ["Class Sections", sections.length]].map(([l, n]) => (
           <div key={l} className="border border-vc-line bg-background px-3 py-2.5"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="text-[26px] font-light text-ax-top">{n}</div></div>))}

@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { GripVertical, Plus } from "lucide-react";
-import { useState } from "react";
+import { GripVertical } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
+import { AxAction, AxAdd, AxField, AxFooter, AxToggle, axInput } from "@/components/admin/AxiomDetail";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { teacherFull, type Course } from "@/lib/sis-data";
 import { BLANK_SITE, useSchool, yearLabel, type CourseDef } from "@/lib/school-store";
@@ -12,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/courses/")({
+  validateSearch: z.object({ add: z.enum(["course"]).optional() }),
   head: () => pageHead("Axiom · Courses & Enrollment", "Create courses, schedule class sections by term and publish them to portals."),
   component: Courses,
 });
@@ -22,12 +25,14 @@ const STATUS = { current: "Current", future: "Future", past: "Past" } as const;
 function Courses() {
   const { courses, sections, courseFlags, update } = useSchool();
   const nav = useNavigate();
+  const { add } = Route.useSearch();
   const years = schoolYears();
   const [year, setYear] = useState(years[1]?.id ?? years[0]?.id ?? "");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CourseDef | null>(null);
+  useEffect(() => { if (add === "course") { setEditing(false); setDraft({ id: "", name: "", type: "ACADEMIC", dept: "", credits: 1, description: "" }); nav({ to: "/admin/courses", search: {}, replace: true }); } }, [add]); // eslint-disable-line react-hooks/exhaustive-deps
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   // The order of this list is the order classes appear everywhere in the app (student, teacher and admin views).
@@ -68,7 +73,7 @@ function Courses() {
   };
 
   return (
-    <AxiomShell title="Courses & Enrollment" actions={<button onClick={() => { setEditing(false); setDraft({ id: "", name: "", type: "ACADEMIC", dept: "", credits: 1, description: "" }); }} className="flex h-7 items-center gap-1 bg-ax-go px-3 font-semibold text-primary-foreground"><Plus className="size-4" />New Course</button>}>
+    <AxiomShell title="Courses & Enrollment" actions={<AxAction onClick={() => { setEditing(false); setDraft({ id: "", name: "", type: "ACADEMIC", dept: "", credits: 1, description: "" }); }}>Add Course</AxAction>}>
       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-3">
         <Panel title={`Courses (${courses.length})`}>
           <input aria-label="Filter courses" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter courses" className={`${inp} mb-1`} />
@@ -88,9 +93,28 @@ function Courses() {
           </ul>
         </Panel>
         <div className="min-w-0 border border-vc-line bg-background">
-          {sel && courses.filter((c) => c.id === sel).map((c) => <div key={c.id} className="border-b border-vc-line"><div className="flex items-center justify-between bg-ax-head px-3 py-2 font-semibold">GENERAL<Button variant="ghost" size="sm" onClick={() => { setEditing(true); setDraft({ ...c }); }}>Edit Course</Button></div><div className="grid gap-4 p-4 md:grid-cols-2"><dl className="grid grid-cols-[110px_1fr] gap-2"><dt className="text-muted-foreground">COURSE TYPE</dt><dd>{c.type}</dd><dt className="text-muted-foreground">DEPARTMENT</dt><dd>{c.dept || "-"}</dd><dt className="text-muted-foreground">COURSE ID</dt><dd>{c.id}</dd><dt className="text-muted-foreground">COURSE NAME</dt><dd>{c.name}</dd><dt className="text-muted-foreground">CREDITS</dt><dd>{c.credits}</dd></dl><div className="space-y-2">{([["report", "Include on Report Card"], ["transcript", "Include on Transcript"], ["gpa", "Include in GPA"]] as const).map(([key, label]) => <label key={key} className="flex items-center justify-between gap-3">{label}<Switch aria-label={`Course ${label}`} checked={courseFlags[`course:${c.id}`]?.[key] ?? true} onCheckedChange={(value) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [`course:${c.id}`]: { ...s.courseFlags[`course:${c.id}`], [key]: value } } }))} /></label>)}</div></div>{c.description && <p className="px-4 pb-4 whitespace-pre-wrap">{c.description}</p>}</div>)}
-          <div className="flex items-center gap-3 border-b border-vc-line bg-ax-head px-3 py-2">
-            <span className="font-semibold">Class Sections</span>
+          {sel && courses.filter((c) => c.id === sel).map((c) => { const flagOn = (k: string) => courseFlags[`course:${c.id}`]?.[k] ?? true; const setFlag = (k: string, v: boolean) => update((st) => ({ ...st, courseFlags: { ...st.courseFlags, [`course:${c.id}`]: { ...st.courseFlags[`course:${c.id}`], [k]: v } } })); const patch = (p: Partial<CourseDef>) => update((st) => ({ ...st, courses: st.courses.map((x) => (x.id === c.id ? { ...x, ...p } : x)) })); return (
+            <div key={c.id} className="border-b border-vc-line">
+              <div className="flex items-baseline justify-between border-b border-vc-line px-6 py-2.5"><h1 className="text-[27px] font-light uppercase leading-9">General</h1><span className="text-[13px] text-vc-gray">Course {c.id}</span></div>
+              <div className="grid grid-cols-1 gap-x-8 px-6 py-5 xl:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+                <div>
+                  <AxField label="Course Type" required><select aria-label="Course type" className={axInput} value={c.type} onChange={(e) => patch({ type: e.target.value as CourseDef["type"] })}>{(["ACADEMIC", "ARTS", "ADVISORY"] as const).map((t) => <option key={t}>{t}</option>)}</select></AxField>
+                  <AxField label="Subject" required><input aria-label="Subject or department" className={axInput} value={c.dept} maxLength={40} placeholder="<None Specified>" onChange={(e) => patch({ dept: e.target.value })} /></AxField>
+                  <AxField label="Course ID"><input aria-label="Course ID" className={axInput} value={c.id} disabled /></AxField>
+                  <AxField label="Course Name" required><input aria-label="Course name" className={axInput} value={c.name} maxLength={80} onChange={(e) => patch({ name: e.target.value })} /></AxField>
+                  <AxField label="Credits"><input aria-label="Credits" type="number" min={0} max={5} step={0.25} className={`${axInput} text-right`} value={c.credits} onChange={(e) => patch({ credits: Math.max(0, Number(e.target.value) || 0) })} /></AxField>
+                </div>
+                <div>
+                  <AxField label="Include on Report Card"><AxToggle label="Include on report card" on={flagOn("report")} onChange={(v) => setFlag("report", v)} /></AxField>
+                  <AxField label="Include on Transcript"><AxToggle label="Include on transcript" on={flagOn("transcript")} onChange={(v) => setFlag("transcript", v)} /></AxField>
+                  <AxField label="Include in GPA"><AxToggle label="Include in GPA" on={flagOn("gpa")} onChange={(v) => setFlag("gpa", v)} /></AxField>
+                </div>
+                <div><AxField label="Description"><textarea aria-label="Course description" className="h-[118px] w-full border border-vc-gray-light/80 bg-background p-2.5 text-[15px] outline-none focus:border-vc-link" maxLength={1000} value={c.description} onChange={(e) => patch({ description: e.target.value })} /></AxField></div>
+              </div>
+              <div className="flex items-center gap-3 border-t border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => newClass(c)}>Add Record</AxAdd><span className="text-[13px] text-vc-gray">Adds a class for this course in the school year shown below.</span></div>
+            </div>); })}
+          <div className="flex items-center gap-3 border-b border-vc-line bg-vc-panel px-4 py-2">
+            <span className="text-[15px] font-semibold">Classes</span>
             <label className="ml-auto flex items-center gap-2">School Year
               <select aria-label="School year" value={year} onChange={(e) => setYear(e.target.value)} className="h-7 border border-vc-line bg-background px-2">{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></label>
           </div>
@@ -109,6 +133,7 @@ function Courses() {
               </tr>))}
               {!yearSections.length && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">No classes scheduled for {yearLabel(year)}{sel ? ` in course ${sel}` : ""}. Use "+ Class" next to a course.</td></tr>}</tbody>
           </table></div>
+          <AxFooter count={yearSections.length} />
         </div>
       </div>
       <Dialog open={!!draft} onOpenChange={(o) => !o && setDraft(null)}>

@@ -2,8 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { blockMeetings } from '@/lib/scheduling';
 import { useState } from "react";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
+import { AxAction, AxBanner, AxDetail, AxEmpty, AxField, AxFooter, AxToggle, axInput, axTd, axTh, type AxGroup } from "@/components/admin/AxiomDetail";
 import { EXTRA, ME_STUDENT, STUDENTS, TEACHERS, teacherFull } from "@/lib/sis-data";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
@@ -75,65 +75,71 @@ function Editor({ c }: { c: Section }) {
   const remove = () => { if (!confirm(`Delete class ${c.id}? Its grades and attendance will no longer be shown.`)) return; update((s) => ({ ...s, sections: s.sections.filter((x) => x.id !== c.id) })); nav({ to: "/admin/courses" }); };
   const status = classStatus(d.terms);
   const Row = ({ l, children }: { l: string; children: React.ReactNode }) => <div className="grid grid-cols-[130px_1fr] items-center gap-2 border-b border-vc-line py-1.5 last:border-0"><span className="text-muted-foreground">{l}</span><div>{children}</div></div>;
+  const [tab, setTab] = useState("general");
+  const flag = (k: string, label: string, def: boolean) => <AxField key={k} label={label}><AxToggle label={label} on={f[k] ?? def} onChange={(on) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [c.id]: { ...s.courseFlags[c.id], [k]: on } } }))} /></AxField>;
+  const groups: AxGroup[] = [{ heading: "General", items: [{ id: "general", label: "General" }] }, { heading: "Schedule", items: [{ id: "schedule", label: "Schedule" }] }, { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] }];
   return (
-    <AxiomShell title={`${c.id}: ${c.name}`} crumbs={[{ label: "Courses & Enrollment", to: "/admin/courses" }]}
-      actions={<div className="flex gap-2"><button onClick={remove} className="h-7 border border-vc-line bg-background px-3 text-destructive">Delete</button><button onClick={save} className="h-7 bg-ax-go px-4 font-semibold text-primary-foreground">Save</button></div>}>
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-        <Panel title="Class Section Detail">
-          <Row l="Class ID"><input aria-label="Class identifier" className={inp} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></Row>
-          <Row l="Class Name"><input aria-label="Class name" className={inp} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></Row>
-          <Row l="Course">{c.courseNo} · {courseRecord?.name ?? c.name}</Row>
-          <Row l="Section"><input className={inp} value={d.section} maxLength={4} onChange={(e) => setD({ ...d, section: e.target.value })} /></Row>
+    <AxiomShell title={`Class: ${c.code}: ${c.name}`} crumbs={[{ label: "System", to: "/admin/courses" }]}
+      actions={<div className="flex gap-2"><button onClick={remove} className="h-[34px] border border-primary-foreground/60 px-3 text-[13px] uppercase text-primary-foreground hover:bg-primary-foreground/10">Delete</button><AxAction onClick={save}>Update</AxAction></div>}>
+      <AxDetail groups={groups} active={tab} onSelect={setTab} title={tab === "general" ? "General" : tab === "schedule" ? "Schedule" : "Settings"} banner={tab === "general" ? <AxBanner /> : undefined}>
+        {tab === "general" && <>
+          <div className="grid grid-cols-1 gap-x-8 px-6 py-5 lg:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+            <div>
+              <AxField label="School Year" required><select aria-label="School year" className={axInput} value={year} onChange={(e) => setTerms(e.target.value, termMode)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></AxField>
+              <AxField label="Terms"><select aria-label="Terms" className={axInput} value={termMode} onChange={(e) => setTerms(year, e.target.value)}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></AxField>
+              <AxField label="Course" required><div className={`${axInput} flex items-center bg-vc-panel`}>{c.courseNo} · {courseRecord?.name ?? c.name}</div></AxField>
+              <AxField label="Class ID" required><input aria-label="Class identifier" className={axInput} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></AxField>
+              <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
+              <AxField label="Section"><input className={axInput} value={d.section} maxLength={4} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
+              <AxField label="Room"><input className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
+              <AxField label="Status" required><div className={`${axInput} flex items-center bg-vc-panel capitalize`}>{status}</div></AxField>
+            </div>
+            <div>
+              <AxField label="Scheduling Set"><select aria-label="Scheduling set" className={axInput} value={d.scheduleSetId ?? ""} onChange={(e) => setD({ ...d, scheduleSetId: e.target.value || undefined, scheduleBlockId: undefined, block: "" })}><option value="">Manual timetable</option>{schedulingSets.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></AxField>
+              <AxField label="Max Students"><div className={`${axInput} flex items-center justify-end bg-vc-panel`}>{roster.length}</div></AxField>
+              <AxField label="Published"><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
+              <p className="mt-2 text-[12px] text-vc-gray">{d.published ? "Teachers and students can see this class." : "Hidden from teacher and student portals."}</p>
+            </div>
+            <div>
+              {flag("attendance", "Track Class Attendance", true)}
+              {flag("gpa", "Include in GPA", true)}
+              {flag("report", "Show on Report Card", true)}
+              {flag("transcript", "Show on Transcript", true)}
+            </div>
+          </div>
+          <div className="border-y border-vc-line bg-vc-panel px-6 py-2.5 text-[15px] font-semibold">Teachers</div>
+          <div className="px-6 py-3">
           <Row l="Teacher(s)">
-            <div className="space-y-1">
-              {d.teacherIds.map((id, i) => (
-                <div key={id} className="flex items-center gap-2">
-                  <PersonPhoto personId={id} className="size-7" />
-                  <span className="flex-1">{teacherFull(id)}</span>
-                  {i === 0 ? <span className="border border-vc-line px-1.5 text-[10px] uppercase text-muted-foreground">Primary</span> : <button type="button" onClick={() => makePrimary(id)} className="text-[12px] text-vc-link-strong hover:underline">Make primary</button>}
-                  <button type="button" aria-label={`Remove ${teacherFull(id)}`} disabled={d.teacherIds.length < 2} onClick={() => setD({ ...d, teacherIds: d.teacherIds.filter((x) => x !== id) })} className="text-[12px] text-destructive hover:underline disabled:opacity-40 disabled:no-underline">Remove</button>
-                </div>))}
-              {!d.teacherIds.length && <p className="text-muted-foreground">No teacher assigned.</p>}
-            </div>
-            <input aria-label="Find teachers" className={`${inp} mt-2`} placeholder="Add a teacher: search faculty by name or email" value={facultySearch} onChange={(e) => setFacultySearch(e.target.value)} />
-            <div className="mt-1 max-h-36 overflow-y-auto">
-              {addable.slice(0, 6).map((t) => (
-                <button type="button" key={t.id} aria-label={`Add ${t.first} ${t.last}`} onClick={() => { setD({ ...d, teacherIds: [...d.teacherIds, t.personId] }); setFacultySearch(""); }} className="flex w-full items-center gap-2 px-1 py-1 text-left hover:bg-vc-panel">
-                  <PersonPhoto personId={t.personId} className="size-7" />
-                  <span>{t.prefix} {t.first} {t.last}<span className="ml-2 text-[11px] text-muted-foreground">{t.email}</span></span>
-                  <span className="ml-auto text-[12px] text-vc-link-strong">+ Add</span>
-                </button>))}
-              {addable.length > 6 && <div className="px-1 text-[11px] text-muted-foreground">{addable.length - 6} more: keep typing to narrow the list</div>}
-              {!addable.length && <div className="px-1 text-[11px] text-muted-foreground">No matching faculty to add.</div>}
-            </div>
-          </Row>
-          <Row l="Room"><input className={inp} value={d.room} maxLength={12} onChange={(e) => setD({ ...d, room: e.target.value })} /></Row>
-          <Row l="Scheduling Set"><select aria-label="Scheduling set" className={inp} value={d.scheduleSetId ?? ''} onChange={(e) => setD({ ...d, scheduleSetId: e.target.value || undefined, scheduleBlockId: undefined, block: '' })}><option value="">Manual timetable</option>{schedulingSets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Row>
-          <Row l="Block">{schedule ? <select aria-label="Class block" className={inp} value={d.scheduleBlockId ?? ''} onChange={(e) => { const b = schedule.blocks.find((x) => x.id === e.target.value); if (b) { const ms = schedule.meetings ? blockMeetings(schedule, b.id) : []; setD({ ...d, scheduleBlockId: b.id, block: b.name, days: schedule.meetings ? [...new Set(ms.map((m) => m.day))] : b.days, time: ms[0] ? `${ms[0].start}–${ms[0].end}` : `${b.start}–${b.end}` }); } }}><option value="">— choose —</option>{schedule.blocks.map((b) => <option key={b.id} value={b.id}>{b.name}{!schedule.meetings && ` · ${b.start}–${b.end}`}</option>)}</select> : <input aria-label="Class block" className={inp} value={d.block} onChange={(e) => setD({ ...d, block: e.target.value })} />}</Row>
-          <Row l="Meeting Days"><div className="flex gap-3">{DAYS.map((l, i) => (
-            <label key={l} className="flex items-center gap-1"><input type="checkbox" checked={d.days.includes(i + 1)} onChange={(e) => setD({ ...d, days: e.target.checked ? [...d.days, i + 1].sort() : d.days.filter((x) => x !== i + 1) })} />{l}</label>))}</div></Row>
-          <Row l="Start Time"><input className={inp} value={d.time} placeholder="9:10 am" maxLength={10} onChange={(e) => setD({ ...d, time: e.target.value })} /></Row>
-        </Panel>
-        <div className="space-y-3">
-          <Panel title="Timetable & Publishing">
-            <Row l="School Year"><select className={inp} value={year} onChange={(e) => setTerms(e.target.value, termMode)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></Row>
-            <Row l="Terms"><select className={inp} value={termMode} onChange={(e) => setTerms(year, e.target.value)}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></Row>
-            <Row l="Status today"><span className="capitalize">{status}</span> <span className="text-[11px] text-muted-foreground">— appears under {status === "current" ? "Active" : status === "future" ? "Future" : "Past"} classes</span></Row>
-            <Row l="Published"><div className="flex items-center gap-2"><Switch aria-label="Published to portals" checked={d.published} onCheckedChange={(on) => setD({ ...d, published: on })} /><span className="text-[12px] text-muted-foreground">{d.published ? "Teachers and students can see this class" : "Hidden from teacher and student portals"}</span></div></Row>
-          </Panel>
-          <Panel title="Inclusion & Settings">
-            {FLAGS.map(([k, label, def]) => (
-              <div key={k} className="flex items-center justify-between border-b border-vc-line py-1 last:border-0"><span>{label}</span>
-                <Switch aria-label={label} checked={f[k] ?? def} onCheckedChange={(on) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [c.id]: { ...s.courseFlags[c.id], [k]: on } } }))} /></div>))}
-          </Panel>
-        </div>
-      </div>
-      <Panel title={`Class Enrollment (${roster.length})`} className="mt-3">
+  <div className="space-y-1">
+    {d.teacherIds.map((id, i) => (
+      <div key={id} className="flex items-center gap-2">
+        <PersonPhoto personId={id} className="size-7" />
+        <span className="flex-1">{teacherFull(id)}</span>
+        {i === 0 ? <span className="border border-vc-line px-1.5 text-[10px] uppercase text-muted-foreground">Primary</span> : <button type="button" onClick={() => makePrimary(id)} className="text-[12px] text-vc-link-strong hover:underline">Make primary</button>}
+        <button type="button" aria-label={`Remove ${teacherFull(id)}`} disabled={d.teacherIds.length < 2} onClick={() => setD({ ...d, teacherIds: d.teacherIds.filter((x) => x !== id) })} className="text-[12px] text-destructive hover:underline disabled:opacity-40 disabled:no-underline">Remove</button>
+      </div>))}
+    {!d.teacherIds.length && <p className="text-muted-foreground">No teacher assigned.</p>}
+  </div>
+  <input aria-label="Find teachers" className={`${inp} mt-2`} placeholder="Add a teacher: search faculty by name or email" value={facultySearch} onChange={(e) => setFacultySearch(e.target.value)} />
+  <div className="mt-1 max-h-36 overflow-y-auto">
+    {addable.slice(0, 6).map((t) => (
+      <button type="button" key={t.id} aria-label={`Add ${t.first} ${t.last}`} onClick={() => { setD({ ...d, teacherIds: [...d.teacherIds, t.personId] }); setFacultySearch(""); }} className="flex w-full items-center gap-2 px-1 py-1 text-left hover:bg-vc-panel">
+        <PersonPhoto personId={t.personId} className="size-7" />
+        <span>{t.prefix} {t.first} {t.last}<span className="ml-2 text-[11px] text-muted-foreground">{t.email}</span></span>
+        <span className="ml-auto text-[12px] text-vc-link-strong">+ Add</span>
+      </button>))}
+    {addable.length > 6 && <div className="px-1 text-[11px] text-muted-foreground">{addable.length - 6} more: keep typing to narrow the list</div>}
+    {!addable.length && <div className="px-1 text-[11px] text-muted-foreground">No matching faculty to add.</div>}
+  </div>
+</Row>
+          </div>
+          <div className="border-t border-vc-line bg-vc-panel px-6 py-2.5 text-[15px] font-semibold">Registrations</div>
+      <Panel title={`Registrations (${roster.length})`} className="m-4">
         <div className="mb-3 flex flex-wrap items-center gap-2"><input aria-label="Find students to enroll" className={`${inp} max-w-80`} placeholder="Find students by name or email" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter students by grade" className={`${inp} w-32`} value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}><option value="">All grades</option>{grades.map((g) => <option key={g} value={String(g)}>Grade {g}</option>)}</select><Button variant="outline" size="sm" disabled={!pool.length} onClick={() => setSelected([...new Set([...selected, ...pool.map((u) => u.personId)])])}>Select all shown ({pool.length})</Button><Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setSelected([])}>Clear</Button><Button size="sm" disabled={!selected.length} onClick={() => { setRoster([...c.studentIds, ...selected]); toast.success(`${selected.length} ${selected.length === 1 ? "student" : "students"} enrolled`); setSelected([]); }}>Enroll selected ({selected.length})</Button></div>
         <div className="mb-3 grid max-h-44 grid-cols-1 gap-1 overflow-y-auto border-b border-vc-line pb-3 md:grid-cols-2">{pool.map((u) => <label key={u.id} className="flex items-center gap-2 px-2 py-1"><input type="checkbox" aria-label={`Enroll ${u.first} ${u.last}`} checked={selected.includes(u.personId)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.personId] : ids.filter((id) => id !== u.personId))} /><PersonPhoto personId={u.personId} className="size-7" /><span>{u.last}, {u.first}<span className="ml-2 text-[11px] text-muted-foreground">Grade {u.grade ?? 9}</span></span></label>)}{!pool.length && <p className="px-2 text-muted-foreground">No matching unenrolled students.</p>}</div>
         <div className="mb-2 flex items-center justify-between"><span className="text-[12px] text-muted-foreground">{roster.length} enrolled{drop.length ? ` · ${drop.length} selected` : ""}</span>
           <Button variant="outline" size="sm" disabled={!drop.length} onClick={() => { if (!confirm(`Withdraw ${drop.length} ${drop.length === 1 ? "student" : "students"} from ${c.id}?`)) return; setRoster(c.studentIds.filter((x) => !drop.includes(x))); toast.success(`${drop.length} withdrawn`); setDrop([]); }}>Withdraw selected ({drop.length})</Button></div>
-        <table className="w-full">
+        <table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-[#fafafa] [&_tbody_tr]:h-[40px]">
           <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="w-8 py-1.5"><input type="checkbox" aria-label="Select all enrolled students" disabled={!roster.length} checked={!!roster.length && drop.length === roster.length} onChange={(e) => setDrop(e.target.checked ? roster.map((s) => s.id) : [])} /></th><th className="py-1.5">Student</th><th>Grade Level</th><th>Teacher(s)</th><th className="text-right">Current Grade</th><th /></tr></thead>
           <tbody>{roster.map((s) => { const av = weightedAverage(list.map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, s.id) })), w); return (
             <tr key={s.id} className="border-b border-vc-line hover:bg-vc-panel">
@@ -145,6 +151,38 @@ function Editor({ c }: { c: Section }) {
             {!roster.length && <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No students enrolled yet.</td></tr>}</tbody>
         </table>
       </Panel>
+        </>}
+        {tab === "schedule" && <>
+          <div className="grid grid-cols-1 gap-x-8 px-6 py-5 lg:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+            <div>
+              <AxField label="Scheduling Set"><select aria-label="Scheduling set (schedule tab)" className={axInput} value={d.scheduleSetId ?? ""} onChange={(e) => setD({ ...d, scheduleSetId: e.target.value || undefined, scheduleBlockId: undefined, block: "" })}><option value="">Manual timetable</option>{schedulingSets.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></AxField>
+              <AxField label="Block group"><div className={`${axInput} flex items-center bg-vc-panel`}>{schedule?.name ?? "<Default>"}</div></AxField>
+              <AxField label="Terms"><div className={`${axInput} flex items-center bg-vc-panel`}>{termMode === "FY" ? "Full Year (S1 + S2)" : termMode === "S1" ? "Semester 1" : "Semester 2"}</div></AxField>
+            </div>
+            <div>
+          <Row l="Block">{schedule ? <select aria-label="Class block" className={inp} value={d.scheduleBlockId ?? ''} onChange={(e) => { const b = schedule.blocks.find((x) => x.id === e.target.value); if (b) { const ms = schedule.meetings ? blockMeetings(schedule, b.id) : []; setD({ ...d, scheduleBlockId: b.id, block: b.name, days: schedule.meetings ? [...new Set(ms.map((m) => m.day))] : b.days, time: ms[0] ? `${ms[0].start}–${ms[0].end}` : `${b.start}–${b.end}` }); } }}><option value="">— choose —</option>{schedule.blocks.map((b) => <option key={b.id} value={b.id}>{b.name}{!schedule.meetings && ` · ${b.start}–${b.end}`}</option>)}</select> : <input aria-label="Class block" className={inp} value={d.block} onChange={(e) => setD({ ...d, block: e.target.value })} />}</Row>
+
+              <Row l="Meeting Days"><div className="flex flex-wrap gap-3">{DAYS.map((l, i) => (
+                <label key={l} className="flex items-center gap-1"><input type="checkbox" checked={d.days.includes(i + 1)} onChange={(e) => setD({ ...d, days: e.target.checked ? [...d.days, i + 1].sort() : d.days.filter((x) => x !== i + 1) })} />{l}</label>))}</div></Row>
+              <Row l="Start Time"><input className={inp} value={d.time} placeholder="9:10 am" maxLength={10} onChange={(e) => setD({ ...d, time: e.target.value })} /></Row>
+            </div>
+            <div>
+              <AxField label="Meets Today"><div className={`${axInput} flex items-center bg-vc-panel`}>{d.days.includes(((new Date().getDay() + 6) % 7) + 1) ? "Yes" : "No"}</div></AxField>
+              <AxField label="Room"><input className={axInput} value={d.room} maxLength={12} onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
+            </div>
+          </div>
+          <div className="overflow-x-auto border-t border-vc-line">
+            <table className="w-full min-w-[640px] border-collapse"><thead><tr><th className={axTh}>Grading Period</th><th className={axTh}>Day</th><th className={axTh}>Block</th><th className={axTh}>Start Time</th><th className={axTh}>Room (Class Sched)</th></tr></thead>
+              <tbody>{d.days.map((n) => <tr key={n} className="bg-[#fafafa]"><td className={axTd}>{termMode === "FY" ? "ALL" : termMode}</td><td className={axTd}>{DAYS[n - 1]}</td><td className={axTd}>{d.block || "—"}</td><td className={axTd}>{d.time || "—"}</td><td className={`${axTd} text-vc-gray`}>{d.room || "<None Specified>"}</td></tr>)}</tbody></table>
+            {!d.days.length && <AxEmpty />}
+            <AxFooter count={d.days.length} />
+          </div>
+        </>}
+        {tab === "settings" && <div className="grid grid-cols-1 gap-x-8 px-6 py-5 lg:grid-cols-2 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+          <div>{FLAGS.slice(0, 4).map(([k, l, def]) => flag(k, l, def))}</div>
+          <div>{FLAGS.slice(4).map(([k, l, def]) => flag(k, l, def))}</div>
+        </div>}
+      </AxDetail>
     </AxiomShell>
   );
 }
