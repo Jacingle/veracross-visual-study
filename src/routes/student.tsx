@@ -24,7 +24,7 @@ type TileIcon = ComponentType<{ className?: string }>;
 /** `solid` lucide icons are filled and stroke their details with --cut; custom icons read --cut themselves. */
 function Tile({ to, label, icon: Icon, warm, solid }: { to: "/schedule" | "/assignments" | "/classes" | "/calendar" | "/directories"; label: string; icon: TileIcon; warm?: boolean; solid?: boolean }) {
   return (
-    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)]" : "bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]"}`}>
+    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)] hover:bg-vc-tile-warm-hover hover:[--cut:var(--vc-tile-warm-hover)]" : "bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]"}`}>
       <Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}
     </Link>
   );

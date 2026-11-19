@@ -79,6 +79,11 @@
   --color-vc-tile: var(--vc-tile);
   --color-vc-tile-hover: var(--vc-tile-hover);
   --color-vc-tile-warm: var(--vc-tile-warm);
+  --color-vc-tile-warm-hover: var(--vc-tile-warm-hover);
+  --color-vc-comment: var(--vc-comment);
+  --color-vc-notify: var(--vc-notify);
+  --color-vc-success-soft: var(--vc-success-soft);
+  --color-vc-success-soft-hover: var(--vc-success-soft-hover);
   --color-vc-tile-warm-fg: var(--vc-tile-warm-fg);
   --color-vc-success: var(--vc-success);
   --color-vc-classbar: var(--vc-classbar);
@@ -152,6 +157,11 @@
   --vc-link-soft: oklch(0.671 0.164 254);
   --vc-tile-hover: oklch(0.915 0.025 252);
   --vc-tile-warm: oklch(0.975 0.024 94);
+  --vc-tile-warm-hover: oklch(0.945 0.05 92);
+  --vc-comment: #2c66ac;
+  --vc-notify: #f27b21;
+  --vc-success-soft: oklch(0.955 0.03 152);
+  --vc-success-soft-hover: oklch(0.915 0.05 152);
   --vc-tile-warm-fg: oklch(0.758 0.14 72);
   --vc-success: oklch(0.663 0.16 152.4);
   --vc-classbar: oklch(0.45 0.09 262);

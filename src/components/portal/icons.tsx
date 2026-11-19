@@ -192,3 +192,13 @@ export function MegaphoneSparks(p: P) {
     </svg>
   );
 }
+
+/** Two overlapping speech bubbles (solid), the "has feedback" mark. */
+export function CommentsSolid({ className, "aria-label": label }: { className?: string; "aria-label"?: string }) {
+  return (
+    <svg viewBox="0 0 24 22" className={className} fill="currentColor" role="img" aria-label={label}>
+      <path d="M14.5 7c4.6 0 8.5 2.5 8.5 5.7 0 1.7-1 3.2-2.7 4.3l.9 3-3.6-1.9c-.9.2-2 .3-3.1.3-4.6 0-8.5-2.5-8.5-5.7S9.9 7 14.5 7z" />
+      <path d="M9 1C4.6 1 1 3.5 1 6.6c0 1.6.9 3 2.4 4L2.5 13.6l3.4-1.7c1 .3 2 .4 3.1.4 4.4 0 8-2.5 8-5.6S13.4 1 9 1z" stroke="var(--cut, var(--background))" strokeWidth="1.4" />
+    </svg>
+  );
+}

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { addDays, format, isSameDay } from "date-fns";
 import { BookOpen, CalendarDays, ChevronDown, ClipboardCheck, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, NotebookPen, Pencil, Plus, Search, Users } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ALL_ASSIGNMENTS, today } from "@/lib/sis-data";
 import { isoDay, toAssignment, useMySections, useSchool } from "@/lib/school-store";
@@ -14,11 +14,17 @@ export const Route = createFileRoute("/teacher/")({
   component: TeacherHome,
 });
 
-const TABS = ["My Classes", "Teams", "Programs", "Other Classes", "Future", "Completed"] as const;
-const h2 = "text-[20px] font-light leading-7";
-const tile = "flex h-[84px] flex-col items-center justify-center gap-1.5 bg-vc-tile text-[13px] text-vc-tile-fg hover:bg-vc-tile-hover";
-const wide = "flex h-[31px] items-center justify-center gap-2 border-b-2 border-vc-tile-hover bg-vc-tile text-[13px] font-semibold text-vc-tile-fg hover:bg-vc-tile-hover";
-const add = "flex h-[31px] items-center justify-center gap-2 border-b-2 border-vc-success/30 bg-vc-success/10 text-[13px] font-semibold text-vc-success hover:bg-vc-success/20";
+const TABS = ["My Classes", "Groups", "Future", "Completed"] as const;
+const h2 = "text-[20px] leading-[30px]";
+const hov = "hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]";
+const btn = `flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`;
+const addBtn = "flex h-9 items-center justify-center gap-2 bg-vc-success-soft text-[14px] font-semibold text-vc-success [--cut:var(--vc-success-soft)] hover:bg-vc-success-soft-hover";
+type Dest = "/resources" | "/messages" | "/calendar" | "/directories" | "/teacher/news" | "/teacher/purchases";
+type TileIcon = ComponentType<{ className?: string }>;
+/** Same tile as the student home: a soft blue square with the icon above the label; it darkens on hover. */
+function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Record<string, string>; label: string; icon: TileIcon; solid?: boolean }) {
+  return <Link to={to} search={search as never} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`}><Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}</Link>;
+}
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
   return <Link to="/teacher/class/$classId" params={{ classId }} search={{ tab: "attendance" }} className={`mt-0.5 flex items-center gap-1.5 text-[13px] ${taken ? "text-vc-gray" : "text-destructive"}`}><span className={`size-[9px] rounded-full border ${taken ? "border-vc-gray-light" : "border-destructive bg-destructive"}`} />Attendance →</Link>;
@@ -40,15 +46,15 @@ function TeacherHome() {
   }, [custom, mineIds]);
   const week = [0, 1, 2, 3, 4].map((n) => addDays(now, n));
   const todays = all.flatMap((c) => meetingsOn(c, schedulingSets, now).map((m) => ({ c, label: [m.name || c.block, [scheduleTime(m.start), m.end ? scheduleTime(m.end) : ""].filter(Boolean).join(" - ")].filter(Boolean).join(": ") }))).sort((a, b) => a.label.localeCompare(b.label));
-  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
+  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && c.type !== "ADVISORY" : tab === "Groups" ? c.status === "current" && c.type === "ADVISORY" : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
   const toolLink = (label: string, icon: ReactNode, tabId: "assignments" | "grades" | "attendance", cls: string) => first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: tabId }} className={cls}>{icon}{label}</Link> : null;
   return (
     <PortalShell portal="teacher" area="teacher">
-      <div className="border-b border-vc-line px-4 py-3 text-[17px] font-light">Home</div>
-      <div className="grid grid-cols-1 gap-x-9 px-4 pb-10 pt-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="border-b border-vc-line px-4 py-[10.5px] text-[18px] leading-[27px]">Home</div>
+      <div className="grid grid-cols-1 gap-8 px-3 pb-8 pt-[13px] md:grid-cols-[minmax(0,1fr)_304px]">
         <div className="min-w-0">
-          <h2 className={h2}>Upcoming</h2>
-          <div className="mt-3 grid grid-cols-5 border border-vc-line">
+          <h2 className={`mb-[11px] ${h2}`}>Upcoming</h2>
+          <div className="grid grid-cols-5 border border-vc-line">
             {week.map((d, i) => { const items = assignments.filter((a) => isSameDay(a.due, d)); return (
               <div key={+d} className={i ? "border-l border-vc-line" : ""}>
                 <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase text-foreground/70 ${i === 0 ? "bg-vc-tile-warm" : "bg-vc-bar"}`}>{format(d, "EEE - MMM d")}</div>
@@ -71,7 +77,7 @@ function TeacherHome() {
           </div>
 
           <h2 className={`${h2} mt-6`}>All Classes</h2>
-          <div role="tablist" className="mt-3 flex border-b border-vc-line">
+          <div role="tablist" className="mt-3 flex overflow-x-auto whitespace-nowrap border-b border-vc-line">
             {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px h-[44px] px-6 text-[14.5px] ${tab === t ? "border-x border-t border-vc-line bg-background text-vc-tile-warm-fg" : "text-foreground"}`}>{t}</button>)}
           </div>
           <div className="mt-1">
@@ -79,50 +85,50 @@ function TeacherHome() {
               <div key={c.id} className="border-b border-vc-line border-l-2 border-l-vc-link pb-3 pl-4 pt-3">
                 <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[18px] leading-6 text-vc-link hover:underline"><b className="font-semibold">{c.id}</b>: {c.name}</Link>
                 <Attendance taken={attDone.includes(`${c.id}|${day}`)} classId={c.id} />
-                <div className="mt-2 flex flex-wrap items-center gap-x-7 gap-y-1 text-[13px] text-vc-gray-dark">
-                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="flex items-center gap-1.5 font-semibold text-vc-link-strong"><Pencil className="size-4" />Gradebook</Link>
-                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-vc-link-strong"><Globe className="size-4" />Website<ChevronDown className="size-3" /></Link>
-                  <Link to="/messages" className="flex items-center gap-1.5 text-vc-link-strong"><Mail className="size-4" />Contact<ChevronDown className="size-3" /></Link>
-                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="flex items-center gap-1.5 text-vc-link-strong"><Menu className="size-4" />More<ChevronDown className="size-3" /></Link>
+                <div className="mt-2 flex flex-nowrap items-center gap-x-7 overflow-x-auto whitespace-nowrap text-[14px] text-vc-link-strong">
+                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="flex items-center gap-1.5 font-semibold"><Pencil className="size-4" />Gradebook</Link>
+                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5"><Globe className="size-4" />Website<ChevronDown className="size-3" /></Link>
+                  <Link to="/messages" className="flex items-center gap-1.5"><Mail className="size-4" />Contact<ChevronDown className="size-3" /></Link>
+                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="flex items-center gap-1.5"><Menu className="size-4" />More<ChevronDown className="size-3" /></Link>
                 </div>
               </div>))}
             {!shown.length && <p className="py-8 text-center text-[14px] text-vc-gray">No classes here.{tab === "My Classes" ? " Classes appear once the school office schedules and publishes them." : ""}</p>}
           </div>
         </div>
 
-        <aside className="mt-8 space-y-0 lg:mt-0">
-          <h2 className={h2}>Faculty Portal</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <Link to="/resources" className={tile}><Library className="size-6" />My Library</Link>
-            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={tile}><NotebookPen className="size-6" />Lesson Planner</Link> : <span className={tile}><NotebookPen className="size-6" />Lesson Planner</span>}
-            <Link to="/messages" className={tile}><Mail className="size-6" />My Messages</Link>
-            <Link to="/calendar" className={tile}><CalendarDays className="size-6" />My Calendar</Link>
+        <aside>
+          <h2 className={`mb-[11px] ${h2}`}>Faculty Portal</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <Tile to="/resources" label="My Library" icon={Library} solid />
+            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`}><NotebookPen className="size-6" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><NotebookPen className="size-6" />Lesson Planner</span>}
+            <Tile to="/messages" label="My Messages" icon={Mail} solid />
+            <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            {toolLink("Take Attendance", <ClipboardCheck className="size-4" />, "attendance", wide)}
-            {toolLink("Assignments", <BookOpen className="size-4" />, "assignments", wide)}
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {toolLink("Take Attendance", <ClipboardCheck className="size-[18px]" />, "attendance", btn)}
+            {toolLink("Assignments", <BookOpen className="size-[18px]" />, "assignments", btn)}
           </div>
-          <h2 className={`${h2} mt-6`}>Reserve Resources</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2.5"><Link to="/resources" className={wide}><LayoutGrid className="size-4" />My Resources</Link><Link to="/resources" className={wide}><Search className="size-4" />Find Resources</Link></div>
-          <h2 className={`${h2} mt-6`}>Manage Students</h2>
-          <form className="relative mt-3" onSubmit={(e) => { e.preventDefault(); }}>
+          <h2 className={`mb-[11px] mt-3 ${h2}`}>Reserve Resources</h2>
+          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><LayoutGrid className="size-[18px]" />My Resources</Link><Link to="/resources" className={btn}><Search className="size-[18px]" />Find Resources</Link></div>
+          <h2 className={`mb-[11px] mt-3 ${h2}`}>Manage Students</h2>
+          <form className="relative" onSubmit={(e) => { e.preventDefault(); }}>
             <Search className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-foreground/70" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find students" aria-label="Find students" className="h-[52px] w-full border border-vc-line bg-background pl-11 pr-3 text-[17px] outline-none focus:border-vc-link" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find students" aria-label="Find students" className="h-[44px] w-full border-2 border-vc-line bg-background pl-11 pr-3 text-[17px] outline-none focus:border-vc-link" />
           </form>
           {q.trim() && <Link to="/directories" search={{ type: "students", last: q.trim() }} className="mt-1 block text-[13px] text-vc-link-strong">Search the student directory for “{q.trim()}” →</Link>}
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            {toolLink("Add Comment", <MessageSquarePlus className="size-4" />, "grades", add)}
-            {toolLink("Add Assignment", <Plus className="size-4" />, "assignments", add)}
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {toolLink("Add Comment", <MessageSquarePlus className="size-[18px]" />, "grades", addBtn)}
+            {toolLink("Add Assignment", <Plus className="size-[18px]" />, "assignments", addBtn)}
           </div>
-          <h2 className={`${h2} mt-6`}>School Links</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <Link to="/calendar" className={tile}><CalendarDays className="size-6" />School Calendar</Link>
-            <Link to="/teacher/news" className={tile}><Globe className="size-6" />School News</Link>
-            <Link to="/directories" search={{ type: "students" }} className={tile}><Users className="size-6" />Student Directory</Link>
-            <Link to="/directories" search={{ type: "faculty" }} className={tile}><Users className="size-6" />Faculty/Staff Directory</Link>
+          <h2 className={`mb-[11px] mt-3 ${h2}`}>School Links</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <Tile to="/calendar" label="School Calendar" icon={CalendarDays} solid />
+            <Tile to="/teacher/news" label="School News" icon={Globe} />
+            <Tile to="/directories" search={{ type: "students" }} label="Student Directory" icon={Users} solid />
+            <Tile to="/directories" search={{ type: "faculty" }} label="Faculty/Staff Directory" icon={Users} solid />
           </div>
-          <h2 className={`${h2} mt-6`}>Faculty Links</h2>
-          <div className="mt-3"><Link to="/teacher/purchases" className={wide}>Purchase Requests</Link></div>
+          <h2 className={`mb-[11px] mt-3 ${h2}`}>Faculty Links</h2>
+          <Link to="/teacher/purchases" className={btn}>Purchase Requests</Link>
         </aside>
       </div>
     </PortalShell>

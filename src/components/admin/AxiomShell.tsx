@@ -1,6 +1,6 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { ArrowLeft, BookOpen, ChevronRight, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -26,11 +26,12 @@ export const AXIOM_LINKS = [
 ] as const;
 
 /** Axiom (admin) frame: Launchpad, global search, breadcrumb bar, grey workspace. */
-export function AxiomShell({ title, crumbs = [], actions, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; children: ReactNode }) {
-  return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={actions}>{children}</Frame></RoleGate>;
+export function AxiomShell({ title, crumbs = [], actions, compactRail = false, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; compactRail?: boolean; children: ReactNode }) {
+  return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={actions} compactRail={compactRail}>{children}</Frame></RoleGate>;
 }
 
-function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; children: ReactNode }) {
+function Frame({ title, crumbs, actions, compactRail, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; compactRail: boolean; children: ReactNode }) {
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { user, logout, users, sections } = useSchool();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
@@ -94,7 +95,19 @@ function Frame({ title, crumbs, actions, children }: { title: string; crumbs: Cr
         </div>
       </header>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-vc-line bg-background px-4 py-2"><h1 className="text-[18px] font-normal text-ax-top">{title}</h1><div className="flex items-center gap-2"><Button variant="ghost" size="icon" aria-label="Favorite this page" title="Favorite this page" className="size-7" onClick={() => workspace.toggleFavorite({ title, path })}><Star className={`size-4 ${workspace.favorites.some((f) => f.path === path) ? 'fill-current text-vc-tile-warm-fg' : 'text-vc-gray'}`} /></Button><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="h-7 text-[12px]">Related Pages<ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">{AXIOM_LINKS.map((l) => <DropdownMenuItem key={l.to} asChild><Link to={l.to}>{l.label}</Link></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu></div></div>
-      <main className="p-3 sm:p-4">{children}</main>
+      <div className="flex items-center gap-1.5 border-b border-vc-line bg-background px-4 py-1.5 text-[13px]">
+        <button onClick={() => window.history.back()} aria-label="Back" title="Back" className="mr-1 grid size-7 place-items-center text-vc-link-strong hover:bg-vc-panel"><ArrowLeft className="size-4" /></button>
+        <Link to="/admin" className="text-vc-link-strong hover:underline">System</Link>
+        {crumbs.map((c) => <span key={c.label} className="flex items-center gap-1.5"><ChevronRight className="size-3.5 text-muted-foreground" />{c.to ? <Link to={c.to} className="text-vc-link-strong hover:underline">{c.label}</Link> : c.label}</span>)}
+        {title !== "System Administrator Homepage" && <span className="flex items-center gap-1.5"><ChevronRight className="size-3.5 text-muted-foreground" /><b className="font-semibold">{title}</b></span>}
+      </div>
+      <div className="flex">
+        <nav aria-label="Administration" className={`sticky top-[86px] hidden h-[calc(100vh-86px)] shrink-0 self-start overflow-y-auto border-r border-vc-line bg-background py-2 md:block ${compactRail ? "w-[52px]" : "w-[216px]"}`}>
+          {AXIOM_LINKS.map(({ to, label, icon: Icon }) => { const on = to === "/admin" ? pathname === "/admin" || pathname === "/admin/" : pathname.startsWith(to); return (
+            <Link key={to} to={to} title={label} aria-current={on ? "page" : undefined} className={`flex items-center gap-2.5 border-l-[4px] px-3 py-2.5 text-[14px] ${on ? "border-vc-link bg-vc-tile font-semibold text-foreground" : "border-transparent text-vc-link-strong hover:bg-vc-panel"}`}><Icon className="size-[18px] shrink-0" />{!compactRail && <span className="truncate">{label}</span>}</Link>); })}
+        </nav>
+        <main className="min-w-0 flex-1 p-3 sm:p-4">{children}</main>
+      </div>
       <PortalChooser open={chooser} onClose={() => setChooser(false)} />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0 text-[13px]">

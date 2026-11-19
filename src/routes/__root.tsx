@@ -108,28 +108,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-/**
- * Veracross has a slightly heavier feel than a typical single-page app: a press registers, then the next page
- * arrives about a tenth of a second later. Every in-app link click is held for that beat (with a pressed look)
- * and then goes through normally, so existing click handlers still run.
- */
-function PressFeel() {
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download") || a.origin !== window.location.origin) return;
-      if (a.dataset["go"]) { delete a.dataset["go"]; return; }
-      e.preventDefault(); e.stopPropagation();
-      a.dataset["pressed"] = "1";
-      window.setTimeout(() => { delete a.dataset["pressed"]; a.dataset["go"] = "1"; a.click(); }, 110);
-    };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, []);
-  return null;
-}
-
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -152,7 +130,6 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <SchoolStoreProvider>
         <PortalStoreProvider>
-          <PressFeel />
           <Outlet />
           <Toaster />
         </PortalStoreProvider>

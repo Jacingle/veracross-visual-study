@@ -76,7 +76,7 @@ function Planner() {
                 </div>
               </div>
               {days.map((d) => (
-                <div key={+d} className={`min-h-[80px] space-y-[9px] border-b border-vc-line pb-[7px] pl-2.5 pr-1.5 pt-[7px] ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
+                <div key={+d} className={`min-h-[80px] space-y-[7.5px] border-b border-vc-line pb-2 pl-2.5 pr-1.5 pt-2 ${isSameDay(d, today()) ? "bg-vc-now" : ""} ${d.getDay() === 5 ? "border-r" : ""}`}>
                   {all.filter((a) => a.courseId === c.id && isSameDay(a.due, d)).map((a) => (
                     <Popover key={a.id}>
                       <PopoverTrigger className="flex h-[19px] w-full items-stretch border border-vc-gray-light/70 bg-background text-left text-[11.5px] uppercase shadow-[0_1px_2px_rgba(0,0,0,.15)]">

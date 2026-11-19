@@ -3,7 +3,7 @@ import { blockMeetings } from '@/lib/scheduling';
 import { useState } from "react";
 import { toast } from "sonner";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
-import { AxAction, AxBanner, AxDetail, AxEmpty, AxField, AxFooter, AxToggle, axInput, axTd, axTh, type AxGroup } from "@/components/admin/AxiomDetail";
+import { AxAction, AxAdd, AxBanner, AxDetail, AxEmpty, AxField, AxFooter, AxToggle, axInput, axTd, axTh, type AxGroup } from "@/components/admin/AxiomDetail";
 import { EXTRA, ME_STUDENT, STUDENTS, TEACHERS, teacherFull } from "@/lib/sis-data";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
@@ -76,10 +76,11 @@ function Editor({ c }: { c: Section }) {
   const status = classStatus(d.terms);
   const Row = ({ l, children }: { l: string; children: React.ReactNode }) => <div className="grid grid-cols-[130px_1fr] items-center gap-2 border-b border-vc-line py-1.5 last:border-0"><span className="text-muted-foreground">{l}</span><div>{children}</div></div>;
   const [tab, setTab] = useState("general");
+  const [adding, setAdding] = useState(false);
   const flag = (k: string, label: string, def: boolean) => <AxField key={k} label={label}><AxToggle label={label} on={f[k] ?? def} onChange={(on) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [c.id]: { ...s.courseFlags[c.id], [k]: on } } }))} /></AxField>;
   const groups: AxGroup[] = [{ heading: "General", items: [{ id: "general", label: "General" }] }, { heading: "Schedule", items: [{ id: "schedule", label: "Schedule" }] }, { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] }];
   return (
-    <AxiomShell title={`Class: ${c.code}: ${c.name}`} crumbs={[{ label: "System", to: "/admin/courses" }]}
+    <AxiomShell compactRail title={`Class: ${c.code}: ${c.name}`} crumbs={[{ label: "System", to: "/admin/courses" }]}
       actions={<div className="flex gap-2"><button onClick={remove} className="h-[34px] border border-primary-foreground/60 px-3 text-[13px] uppercase text-primary-foreground hover:bg-primary-foreground/10">Delete</button><AxAction onClick={save}>Update</AxAction></div>}>
       <AxDetail groups={groups} active={tab} onSelect={setTab} title={tab === "general" ? "General" : tab === "schedule" ? "Schedule" : "Settings"} banner={tab === "general" ? <AxBanner /> : undefined}>
         {tab === "general" && <>
@@ -135,8 +136,11 @@ function Editor({ c }: { c: Section }) {
           </div>
           <div className="border-t border-vc-line bg-vc-panel px-6 py-2.5 text-[15px] font-semibold">Registrations</div>
       <Panel title={`Registrations (${roster.length})`} className="m-4">
+        <div className="mb-3 flex items-center gap-3"><AxAdd onClick={() => setAdding((v) => !v)} aria-expanded={adding}>{adding ? "Done Adding" : "Add Record"}</AxAdd><span className="text-[13px] text-vc-gray">Search for a student, tick the names and enroll them in this class.</span></div>
+        {adding && <>
         <div className="mb-3 flex flex-wrap items-center gap-2"><input aria-label="Find students to enroll" className={`${inp} max-w-80`} placeholder="Find students by name or email" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter students by grade" className={`${inp} w-32`} value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}><option value="">All grades</option>{grades.map((g) => <option key={g} value={String(g)}>Grade {g}</option>)}</select><Button variant="outline" size="sm" disabled={!pool.length} onClick={() => setSelected([...new Set([...selected, ...pool.map((u) => u.personId)])])}>Select all shown ({pool.length})</Button><Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setSelected([])}>Clear</Button><Button size="sm" disabled={!selected.length} onClick={() => { setRoster([...c.studentIds, ...selected]); toast.success(`${selected.length} ${selected.length === 1 ? "student" : "students"} enrolled`); setSelected([]); }}>Enroll selected ({selected.length})</Button></div>
         <div className="mb-3 grid max-h-44 grid-cols-1 gap-1 overflow-y-auto border-b border-vc-line pb-3 md:grid-cols-2">{pool.map((u) => <label key={u.id} className="flex items-center gap-2 px-2 py-1"><input type="checkbox" aria-label={`Enroll ${u.first} ${u.last}`} checked={selected.includes(u.personId)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.personId] : ids.filter((id) => id !== u.personId))} /><PersonPhoto personId={u.personId} className="size-7" /><span>{u.last}, {u.first}<span className="ml-2 text-[11px] text-muted-foreground">Grade {u.grade ?? 9}</span></span></label>)}{!pool.length && <p className="px-2 text-muted-foreground">No matching unenrolled students.</p>}</div>
+        </>}
         <div className="mb-2 flex items-center justify-between"><span className="text-[12px] text-muted-foreground">{roster.length} enrolled{drop.length ? ` · ${drop.length} selected` : ""}</span>
           <Button variant="outline" size="sm" disabled={!drop.length} onClick={() => { if (!confirm(`Withdraw ${drop.length} ${drop.length === 1 ? "student" : "students"} from ${c.id}?`)) return; setRoster(c.studentIds.filter((x) => !drop.includes(x))); toast.success(`${drop.length} withdrawn`); setDrop([]); }}>Withdraw selected ({drop.length})</Button></div>
         <table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-[#fafafa] [&_tbody_tr]:h-[40px]">
