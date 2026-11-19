@@ -1,6 +1,6 @@
 // Demo app state shared by every portal (accounts, session, portal settings, teacher edits).
 // Browser-local only: a stand-in until the school moves to Lovable Cloud accounts.
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
 import { canImpersonate, findLogin, type User } from "./auth-rules";
 import { ALL_ASSIGNMENTS, ALL_SECTIONS, EXTRA, MESSAGES, SEED_USERS, studentById, teacherRoster, today, type Assignment, type Category, type Course, type Student } from "./sis-data";
@@ -12,7 +12,8 @@ import blossoms from "@/assets/faculty-bg.jpg";
 import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
 import { setTypeColors } from "./type-colors";
-import { readSchool, saveSchool } from "./browser-save";
+import { readSchool, saveSchool, savesSettled } from "./browser-save";
+import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
@@ -107,12 +108,19 @@ const C = createContext<Ctx | null>(null);
 export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<State>(INITIAL);
   const [ready, setReady] = useState(false);
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const lastRaw = useRef("");
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+    await savesSettled();
+    if (cancelled) return;
     try {
-      const v = JSON.parse(await readSchool() || "{}") as Partial<State>;
+      const raw = await readSchool() || "{}";
       if (cancelled) return;
+      if (raw === lastRaw.current) return;
+      lastRaw.current = raw;
+      const v = JSON.parse(raw) as Partial<State>;
       if (!v.sampleCleared) {
         const sampleIds = new Set(["101-1", "122-1", "143-1", "191-1", "210-1", "93-1", "301-1", "143-2", "145-1", "148-1", "ADV-W"]);
         v.sections = (v.sections ?? []).filter((c) => !sampleIds.has(c.id));
@@ -127,8 +135,8 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
     if (!cancelled) setReady(true);
     })();
     return () => { cancelled = true; };
-  }, []);
-  useEffect(() => { if (ready) void saveSchool(JSON.stringify(s)).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); }, [s, ready]);
+  }, [pathname]);
+  useEffect(() => { if (ready) { const raw = JSON.stringify(s); lastRaw.current = raw; void saveSchool(raw).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); } }, [s, ready]);
   const update = useCallback((fn: (s: State) => State) => setS(fn), []);
   // The administrator's assignment-type colors are read by every page through categoryColor().
   useMemo(() => { setTypeColors(s.assignmentTypes); }, [s.assignmentTypes]);

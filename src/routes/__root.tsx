@@ -12,7 +12,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { savesSettled } from "../lib/browser-save";
 import { PortalStoreProvider } from "../lib/portal-store";
 import { SchoolStoreProvider } from "../lib/school-store";
 import { Toaster } from "../components/ui/sonner";
@@ -37,26 +36,6 @@ function NotFoundComponent() {
       </div>
     </div>
   );
-}
-
-/**
- * Like Veracross, going to another page is a real page load: the browser reloads (you see it in the tab) and the
- * new page appears. In-app links are handed to the browser after the app has saved its latest changes.
- */
-function HardNav() {
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download") || a.origin !== window.location.origin) return;
-      if (a.pathname === window.location.pathname && a.search === window.location.search) return;
-      e.preventDefault();
-      void savesSettled().then(() => window.location.assign(a.href));
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  }, []);
-  return null;
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
@@ -151,7 +130,6 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <SchoolStoreProvider>
         <PortalStoreProvider>
-          <HardNav />
           <Outlet />
           <Toaster />
         </PortalStoreProvider>

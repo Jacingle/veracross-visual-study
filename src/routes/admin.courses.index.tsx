@@ -141,7 +141,7 @@ function Courses() {
           <DialogHeader><DialogTitle className="text-[17px]">{editing ? "Edit Course" : "New Course"}</DialogTitle></DialogHeader>
           {draft && <form onSubmit={saveCourse} className="space-y-2.5 text-[12px] text-muted-foreground">
             <div className="grid grid-cols-[120px_1fr] gap-3">
-              <label>COURSE #<input className={inp} value={draft.id} disabled={editing} maxLength={20} onChange={(e) => setDraft({ ...draft, id: e.target.value })} /></label>
+              <label>COURSE #<input className={inp} value={draft.id} disabled={editing} onChange={(e) => setDraft({ ...draft, id: e.target.value })} /></label>
               <label>COURSE NAME<input className={inp} value={draft.name} maxLength={80} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label></div>
             <div className="grid grid-cols-3 gap-3">
               <label>TYPE<select className={inp} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as CourseDef["type"] })}>{(["ACADEMIC", "ARTS", "ADVISORY"] as const).map((t) => <option key={t}>{t}</option>)}</select></label>
