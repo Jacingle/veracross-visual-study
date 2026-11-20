@@ -2,15 +2,18 @@ import { Button } from "@/components/ui/button";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, Paperclip, Plus } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Switch } from "@/components/ui/switch";
 import { useCategoryStyle } from "@/lib/category-colors";
+import { parseISO } from "date-fns";
 import { today, type Assignment, type Category, type Student } from "@/lib/sis-data";
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
-import { isoDay, useSchool, type CustomAssignment } from "@/lib/school-store";
+import { isoDay, useSchool, useMySections, type CustomAssignment } from "@/lib/school-store";
 
 const STATUSES = ["", "Turned In", "Late", "Missing", "Excused", "Incomplete"];
 const inp = "h-8 w-full border border-vc-line px-2 text-[13px] outline-none focus:border-vc-link";
@@ -27,14 +30,24 @@ export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
   if (aid) {
     const a = list.find((x) => x.id === aid);
     if (aid !== "new" && !a) return <p className="py-10 text-center text-[13px] text-muted-foreground">Assignment not found. <button className="text-vc-link-strong" onClick={() => go({})}>Back to list</button></p>;
+    const i = a ? list.findIndex((x) => x.id === a.id) : -1;
+    const step = (d: number) => { const n = list[i + d]; if (n) go({ aid: n.id, sub }); };
+    const cur = sub ?? "details";
+    const arrow = "grid size-[34px] place-items-center rounded-[6px] bg-[#e8ecf0] text-foreground/70 disabled:opacity-40";
     return (
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <div><button onClick={() => go({})} className="text-[12px] text-vc-link-strong hover:underline">← All assignments</button><h3 className="text-[18px]">{a ? a.title : "New Assignment"}</h3></div>
-          {a && <div className="flex text-[13px]">{(["details", "students"] as const).map((k) => (
-            <button key={k} onClick={() => go({ aid, sub: k })} className={`border border-vc-line px-3 py-1 ${(sub ?? "details") === k ? "bg-vc-link text-primary-foreground" : ""}`}>{k === "details" ? "Assignment Detail" : "Students"}</button>))}</div>}
+      <div className="-mx-4 -my-4 -ml-[48px]">
+        <div className="flex flex-wrap items-center gap-3 border-b border-vc-line pb-0 pl-[48px] pr-5 pt-4">
+          <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradebook" }} className="mb-3 flex h-[42px] items-center gap-2.5 rounded-[8px] bg-[#4a4a4a] px-4 text-[15px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-5 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3.5" strokeWidth={3} /></span>Back to Scores</Link>
+          {([["details", "Assignment Info"], ["students", "Students"]] as const).map(([k, label]) => (
+            <button key={k} type="button" disabled={!a && k === "students"} onClick={() => go({ aid, sub: k })} className={`border-b-[3px] px-4 pb-[13px] pt-[10px] text-[15px] disabled:opacity-40 ${cur === k ? "border-[#4a9be0] text-[#4a9be0]" : "border-transparent text-foreground/70"}`}>{label}</button>))}
         </div>
-        {(sub ?? "details") === "details" || !a ? <Editor key={aid} courseId={courseId} a={a} onSaved={(id) => go({ aid: id })} onDeleted={() => go({})} /> : <StudentList a={a} roster={roster} />}
+        {a && <div className="flex flex-wrap items-center gap-3 px-6 pb-1 pt-5">
+          <button type="button" aria-label="Previous assignment" disabled={i <= 0} onClick={() => step(-1)} className={arrow}><ChevronLeft className="size-5" /></button>
+          <button type="button" aria-label="Next assignment" disabled={i < 0 || i >= list.length - 1} onClick={() => step(1)} className={arrow}><ChevronRight className="size-5" /></button>
+          <span style={chip(a.category)} className="rounded-[4px] px-2 py-0.5 text-[12px] font-semibold uppercase text-primary-foreground">{a.category}</span>
+          <h3 className="text-[22px] font-medium">{a.title}</h3>
+        </div>}
+        {cur === "details" || !a ? <Editor key={aid} courseId={courseId} a={a} onSaved={(id) => go({ aid: id })} onDeleted={() => go({})} /> : <StudentList a={a} roster={roster} />}
       </div>
     );
   }
@@ -62,49 +75,98 @@ function PortalFlag({ id }: { id: string }) {
   return c && !c.published ? <span className="text-muted-foreground">Hidden</span> : <span className="text-vc-success">Shown</span>;
 }
 
-function L({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span>{children}</label>;
+const box = "h-[42px] w-full rounded-[6px] border border-[#d5d9de] bg-background px-3 text-[15px] outline-none focus:border-[#4a9be0]";
+function F({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return <div className={`mb-5 ${className}`}><div className="mb-1.5 text-[14px] font-semibold text-foreground/80">{label}</div>{children}</div>;
+}
+
+/** Small rich-text box: bold / italic / underline, lists, indent and alignment. */
+function RichText({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value; }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const cmd = (c: string) => (e: React.MouseEvent) => { e.preventDefault(); document.execCommand(c); onChange(ref.current?.innerHTML ?? ""); };
+  const tools: [string, string, string][] = [["bold", "B", "font-bold"], ["italic", "I", "italic"], ["underline", "U", "underline"], ["insertUnorderedList", "•≡", ""], ["insertOrderedList", "1≡", ""], ["outdent", "⇤", ""], ["indent", "⇥", ""], ["justifyLeft", "⯇", ""], ["justifyCenter", "≡", ""], ["justifyRight", "⯈", ""]];
+  return (
+    <div className="rounded-[6px] border border-[#d5d9de] focus-within:border-[#4a9be0]">
+      <div className="flex flex-wrap gap-0.5 border-b border-[#d5d9de] bg-[#f6f7f9] p-1">{tools.map(([c, l, s]) => <button key={c} type="button" title={c} onMouseDown={cmd(c)} className={`h-7 min-w-7 rounded px-1.5 text-[13px] hover:bg-[#e4e8ec] ${s}`}>{l}</button>)}</div>
+      <div ref={ref} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={(e) => onChange(e.currentTarget.innerHTML)} className="min-h-[120px] px-3 py-2 text-[15px] outline-none [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" />
+    </div>
+  );
+}
+
+function DatePick({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const d = value ? parseISO(value) : undefined;
+  return (
+    <Popover><PopoverTrigger asChild><button type="button" aria-label={label} className={`${box} flex items-center justify-between text-left`}>{d ? format(d, "MMMM d, yyyy") : "Select date"}<CalendarDays className="size-4 text-foreground/50" /></button></PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-2 [&_[data-selected-single=true]]:!bg-[#4a9be0]"><Calendar mode="single" selected={d} defaultMonth={d} onSelect={(x) => x && onChange(isoDay(x))} /></PopoverContent></Popover>
+  );
+}
+
+function Toggle({ label, on, set }: { label: string; on: boolean; set: (v: boolean) => void }) {
+  return (
+    <div className="mb-3 flex items-center gap-3 text-[15px]">
+      <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => set(!on)} className={`relative h-[26px] w-[48px] rounded-full transition-colors ${on ? "bg-[#4a9be0]" : "bg-[#c9ced4]"}`}><span className={`absolute top-[3px] size-5 rounded-full bg-background shadow transition-all ${on ? "left-[25px]" : "left-[3px]"}`} /></button>
+      <span className="text-foreground/80">{label}</span>
+    </div>
+  );
 }
 
 function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assignment | undefined; onSaved: (id: string) => void; onDeleted: () => void }) {
   const { custom, update, assignmentTypes } = useSchool();
+  const mine = useMySections();
   const existing = a ? custom.find((x) => x.id === a.id) : undefined;
   const [f, setF] = useState<CustomAssignment>(existing ?? {
     id: a?.id ?? `c-${crypto.randomUUID().slice(0, 8)}`, courseId, title: a?.title ?? "", category: a?.category ?? "HOMEWORK",
     assigned: isoDay(a?.assigned ?? today()), due: isoDay(a?.due ?? today()), points: a?.points ?? 10, details: "", notes: a?.notes ?? "",
-    published: true, inCalc: true, extraCredit: false, allSections: false, method: "Points",
+    // Scores stay hidden until the teacher turns "Display on Portals" on (or uses the eye in the gradebook).
+    published: a ? true : false, inCalc: true, extraCredit: false, allSections: false, method: "Points", weight: 10,
   });
+  const types = [...new Set([...assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => t.description.toUpperCase()), f.category])];
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     const r = schema.safeParse(f);
     if (!r.success) { toast.error(r.error.issues[0]?.message ?? "Check the form"); return; }
-    update((s) => ({ ...s, custom: [...s.custom.filter((x) => x.id !== f.id), { ...f, title: f.title.trim() }] }));
-    toast.success("Assignment saved"); onSaved(f.id);
+    // "Applies to All Sections": same course, same term and year, and also taught by this teacher.
+    const here = mine.find((s) => s.id === courseId);
+    const sibs = f.allSections && here ? mine.filter((s) => s.id !== here.id && s.courseNo === here.courseNo && s.terms.some((t) => here.terms.includes(t)) && s.teacherIds.some((t) => here.teacherIds.includes(t))) : [];
+    update((s) => ({ ...s, custom: [...s.custom.filter((x) => x.id !== f.id && x.linkId !== f.id), { ...f, title: f.title.trim() },
+      ...sibs.map((sec) => ({ ...f, id: `${f.id}~${sec.id}`, courseId: sec.id, linkId: f.id, title: f.title.trim() }))] }));
+    toast.success(sibs.length ? `Assignment saved to this and ${sibs.length} other section${sibs.length === 1 ? "" : "s"}` : "Assignment saved"); onSaved(f.id);
   };
-  const sw = (label: string, k: "published" | "inCalc" | "extraCredit" | "allSections") => (
-    <div className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span><Switch checked={f[k]} onCheckedChange={(v) => setF({ ...f, [k]: v })} aria-label={label} /></div>);
+  const del = () => {
+    update((s) => ({ ...s, custom: s.custom.filter((x) => x.id !== f.id && x.linkId !== f.id) }));
+    toast(a && !a.id.startsWith("c-") ? "Edits reverted" : "Assignment deleted"); onDeleted();
+  };
+  const sum = (k: string, v: string) => <div><div className="text-[12px] text-vc-gray">{k}</div><div className="text-[18px] font-medium">{v}</div></div>;
   return (
-    <form onSubmit={save} className="grid grid-cols-2 gap-x-8 border border-vc-line p-4">
-      <div>
-        <L label="Description"><input className={inp} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></L>
-        <L label="Assignment Type"><select className={inp} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{[...new Set([...assignmentTypes.filter((t) => !t.obsolete).sort((a, b) => a.sortKey - b.sortKey).map((t) => t.description), f.category])].map((c) => <option key={c}>{c}</option>)}</select></L>
-        <L label="Assignment Date"><input type="date" className={inp} value={f.assigned} onChange={(e) => setF({ ...f, assigned: e.target.value })} /></L>
-        <L label="Due Date"><input type="date" className={inp} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} /></L>
-        <L label="Grading Method"><select className={inp} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter Grade", "Pass/Fail", "Completion"].map((m) => <option key={m}>{m}</option>)}</select></L>
-        <L label="Max Score"><input className={inp} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></L>
+    <form onSubmit={save} className="px-6 pb-8 pt-5">
+      {existing && <div className="mb-6 flex flex-wrap items-center gap-10">
+        {sum("Max Score", String(f.points))}{sum("Weight", String(f.weight ?? 10))}{sum("Display", f.published ? "ON" : "OFF")}
+        <div className="ml-auto flex gap-2">
+          <button type="button" onClick={() => toast("Attachments aren't available in this version yet.")} className="flex h-[40px] items-center gap-2 rounded-[6px] bg-[#e8ecf0] px-4 text-[14px] font-medium"><Paperclip className="size-4" />Attach Files</button>
+          <button type="button" onClick={del} className="h-[40px] rounded-[6px] border border-[#e0645c] px-4 text-[14px] font-medium text-[#d9453d] hover:bg-[#fbe9e9]">Delete Assignment</button></div></div>}
+      <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div>
+          <F label="Description"><input aria-label="Description" className={box} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></F>
+          <F label="Assignment Details"><RichText label="Assignment Details" value={f.details} onChange={(v) => setF({ ...f, details: v })} /></F>
+          <F label="Teacher Notes (Internal)"><RichText label="Teacher Notes" value={f.notes} onChange={(v) => setF({ ...f, notes: v })} /></F>
+        </div>
+        <div>
+          <F label="Assignment Type"><select aria-label="Assignment Type" className={box} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{types.map((t) => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}</select></F>
+          <div className="grid grid-cols-2 gap-4">
+            <F label="Date Assigned"><DatePick label="Date Assigned" value={f.assigned} onChange={(v) => setF({ ...f, assigned: v, due: v > f.due ? v : f.due })} /></F>
+            <F label="Due Date"><DatePick label="Due Date" value={f.due} onChange={(v) => setF({ ...f, due: v })} /></F></div>
+          <F label="Grading Method"><select aria-label="Grading Method" className={box} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter Grade", "Pass/Fail", "Completion"].map((m) => <option key={m}>{m}</option>)}</select></F>
+          <div className="grid grid-cols-2 gap-4">
+            <F label="Max Score"><input aria-label="Max Score" className={box} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></F>
+            <F label="Weight"><input aria-label="Weight" className={box} inputMode="decimal" value={String(f.weight ?? 10)} onChange={(e) => /^\d{0,3}(\.\d?)?$/.test(e.target.value) && setF({ ...f, weight: Number(e.target.value) })} /></F></div>
+          <Toggle label="Include in Calc. Grade?" on={f.inCalc} set={(v) => setF({ ...f, inCalc: v })} />
+          <Toggle label="Extra Credit" on={f.extraCredit} set={(v) => setF({ ...f, extraCredit: v })} />
+          <Toggle label="Applies to All Sections?" on={f.allSections} set={(v) => setF({ ...f, allSections: v })} />
+          <Toggle label="Display on Portals?" on={f.published} set={(v) => setF({ ...f, published: v })} />
+        </div>
       </div>
-      <div>
-        {sw("Display on Portals", "published")}
-        {sw("Include in Calculations", "inCalc")}
-        {sw("Extra Credit", "extraCredit")}
-        {sw("Apply to All My Sections", "allSections")}
-        <L label="Notes (portal)"><textarea className="h-16 w-full border border-vc-line p-2 text-[13px]" maxLength={1000} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></L>
-        <L label="Homework Details"><textarea className="h-16 w-full border border-vc-line p-2 text-[13px]" maxLength={2000} value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} /></L>
-      </div>
-      <div className="col-span-2 mt-3 flex justify-end gap-2 border-t border-vc-line pt-3">
-        {existing && <button type="button" onClick={() => { update((s) => ({ ...s, custom: s.custom.filter((x) => x.id !== f.id) })); toast(a && !a.id.startsWith("c-") ? "Edits reverted" : "Assignment deleted"); onDeleted(); }} className="h-8 border border-vc-line px-3 text-[13px] text-destructive">{f.id.startsWith("c-") ? "Delete" : "Revert edits"}</button>}
-        <button className="h-8 bg-vc-success px-5 text-[13px] font-semibold text-primary-foreground">Save</button>
-      </div>
+      <div className="mt-2"><button className="h-[44px] rounded-[6px] bg-[#4caf50] px-6 text-[15px] font-semibold text-primary-foreground hover:brightness-105">Save Assignment</button></div>
     </form>
   );
 }
