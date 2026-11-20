@@ -5,7 +5,10 @@ const open = () => new Promise<IDBDatabase>((resolve, reject) => {
   request.onsuccess = () => resolve(request.result);
   request.onerror = () => reject(request.error);
 });
+/** The newest value handed to saveSchool that has not reached storage yet. Reads must see it, or a page change right after an edit would load the old records. */
+let inflight: string | null = null;
 export async function readSchool(): Promise<string | null> {
+  if (inflight !== null) return inflight;
   try {
     const db = await open();
     return await new Promise<string | null>((resolve, reject) => {
@@ -19,6 +22,7 @@ export async function readSchool(): Promise<string | null> {
 }
 let pending: Promise<void> = Promise.resolve();
 export function saveSchool(value: string): Promise<void> {
+  inflight = value;
   pending = pending.catch(() => {}).then(async () => {
   let fallback = false;
   try { localStorage.setItem("cra-school-v2", value); fallback = true; } catch { /* IndexedDB handles larger photos. */ }
@@ -31,7 +35,7 @@ export function saveSchool(value: string): Promise<void> {
     tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
   });
   } catch (error) { if (!fallback) throw error; }
-  });
+  }).finally(() => { if (inflight === value) inflight = null; });
   return pending;
 }
 /** Resolves once every queued save has reached browser storage (used before a full page load). */
