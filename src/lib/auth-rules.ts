@@ -1,7 +1,7 @@
 // Pure sign-in and access rules for the demo accounts (no storage, no React) so they can be tested.
 export type Role = "admin" | "teacher" | "student";
 export type Area = "admin" | "teacher" | "student" | "shared";
-export type User = { id: string; email: string; password: string; role: Role; first: string; last: string; personId: string; active: boolean; prefix?: string; suffix?: string; middle?: string; preferred?: string; address?: string; city?: string; state?: string; postal?: string; phone?: string; grade?: number };
+export type User = { id: string; email: string; password: string; role: Role; first: string; last: string; personId: string; active: boolean; prefix?: string; suffix?: string; middle?: string; preferred?: string; loginDisabled?: boolean; welcomeSent?: boolean; address?: string; city?: string; state?: string; postal?: string; phone?: string; grade?: number };
 
 export const canImpersonate = (actor: User | null, target: User) => actor?.role === "admin" && target.role !== "admin" && target.active;
 
@@ -12,10 +12,12 @@ const norm = (s: string) => s.trim().toLowerCase();
 /** Username is the email (case-insensitive); password must match exactly; inactive accounts can't sign in. */
 export function findLogin(users: User[], username: string, password: string): User | null {
   const u = users.find((x) => norm(x.email) === norm(username));
-  if (!u || !u.active || u.password !== password) return null;
+  if (!u || !u.active || u.loginDisabled || u.password !== password) return null;
   return u;
 }
 
+/** True when the account exists but portal logins were switched off by an administrator. */
+export const loginBlocked = (users: User[], username: string) => users.some((x) => norm(x.email) === norm(username) && x.active && !!x.loginDisabled);
 export const userExists = (users: User[], username: string) => users.some((x) => norm(x.email) === norm(username));
 
 export function homeFor(role: Role): "/admin" | "/teacher" | "/student" {

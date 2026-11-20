@@ -2,7 +2,7 @@
 // Browser-local only: a stand-in until the school moves to Lovable Cloud accounts.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
-import { canImpersonate, findLogin, userExists, type User } from "./auth-rules";
+import { canImpersonate, findLogin, loginBlocked, userExists, type User } from "./auth-rules";
 import { ALL_ASSIGNMENTS, ALL_SECTIONS, EXTRA, MESSAGES, SEED_USERS, studentById, teacherRoster, today, type Assignment, type Category, type Course, type Student } from "./sis-data";
 import { classStatus, makeYear, yearStartFor, type ClassStatus } from "./terms";
 import { scoreOf } from "./gradebook";
@@ -33,7 +33,7 @@ export type Website = { bg: "none" | "color" | "photo"; color: string; photo: st
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
-export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined };
+export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
 
 const Y = String(yearStartFor(new Date()));
 const FY = [`${Y}-S1`, `${Y}-S2`];
@@ -101,7 +101,7 @@ type Ctx = State & {
   ready: boolean; user: User | null;
   update: (fn: (s: State) => State) => void;
   /** Checks the newest saved accounts (not just this tab's copy), so a just-created account can sign in. */
-  login: (username: string, password: string) => Promise<{ user: User | null; exists: boolean }>;
+  login: (username: string, password: string) => Promise<{ user: User | null; exists: boolean; blocked: boolean }>;
   logout: () => void;
   impersonate: (id: string) => boolean;
   stopImpersonating: () => void;
@@ -166,7 +166,7 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
       try { const fresh = JSON.parse((await readSchool()) || "{}") as Partial<State>; if (fresh.users?.length) users = fresh.users; } catch { /* use this tab's copy */ }
       const u = findLogin(users, username, password);
       if (u) setS((x) => ({ ...x, users, sessionId: u.id }));
-      return { user: u, exists: userExists(users, username) };
+      return { user: u, exists: userExists(users, username), blocked: loginBlocked(users, username) };
     },
     logout: () => setS((x) => ({ ...x, sessionId: null, impersonatorId: null })),
     impersonate: (id) => {

@@ -111,6 +111,11 @@ function Courses() {
                   <AxField label="Include on Report Card"><AxToggle label="Include on report card" on={flagOn("report")} onChange={(v) => setFlag("report", v)} /></AxField>
                   <AxField label="Include on Transcript"><AxToggle label="Include on transcript" on={flagOn("transcript")} onChange={(v) => setFlag("transcript", v)} /></AxField>
                   <AxField label="Include in GPA"><AxToggle label="Include in GPA" on={flagOn("gpa")} onChange={(v) => setFlag("gpa", v)} /></AxField>
+                  <AxField label="Include in Scheduler"><AxToggle label="Include in scheduler" on={flagOn("scheduler")} onChange={(v) => setFlag("scheduler", v)} /></AxField>
+                  <AxField label="Include in Parent/Teacher Conferences"><AxToggle label="Include in parent/teacher conferences" on={flagOn("conferences")} onChange={(v) => setFlag("conferences", v)} /></AxField>
+                  <AxField label="Available for Request"><AxToggle label="Available for request" on={flagOn("request")} onChange={(v) => setFlag("request", v)} /></AxField>
+                  <AxField label="Classification: AP"><AxToggle label="Classification AP" on={courseFlags[`course:${c.id}`]?.cls_ap ?? false} onChange={(v) => setFlag("cls_ap", v)} /></AxField>
+                  <AxField label="Classification: Honors"><AxToggle label="Classification Honors" on={courseFlags[`course:${c.id}`]?.cls_honors ?? false} onChange={(v) => setFlag("cls_honors", v)} /></AxField>
                 </div>
                 <div><AxField label="Description"><textarea aria-label="Course description" className="h-[118px] w-full border border-vc-gray-light/80 bg-background p-2.5 text-[15px] outline-none focus:border-vc-link" maxLength={1000} value={c.description} onChange={(e) => patch({ description: e.target.value })} /></AxField></div>
               </div>

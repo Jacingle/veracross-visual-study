@@ -24,23 +24,12 @@ const TILES = [
   { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
 ] as const;
 
-/** The green ADD button on the System homepage: hover (or focus) to choose what to add. */
-function AddMenu() {
-  return <DropdownMenu><DropdownMenuTrigger asChild><Button className="h-8 rounded-none bg-ax-go font-semibold uppercase text-primary-foreground">Add<ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
-    <DropdownMenuItem asChild><Link to="/admin/courses" search={{ add: 'course' }}>Course</Link></DropdownMenuItem>
-    <DropdownMenuItem asChild><Link to="/admin/courses">Class / Registration</Link></DropdownMenuItem>
-    <DropdownMenuItem asChild><Link to="/admin/users" search={{ add: 'user' }}>Person / Account</Link></DropdownMenuItem>
-    <DropdownMenuItem asChild><Link to="/admin/scheduling">Scheduling Set</Link></DropdownMenuItem>
-    <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
-  </DropdownMenuContent></DropdownMenu>;
-}
-
 function AdminHome() {
   const { users, purchases, sent, sections } = useSchool();
   const [filter, setFilter] = useState("");
   const pending = purchases.filter((p) => p.status === "Pending").length;
   return (
-    <AxiomShell title="System Administrator Homepage" actions={<AddMenu />}>
+    <AxiomShell title="System Administrator Homepage">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Input aria-label="Find a task" placeholder="Find a task…" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-8 max-w-80 bg-background text-[13px]" /><Button asChild size="sm" className="h-8 bg-ax-go text-primary-foreground"><Link to="/admin/queries">Find Records</Link></Button></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[["Portal Accounts", users.length], ["Students", users.filter((u) => u.role === "student").length], ["Faculty & Staff", users.filter((u) => u.role === "teacher").length], ["Class Sections", sections.length]].map(([l, n]) => (
           <div key={l} className="border border-vc-line bg-background px-3 py-2.5"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="text-[26px] font-light text-ax-top">{n}</div></div>))}

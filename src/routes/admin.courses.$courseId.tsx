@@ -3,7 +3,7 @@ import { blockMeetings } from '@/lib/scheduling';
 import { useState } from "react";
 import { toast } from "sonner";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
-import { AxAction, AxAdd, AxBanner, AxDetail, AxEmpty, AxField, AxFooter, AxToggle, axInput, axTd, axTh, type AxGroup } from "@/components/admin/AxiomDetail";
+import { AxAction, AxAdd, AxBanner, AxDetail, AxEmpty, AxField, AxFooter, AxOpen, AxToggle, axInput, axTd, axTh, type AxGroup } from "@/components/admin/AxiomDetail";
 import { EXTRA, ME_STUDENT, STUDENTS, TEACHERS, teacherFull } from "@/lib/sis-data";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
@@ -37,7 +37,7 @@ function ClassRecord() {
 }
 
 function Editor({ c }: { c: Section }) {
-  const { courseFlags, update, scores, weights, schedulingSets, users, courses } = useSchool();
+  const { courseFlags, update, scores, weights, schedulingSets, users, courses, sections: allSections } = useSchool();
   const nav = useNavigate();
   const [d, setD] = useState(c);
   const [search, setSearch] = useState("");
@@ -77,38 +77,80 @@ function Editor({ c }: { c: Section }) {
   const [tab, setTab] = useState("general");
   const [adding, setAdding] = useState(false);
   const flag = (k: string, label: string, def: boolean) => <AxField key={k} label={label}><AxToggle label={label} on={f[k] ?? def} onChange={(on) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [c.id]: { ...s.courseFlags[c.id], [k]: on } } }))} /></AxField>;
-  const groups: AxGroup[] = [{ heading: "General", items: [{ id: "general", label: "General" }] }, { heading: "Schedule", items: [{ id: "schedule", label: "Schedule" }] }, { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] }];
+  const groups: AxGroup[] = [
+    { heading: "General", items: [{ id: "general", label: "General" }, { id: "registrations", label: "Registrations" }, { id: "teachers", label: "Teachers" }] },
+    { heading: "Communication", items: [{ id: "emails", label: "Student Email Recipients" }] },
+    { heading: "Schedule", items: [{ id: "schedule", label: "Schedule" }, { id: "suggest", label: "Schedule Suggestions" }] },
+    { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] },
+    { heading: "Other", items: [{ id: "others", label: "Other Sections" }] },
+  ];
+  const TITLES: Record<string, string> = { general: "General", registrations: "Registrations", teachers: "Teachers", emails: "Student Email Recipients", schedule: "Schedule", suggest: "Schedule Suggestions", settings: "Settings", others: "Other Sections" };
+  const LETTER = ["M", "T", "W", "R", "F"];
+  const scheduleText = d.days.length && d.time ? `${d.days.map((n) => LETTER[n - 1]).join("")}: ${d.time}` : "<None Specified>";
+  const bandNames = schedule ? schedule.blocks.map((b) => b.name) : BLOCKS;
+  const suggestions = bandNames.map((name) => {
+    const days = d.days.length ? d.days : [1, 2, 3, 4, 5];
+    const same = allSections.filter((x) => x.id !== c.id && x.block === name && x.terms.some((tm) => d.terms.includes(tm)) && x.days.some((n) => days.includes(n)));
+    const busy = same.some((x) => x.teacherIds.some((id) => d.teacherIds.includes(id)) || (!!d.room && x.room === d.room));
+    return { name, days, busy, affected: roster.filter((s) => same.some((x) => x.studentIds.includes(s.id))).length };
+  }).filter((s) => !s.busy);
+  const applySuggestion = (s: { name: string; days: number[] }) => {
+    const b = schedule?.blocks.find((x) => x.name === s.name);
+    if (schedule && b) { const ms = schedule.meetings ? blockMeetings(schedule, b.id) : []; setD({ ...d, scheduleBlockId: b.id, block: b.name, days: schedule.meetings ? [...new Set(ms.map((m) => m.day))] : b.days, time: ms[0] ? `${ms[0].start}–${ms[0].end}` : `${b.start}–${b.end}` }); }
+    else setD({ ...d, block: s.name, days: s.days });
+    toast.success(`${s.name} chosen. Choose Update to save it.`);
+    setTab("schedule");
+  };
   return (
     <AxiomShell compactRail title={`Class: ${c.code}: ${c.name}`} crumbs={[{ label: "System", to: "/admin/courses" }]}
       actions={<div className="flex gap-2"><button onClick={remove} className="h-[34px] border border-primary-foreground/60 px-3 text-[13px] uppercase text-primary-foreground hover:bg-primary-foreground/10">Delete</button><AxAction onClick={save}>Update</AxAction></div>}>
-      <AxDetail groups={groups} active={tab} onSelect={setTab} title={tab === "general" ? "General" : tab === "schedule" ? "Schedule" : "Settings"} banner={tab === "general" ? <AxBanner /> : undefined}>
-        {tab === "general" && <>
-          <div className="grid grid-cols-1 gap-x-8 px-6 py-5 lg:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+      <AxDetail groups={groups} active={tab} onSelect={setTab} title={TITLES[tab] ?? "General"} banner={tab === "general" ? <AxBanner /> : undefined}>
+        {(tab === "general" || tab === "registrations") && <>
+          {tab === "general" && <div className="grid grid-cols-1 gap-x-8 gap-y-1 px-6 py-4 md:grid-cols-2 xl:grid-cols-4 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+            <div>
+              <AxField label="Course" required><div className={`${axInput} flex items-center bg-vc-panel`}>{courseRecord?.name ?? c.name}</div></AxField>
+              <AxField label="Class ID" required><input aria-label="Class identifier" className={axInput} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></AxField>
+              <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
+            </div>
+            <div>
+              <AxField label="Teacher"><div className={`${axInput} flex items-center justify-between bg-vc-panel`}><span className="truncate">{d.teacherIds[0] ? teacherFull(d.teacherIds[0]) : "<None Specified>"}{d.teacherIds.length > 1 ? ` +${d.teacherIds.length - 1}` : ""}</span><button type="button" onClick={() => setTab("teachers")} className="shrink-0 pl-2 text-[12px] text-vc-link-strong hover:underline">Change</button></div></AxField>
+              <AxField label="Room"><input aria-label="Room" className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
+              <AxField label="Schedule"><div className={`${axInput} flex items-center bg-vc-panel`}>{scheduleText}</div></AxField>
+            </div>
             <div>
               <AxField label="School Year" required><select aria-label="School year" className={axInput} value={year} onChange={(e) => setTerms(e.target.value, termMode)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></AxField>
               <AxField label="Terms"><select aria-label="Terms" className={axInput} value={termMode} onChange={(e) => setTerms(year, e.target.value)}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></AxField>
-              <AxField label="Course" required><div className={`${axInput} flex items-center bg-vc-panel`}>{c.courseNo} · {courseRecord?.name ?? c.name}</div></AxField>
-              <AxField label="Class ID" required><input aria-label="Class identifier" className={axInput} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></AxField>
-              <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
-              <AxField label="Section"><input className={axInput} value={d.section} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
-              <AxField label="Room"><input className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
+              <AxField label="Section"><input aria-label="Section identifier" className={axInput} value={d.section} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
+            </div>
+            <div>
               <AxField label="Status" required><div className={`${axInput} flex items-center bg-vc-panel capitalize`}>{status}</div></AxField>
-            </div>
-            <div>
-              <AxField label="Scheduling Set"><select aria-label="Scheduling set" className={axInput} value={d.scheduleSetId ?? ""} onChange={(e) => setD({ ...d, scheduleSetId: e.target.value || undefined, scheduleBlockId: undefined, block: "" })}><option value="">Manual timetable</option>{schedulingSets.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></AxField>
-              <AxField label="Enrolled Students"><div className={`${axInput} flex items-center justify-end bg-vc-panel`}>{roster.length}</div></AxField>
+              <AxField label="Counts"><div className={`${axInput} flex items-center bg-vc-panel`}>{roster.length}</div></AxField>
               <AxField label="Published"><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
-              <p className="mt-2 text-[12px] text-vc-gray">{d.published ? "Teachers and students can see this class." : "Hidden from teacher and student portals."}</p>
             </div>
-            <div>
-              {flag("attendance", "Track Class Attendance", true)}
-              {flag("gpa", "Include in GPA", true)}
-              {flag("report", "Show on Report Card", true)}
-              {flag("transcript", "Show on Transcript", true)}
-            </div>
-          </div>
-          <div className="border-y border-vc-line bg-vc-panel px-6 py-2.5 text-[15px] font-semibold">Teachers</div>
-          <div className="px-6 py-3">
+          </div>}
+          <div className="flex flex-wrap items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => setAdding((v) => !v)} aria-expanded={adding}>{adding ? "Done Adding" : "Add Record"}</AxAdd><span className="text-[13px] text-vc-gray">{adding ? "Tick the students to enroll, then choose Enroll selected." : "Enrolls a student in this class."}</span></div>
+          {adding && <div className="border-b border-vc-line px-4 pt-3">
+        <div className="mb-3 flex flex-wrap items-center gap-2"><input aria-label="Find students to enroll" className={`${inp} max-w-80`} placeholder="Find students by name or email" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter students by grade" className={`${inp} w-32`} value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}><option value="">All grades</option>{grades.map((g) => <option key={g} value={String(g)}>Grade {g}</option>)}</select><Button variant="outline" size="sm" disabled={!pool.length} onClick={() => setSelected([...new Set([...selected, ...pool.map((u) => u.personId)])])}>Select all shown ({pool.length})</Button><Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setSelected([])}>Clear</Button><Button size="sm" disabled={!selected.length} onClick={() => { setRoster([...c.studentIds, ...selected]); toast.success(`${selected.length} ${selected.length === 1 ? "student" : "students"} enrolled`); setSelected([]); }}>Enroll selected ({selected.length})</Button></div>
+        <div className="mb-3 grid max-h-44 grid-cols-1 gap-1 overflow-y-auto border-b border-vc-line pb-3 md:grid-cols-2">{pool.map((u) => <label key={u.id} className="flex items-center gap-2 px-2 py-1"><input type="checkbox" aria-label={`Enroll ${u.first} ${u.last}`} checked={selected.includes(u.personId)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.personId] : ids.filter((id) => id !== u.personId))} /><PersonPhoto personId={u.personId} className="size-7" /><span>{u.last}, {u.first}<span className="ml-2 text-[11px] text-muted-foreground">Grade {u.grade ?? 9}</span></span></label>)}{!pool.length && <p className="px-2 text-muted-foreground">No matching unenrolled students.</p>}</div>
+          </div>}
+          <div className="overflow-x-auto"><table className="w-full min-w-[820px] border-collapse">
+            <thead><tr><th className={axTh}>Person</th><th className={axTh}>Grade</th><th className={axTh}>Level</th><th className={axTh}>Roles</th><th className={axTh}>Late Date Enrolled</th><th className={axTh}>Date Withdrawn</th><th className={axTh}>Notes</th><th className={`${axTh} w-10`} /><th className={`${axTh} w-10`} /></tr></thead>
+            <tbody>{roster.map((s) => (
+              <tr key={s.id} className="bg-[#fafafa] hover:bg-vc-panel">
+                <td className={axTd}><Link to="/admin/enrollment/$courseId/$studentId" params={{ courseId: c.id, studentId: s.id }} className="text-vc-link-strong underline">{s.last}, {s.first}</Link></td>
+                <td className={axTd}>{s.grade}</td><td className={`${axTd} text-vc-gray`}>N/A</td><td className={axTd}>Student ({s.grade})</td>
+                <td className={axTd}><input type="date" aria-label={`Late date enrolled for ${s.first} ${s.last}`} className="h-7 w-[140px] border border-vc-line bg-background px-1 text-[13px]" value={d.regs?.[s.id]?.late ?? ""} onChange={(e) => setD({ ...d, regs: { ...d.regs, [s.id]: { ...d.regs?.[s.id], late: e.target.value } } })} /></td>
+                <td className={`${axTd} text-vc-gray`}>—</td>
+                <td className={axTd}><input aria-label={`Notes for ${s.first} ${s.last}`} className="h-7 w-full min-w-[120px] border border-vc-line bg-background px-1 text-[13px]" value={d.regs?.[s.id]?.notes ?? ""} onChange={(e) => setD({ ...d, regs: { ...d.regs, [s.id]: { ...d.regs?.[s.id], notes: e.target.value } } })} /></td>
+                <td className={`${axTd} text-center`}><Link to="/admin/enrollment/$courseId/$studentId" params={{ courseId: c.id, studentId: s.id }} aria-label={`Open ${s.first} ${s.last}'s enrollment`}><AxOpen label="Open enrollment" /></Link></td>
+                <td className={`${axTd} text-center`}><button type="button" aria-label={`Withdraw ${s.first} ${s.last}`} title="Withdraw from this class" onClick={() => { if (!confirm(`Withdraw ${s.first} ${s.last} from ${c.code}?`)) return; setRoster(c.studentIds.filter((x) => x !== s.id)); toast.success(`${s.first} ${s.last} withdrawn`); }} className="text-[18px] font-bold leading-none text-destructive">×</button></td>
+              </tr>))}</tbody>
+          </table>
+          {!roster.length && <AxEmpty />}</div>
+          <AxFooter count={roster.length} />
+          <p className="px-4 py-2 text-[12px] text-vc-gray">Notes and late dates are saved with Update.</p>
+        </>}
+        {tab === "teachers" && <div className="px-6 py-4">
           <Row l="Teacher(s)">
   <div className="space-y-1">
     {d.teacherIds.map((id, i) => (
@@ -132,29 +174,24 @@ function Editor({ c }: { c: Section }) {
     {!addable.length && <div className="px-1 text-[11px] text-muted-foreground">No matching faculty to add.</div>}
   </div>
 </Row>
-          </div>
-          <div className="border-t border-vc-line bg-vc-panel px-6 py-2.5 text-[15px] font-semibold">Registrations</div>
-      <Panel title={`Registrations (${roster.length})`} className="m-4">
-        <div className="mb-3 flex items-center gap-3"><AxAdd onClick={() => setAdding((v) => !v)} aria-expanded={adding}>{adding ? "Done Adding" : "Add Record"}</AxAdd><span className="text-[13px] text-vc-gray">Search for a student, tick the names and enroll them in this class.</span></div>
-        {adding && <>
-        <div className="mb-3 flex flex-wrap items-center gap-2"><input aria-label="Find students to enroll" className={`${inp} max-w-80`} placeholder="Find students by name or email" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter students by grade" className={`${inp} w-32`} value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}><option value="">All grades</option>{grades.map((g) => <option key={g} value={String(g)}>Grade {g}</option>)}</select><Button variant="outline" size="sm" disabled={!pool.length} onClick={() => setSelected([...new Set([...selected, ...pool.map((u) => u.personId)])])}>Select all shown ({pool.length})</Button><Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setSelected([])}>Clear</Button><Button size="sm" disabled={!selected.length} onClick={() => { setRoster([...c.studentIds, ...selected]); toast.success(`${selected.length} ${selected.length === 1 ? "student" : "students"} enrolled`); setSelected([]); }}>Enroll selected ({selected.length})</Button></div>
-        <div className="mb-3 grid max-h-44 grid-cols-1 gap-1 overflow-y-auto border-b border-vc-line pb-3 md:grid-cols-2">{pool.map((u) => <label key={u.id} className="flex items-center gap-2 px-2 py-1"><input type="checkbox" aria-label={`Enroll ${u.first} ${u.last}`} checked={selected.includes(u.personId)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.personId] : ids.filter((id) => id !== u.personId))} /><PersonPhoto personId={u.personId} className="size-7" /><span>{u.last}, {u.first}<span className="ml-2 text-[11px] text-muted-foreground">Grade {u.grade ?? 9}</span></span></label>)}{!pool.length && <p className="px-2 text-muted-foreground">No matching unenrolled students.</p>}</div>
-        </>}
-        <div className="mb-2 flex items-center justify-between"><span className="text-[12px] text-muted-foreground">{roster.length} enrolled{drop.length ? ` · ${drop.length} selected` : ""}</span>
-          <Button variant="outline" size="sm" disabled={!drop.length} onClick={() => { if (!confirm(`Withdraw ${drop.length} ${drop.length === 1 ? "student" : "students"} from ${c.id}?`)) return; setRoster(c.studentIds.filter((x) => !drop.includes(x))); toast.success(`${drop.length} withdrawn`); setDrop([]); }}>Withdraw selected ({drop.length})</Button></div>
-        <table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-[#fafafa] [&_tbody_tr]:h-[40px]">
-          <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="w-8 py-1.5"><input type="checkbox" aria-label="Select all enrolled students" disabled={!roster.length} checked={!!roster.length && drop.length === roster.length} onChange={(e) => setDrop(e.target.checked ? roster.map((s) => s.id) : [])} /></th><th className="py-1.5">Student</th><th>Grade Level</th><th>Teacher(s)</th><th className="text-right">Current Grade</th><th /></tr></thead>
-          <tbody>{roster.map((s) => { const av = weightedAverage(list.map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, s.id) })), w); return (
-            <tr key={s.id} className="border-b border-vc-line hover:bg-vc-panel">
-              <td className="w-8 py-1.5"><input type="checkbox" aria-label={`Select ${s.first} ${s.last}`} checked={drop.includes(s.id)} onChange={(e) => setDrop((ids) => e.target.checked ? [...ids, s.id] : ids.filter((id) => id !== s.id))} /></td>
-              <td className="py-1.5"><Link to="/admin/enrollment/$courseId/$studentId" params={{ courseId: c.id, studentId: s.id }} className="text-vc-link-strong hover:underline">{s.last}, {s.first}</Link></td>
-              <td>{s.grade}</td><td>{c.teacherIds.map(teacherFull).join(", ")}</td><td className="text-right">{av !== null ? `${letterFor(av)} · ${av.toFixed(2)}%` : "—"}</td>
-              <td className="text-right"><button onClick={() => setRoster(c.studentIds.filter((x) => x !== s.id))} className="text-[12px] text-destructive hover:underline">Withdraw</button></td>
-            </tr>); })}
-            {!roster.length && <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No students enrolled yet.</td></tr>}</tbody>
-        </table>
-      </Panel>
-        </>}
+        </div>}
+        {tab === "emails" && <div className="px-6 py-4">
+          <p className="mb-2 text-[13px] text-vc-gray">Student email recipients for {c.code}. Copy the list into a message.</p>
+          <textarea readOnly aria-label="Student email recipients" className="h-32 w-full border border-vc-line bg-vc-panel p-2 font-mono text-[13px]" value={roster.map((s) => s.email).filter(Boolean).join("; ")} />
+          <div className="mt-2 flex items-center gap-3"><AxAction onClick={() => { void navigator.clipboard?.writeText(roster.map((s) => s.email).filter(Boolean).join("; ")); toast.success("Recipients copied"); }}>Copy</AxAction><Link to="/admin/messages" className="text-vc-link-strong hover:underline">Compose a message</Link></div>
+          <p className="mt-4 text-[13px] text-vc-gray">Parent email recipients: parent accounts are not part of this portal yet.</p>
+        </div>}
+        {tab === "others" && <div className="overflow-x-auto"><table className="w-full min-w-[560px] border-collapse"><thead><tr><th className={axTh}>Class ID</th><th className={axTh}>Description</th><th className={axTh}>Teacher(s)</th><th className={axTh}>Block</th><th className={axTh}>Enrolled</th></tr></thead>
+          <tbody>{allSections.filter((x) => x.courseNo === c.courseNo && x.id !== c.id).map((x) => <tr key={x.id} className="bg-[#fafafa]"><td className={axTd}><Link to="/admin/courses/$courseId" params={{ courseId: x.id }} className="text-vc-link-strong underline">{x.code}</Link></td><td className={axTd}>{x.name}</td><td className={axTd}>{x.teacherIds.map(teacherFull).join(", ") || "—"}</td><td className={axTd}>{x.block || "—"}</td><td className={axTd}>{x.studentIds.length}</td></tr>)}</tbody></table>
+          {!allSections.some((x) => x.courseNo === c.courseNo && x.id !== c.id) && <AxEmpty />}
+          <AxFooter count={allSections.filter((x) => x.courseNo === c.courseNo && x.id !== c.id).length} /></div>}
+        {tab === "suggest" && <div>
+          <p className="px-6 py-3 text-[13px] text-vc-gray">Open times for this class: blocks where none of its teachers already teach and the room is free. Students Affected counts enrolled students who already have a class in that block.</p>
+          <div className="overflow-x-auto"><table className="w-full min-w-[640px] border-collapse"><thead><tr><th className={axTh}>Block</th><th className={axTh}>Days</th><th className={axTh}>Room</th><th className={axTh}>Students Affected</th><th className={axTh} /></tr></thead>
+            <tbody>{suggestions.map((s) => <tr key={s.name} className="bg-[#fafafa]"><td className={axTd}>{s.name}</td><td className={axTd}>{s.days.map((n) => DAYS[n - 1]).join(" ") || "—"}</td><td className={axTd}>{d.room || "<None Specified>"}</td><td className={axTd}>{s.affected}</td><td className={axTd}><button type="button" onClick={() => applySuggestion(s)} className="text-vc-link-strong underline">Use this schedule</button></td></tr>)}</tbody></table>
+            {!suggestions.length && <AxEmpty />}</div>
+          <AxFooter count={suggestions.length} />
+        </div>}
         {tab === "schedule" && <>
           <div className="grid grid-cols-1 gap-x-8 px-6 py-5 lg:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
             <div>
@@ -182,8 +219,12 @@ function Editor({ c }: { c: Section }) {
           </div>
         </>}
         {tab === "settings" && <div className="grid grid-cols-1 gap-x-8 px-6 py-5 lg:grid-cols-2 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
-          <div>{FLAGS.slice(0, 4).map(([k, l, def]) => flag(k, l, def))}</div>
-          <div>{FLAGS.slice(4).map(([k, l, def]) => flag(k, l, def))}</div>
+          <div>
+              <AxField label="Scheduling Set"><select aria-label="Scheduling set" className={axInput} value={d.scheduleSetId ?? ""} onChange={(e) => setD({ ...d, scheduleSetId: e.target.value || undefined, scheduleBlockId: undefined, block: "" })}><option value="">Manual timetable</option>{schedulingSets.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></AxField>
+            <AxField label="Lock Schedule"><AxToggle label="Lock schedule for future scheduler results" on={!!d.scheduleLocked} onChange={(on) => setD({ ...d, scheduleLocked: on })} /></AxField>
+            {FLAGS.slice(0, 2).map(([k, l, def]) => flag(k, l, def))}
+          </div>
+          <div>{FLAGS.slice(2).map(([k, l, def]) => flag(k, l, def))}</div>
         </div>}
       </AxDetail>
     </AxiomShell>

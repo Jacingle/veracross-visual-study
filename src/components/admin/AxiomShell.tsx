@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen, ChevronRight, FileText, History, Plus, ChevronDown
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ActionsMenu, AddMenu } from "@/components/admin/AdminTools";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
@@ -87,6 +88,7 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
               </ul>)}
           </div>
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2 text-[12px]">{actions}</div>
+          <div className="flex shrink-0 items-stretch border border-primary-foreground/40"><ActionsMenu /><AddMenu /></div>
           <DropdownMenu>
             <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-8" /></Button>
             <DropdownMenuContent align="end" className="text-[13px]">

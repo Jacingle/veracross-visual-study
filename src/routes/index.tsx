@@ -25,8 +25,8 @@ function Login() {
   const next = (e?: React.SyntheticEvent) => { e?.preventDefault(); if (!username.trim()) return; setError(""); setStep(2); };
   const submit = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
-    const { user: u, exists } = await login(username, password);
-    if (!u) { setError(exists ? "The password you entered is incorrect." : "We couldn't find an account with that username."); setPassword(""); return; }
+    const { user: u, exists, blocked } = await login(username, password);
+    if (!u) { setError(blocked ? "Portal logins are currently disabled for this account. Please contact the school office." : exists ? "The password you entered is incorrect." : "We couldn't find an account with that username."); setPassword(""); return; }
   };
 
   return (
