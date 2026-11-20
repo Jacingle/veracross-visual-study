@@ -1,0 +1,381 @@
+From be22b6a811036aa02731379d4abeda2a720422a0 Mon Sep 17 00:00:00 2001
+From: Claude <claude@example.com>
+Date: Fri, 20 Nov 2026 21:02:34 +0000
+Subject: [PATCH] Fix class creation: new classes no longer vanish (Class not
+ found), draft classes need no teacher, add Class dialog to the + menu
+
+- browser-save: reads return the newest in-flight save. Before, adding a class and opening its record page in the same moment made the page re-read the OLDER saved copy and wipe the class, which showed 'Class not found'
+- school-store.test: reproduces that exact case with a timed IndexedDB stand-in (fails on the old code, passes now)
+- class-records: a teacher is required only when a class is published, so a new draft class can be saved
+- class-create: shared helper to build a new draft class (next free ID, terms, optional teacher)
+- AdminTools: + menu has a working Class dialog (course, year, terms, optional teacher)
+- admin.courses.index: fix two TS4111 type errors so tsc is clean
+- tests for all of the above
+---
+ src/components/admin/AdminTools.tsx | 78 ++++++++++++++++++++++++-----
+ src/lib/browser-save.test.ts        | 20 ++++++++
+ src/lib/browser-save.ts             | 11 +++-
+ src/lib/class-create.test.ts        | 26 ++++++++++
+ src/lib/class-create.ts             | 20 ++++++++
+ src/lib/class-records.test.ts       | 11 +++-
+ src/lib/class-records.ts            |  7 +--
+ src/lib/school-store.test.tsx       | 64 +++++++++++++++++++++++
+ src/routes/admin.courses.index.tsx  |  4 +-
+ 9 files changed, 222 insertions(+), 19 deletions(-)
+ create mode 100644 src/lib/browser-save.test.ts
+ create mode 100644 src/lib/class-create.test.ts
+ create mode 100644 src/lib/class-create.ts
+ create mode 100644 src/lib/school-store.test.tsx
+
+diff --git a/src/components/admin/AdminTools.tsx b/src/components/admin/AdminTools.tsx
+index 39fc23e..1418cd5 100644
+--- a/src/components/admin/AdminTools.tsx
++++ b/src/components/admin/AdminTools.tsx
+@@ -1,4 +1,4 @@
+-import { Link } from "@tanstack/react-router";
++import { Link, useNavigate } from "@tanstack/react-router";
+ import { Plus, Zap } from "lucide-react";
+ import { useState } from "react";
+ import { toast } from "sonner";
+@@ -7,25 +7,79 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
+ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+ import type { Role } from "@/lib/auth-rules";
+ import { buildAccounts, parseBatch } from "@/lib/batch-accounts";
+-import { useSchool } from "@/lib/school-store";
++import { buildSection } from "@/lib/class-create";
++import { enrollmentPeople } from "@/lib/class-records";
++import { BLANK_SITE, useSchool } from "@/lib/school-store";
+ import { SCHOOL } from "@/lib/sis-data";
++import { schoolYears } from "@/lib/terms";
+ 
+ const iconBtn = "grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20";
+ const act = "block w-full px-0 py-1 text-left text-[16px] text-vc-link-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline";
++const field = "h-8 w-full border border-vc-line bg-background px-2 text-[13px] text-foreground outline-none focus:border-vc-link";
+ 
+ /** The + button in the Axiom toolbar: add a record from anywhere. */
+ export function AddMenu() {
++  const { courses, sections, users, update } = useSchool();
++  const nav = useNavigate();
++  const years = schoolYears();
++  const [open, setOpen] = useState(false);
++  const [courseNo, setCourseNo] = useState("");
++  const [year, setYear] = useState("");
++  const [terms, setTerms] = useState<"FY" | "S1" | "S2">("FY");
++  const [teacherId, setTeacherId] = useState("");
++  const faculty = enrollmentPeople(users, "teacher");
++  const startClass = () => {
++    setCourseNo(courses[0]?.id ?? ""); setYear(years[1]?.id ?? years[0]?.id ?? ""); setTerms("FY"); setTeacherId(""); setOpen(true);
++  };
++  const createClass = (e: React.FormEvent) => {
++    e.preventDefault();
++    const course = courses.find((c) => c.id === courseNo);
++    if (!course) { toast.error("Choose a course first."); return; }
++    const made = buildSection(course, sections, { year, terms, teacherId, website: BLANK_SITE });
++    update((s) => ({ ...s, sections: [...s.sections, made], courseFlags: { ...s.courseFlags, [made.id]: { ...s.courseFlags[`course:${course.id}`] } } }));
++    setOpen(false);
++    toast.success(`Class ${made.code} added to ${course.name}. Add a teacher, block and room, then choose Update.`);
++    nav({ to: "/admin/courses/$courseId", params: { courseId: made.id } });
++  };
+   return (
+-    <DropdownMenu>
+-      <DropdownMenuTrigger asChild><button type="button" aria-label="Add" title="Add" className={iconBtn}><Plus className="size-5" strokeWidth={3} /></button></DropdownMenuTrigger>
+-      <DropdownMenuContent align="end" className="min-w-[200px] text-[14px]">
+-        <DropdownMenuItem asChild><Link to="/admin/courses" search={{ add: "course" }}>Course</Link></DropdownMenuItem>
+-        <DropdownMenuItem asChild><Link to="/admin/courses">Class (pick a course, then + Class)</Link></DropdownMenuItem>
+-        <DropdownMenuItem asChild><Link to="/admin/users" search={{ add: "user" }}>Person / User Account</Link></DropdownMenuItem>
+-        <DropdownMenuItem asChild><Link to="/admin/scheduling">Scheduling Set</Link></DropdownMenuItem>
+-        <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
+-      </DropdownMenuContent>
+-    </DropdownMenu>
++    <>
++      <DropdownMenu modal={false}>
++        <DropdownMenuTrigger asChild><button type="button" aria-label="Add" title="Add" className={iconBtn}><Plus className="size-5" strokeWidth={3} /></button></DropdownMenuTrigger>
++        <DropdownMenuContent align="end" className="min-w-[200px] text-[14px]">
++          <DropdownMenuItem asChild><Link to="/admin/courses" search={{ add: "course" }}>Course</Link></DropdownMenuItem>
++          <DropdownMenuItem onSelect={startClass}>Class</DropdownMenuItem>
++          <DropdownMenuItem asChild><Link to="/admin/users" search={{ add: "user" }}>Person / User Account</Link></DropdownMenuItem>
++          <DropdownMenuItem asChild><Link to="/admin/scheduling">Scheduling Set</Link></DropdownMenuItem>
++          <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
++        </DropdownMenuContent>
++      </DropdownMenu>
++      <Dialog open={open} onOpenChange={setOpen}>
++        <DialogContent className="max-w-[460px] text-[13px]">
++          <DialogHeader><DialogTitle className="text-[17px]">New Class</DialogTitle></DialogHeader>
++          {courses.length ? (
++            <form onSubmit={createClass} className="space-y-2.5 text-[12px] text-muted-foreground">
++              <label className="block">COURSE
++                <select aria-label="Course" className={field} value={courseNo} onChange={(e) => setCourseNo(e.target.value)}>{courses.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.name}</option>)}</select></label>
++              <div className="grid grid-cols-2 gap-3">
++                <label>SCHOOL YEAR
++                  <select aria-label="School year" className={field} value={year} onChange={(e) => setYear(e.target.value)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></label>
++                <label>TERMS
++                  <select aria-label="Terms" className={field} value={terms} onChange={(e) => setTerms(e.target.value as "FY" | "S1" | "S2")}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></label>
++              </div>
++              <label className="block">TEACHER (OPTIONAL)
++                <select aria-label="Teacher" className={field} value={teacherId} onChange={(e) => setTeacherId(e.target.value)}><option value="">Assign later</option>{faculty.map((t) => <option key={t.personId} value={t.personId}>{t.prefix ? `${t.prefix} ` : ""}{t.first} {t.last}</option>)}</select></label>
++              <p>The class starts as a draft. Teachers and students see it once you publish it.</p>
++              <div className="flex justify-end gap-2"><button type="button" onClick={() => setOpen(false)} className="h-8 border border-vc-line px-3 text-foreground">Cancel</button><button type="submit" className="h-8 bg-ax-go px-4 font-semibold text-primary-foreground">Create Class</button></div>
++            </form>
++          ) : (
++            <div className="space-y-3 text-muted-foreground">
++              <p>A class belongs to a course, and there are no courses yet.</p>
++              <Link to="/admin/courses" search={{ add: "course" }} onClick={() => setOpen(false)} className="inline-block text-vc-link-strong hover:underline">Add a course first</Link>
++            </div>
++          )}
++        </DialogContent>
++      </Dialog>
++    </>
+   );
+ }
+ 
+diff --git a/src/lib/browser-save.test.ts b/src/lib/browser-save.test.ts
+new file mode 100644
+index 0000000..1c4899d
+--- /dev/null
++++ b/src/lib/browser-save.test.ts
+@@ -0,0 +1,20 @@
++import { beforeEach, describe, expect, it } from "vitest";
++import { readSchool, saveSchool, savesSettled } from "./browser-save";
++
++beforeEach(() => { localStorage.clear(); });
++
++describe("browser save", () => {
++  it("reads back the newest value while its write is still in flight", async () => {
++    const done = saveSchool('{"sections":["new class"]}');
++    expect(await readSchool()).toBe('{"sections":["new class"]}');
++    await done;
++    expect(await readSchool()).toBe('{"sections":["new class"]}');
++  });
++  it("returns the newest of several queued saves", async () => {
++    void saveSchool('{"v":1}');
++    void saveSchool('{"v":2}');
++    expect(await readSchool()).toBe('{"v":2}');
++    await savesSettled();
++    expect(await readSchool()).toBe('{"v":2}');
++  });
++});
+diff --git a/src/lib/browser-save.ts b/src/lib/browser-save.ts
+index b7ef5fe..c3cb562 100644
+--- a/src/lib/browser-save.ts
++++ b/src/lib/browser-save.ts
+@@ -5,7 +5,13 @@ const open = () => new Promise<IDBDatabase>((resolve, reject) => {
+   request.onsuccess = () => resolve(request.result);
+   request.onerror = () => reject(request.error);
+ });
++// The newest value handed to saveSchool while its write is still in flight. Reads return it, so a page that
++// re-reads storage right after a change (route change, window focus) never gets the older copy back and
++// overwrites the change: this is what made a just-added class disappear when its record page opened.
++let queued: string | null = null;
++let inFlight = 0;
+ export async function readSchool(): Promise<string | null> {
++  if (inFlight > 0 && queued !== null) return queued;
+   try {
+     const db = await open();
+     return await new Promise<string | null>((resolve, reject) => {
+@@ -19,7 +25,9 @@ export async function readSchool(): Promise<string | null> {
+ }
+ let pending: Promise<void> = Promise.resolve();
+ export function saveSchool(value: string): Promise<void> {
+-  pending = pending.catch(() => {}).then(async () => {
++  queued = value;
++  inFlight++;
++  const run = pending.catch(() => {}).then(async () => {
+   let fallback = false;
+   try { localStorage.setItem("cra-school-v2", value); fallback = true; } catch { /* IndexedDB handles larger photos. */ }
+   try {
+@@ -32,6 +40,7 @@ export function saveSchool(value: string): Promise<void> {
+   });
+   } catch (error) { if (!fallback) throw error; }
+   });
++  pending = run.finally(() => { inFlight--; });
+   return pending;
+ }
+ /** Resolves once every queued save has reached browser storage (used before a full page load). */
+diff --git a/src/lib/class-create.test.ts b/src/lib/class-create.test.ts
+new file mode 100644
+index 0000000..e022aa8
+--- /dev/null
++++ b/src/lib/class-create.test.ts
+@@ -0,0 +1,26 @@
++import { describe, expect, it } from "vitest";
++import { buildSection, nextClassId } from "./class-create";
++import type { CourseDef, Section } from "./school-store";
++
++const course: CourseDef = { id: "BIO", name: "Biology", type: "ACADEMIC", dept: "", credits: 1, description: "" };
++const website: Section["website"] = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
++
++describe("adding a class to a course", () => {
++  it("numbers the first class 1 and skips IDs already taken", () => {
++    expect(nextClassId([], "BIO")).toEqual({ id: "BIO-1", section: "1" });
++    // Two BIO classes exist (BIO-1 and BIO-3), so the count suggests 3, which is taken: the next free ID is BIO-4.
++    expect(nextClassId([{ id: "BIO-1", courseNo: "BIO" }, { id: "BIO-3", courseNo: "BIO" }], "BIO")).toEqual({ id: "BIO-4", section: "4" });
++  });
++  it("builds a draft class for the chosen year and terms", () => {
++    const s = buildSection(course, [], { year: "2026", website });
++    expect(s).toMatchObject({ id: "BIO-1", code: "BIO-1", courseNo: "BIO", name: "Biology", section: "1", terms: ["2026-S1", "2026-S2"], published: false, teacherIds: [], studentIds: [] });
++    expect(buildSection(course, [], { year: "2026", terms: "S2", website }).terms).toEqual(["2026-S2"]);
++  });
++  it("assigns an optional teacher and gives each class its own website copy", () => {
++    const a = buildSection(course, [], { year: "2026", teacherId: "p-1", website });
++    const b = buildSection(course, [a], { year: "2026", website });
++    expect(a.teacherIds).toEqual(["p-1"]);
++    expect(b.id).toBe("BIO-2");
++    expect(b.website).not.toBe(a.website);
++  });
++});
+diff --git a/src/lib/class-create.ts b/src/lib/class-create.ts
+new file mode 100644
+index 0000000..f5f32d2
+--- /dev/null
++++ b/src/lib/class-create.ts
+@@ -0,0 +1,20 @@
++import type { Course } from "./sis-data";
++import type { CourseDef, Section } from "./school-store";
++
++/** Next free class ID for a course: "<course>-<n>", skipping IDs that are already taken. */
++export function nextClassId(sections: Pick<Section, "id" | "courseNo">[], courseNo: string): { id: string; section: string } {
++  let n = sections.filter((s) => s.courseNo === courseNo).length + 1;
++  while (sections.some((s) => s.id === `${courseNo}-${n}`)) n++;
++  return { id: `${courseNo}-${n}`, section: String(n) };
++}
++
++export type NewClassOptions = { year: string; terms?: "FY" | "S1" | "S2"; teacherId?: string; website: Section["website"] };
++
++/** A new class (section) of a course: a draft with no block or room yet, so nothing shows on portals until it is published. */
++export function buildSection(course: CourseDef, sections: Pick<Section, "id" | "courseNo">[], opts: NewClassOptions): Section {
++  const { id, section } = nextClassId(sections, course.id);
++  const terms = opts.terms === "S1" ? [`${opts.year}-S1`] : opts.terms === "S2" ? [`${opts.year}-S2`] : [`${opts.year}-S1`, `${opts.year}-S2`];
++  const teacherId = opts.teacherId ?? "";
++  const base: Course = { id, code: id, name: course.name, section, teacherId, block: "", room: "", letter: "", pct: 0, type: course.type, days: [], time: "" };
++  return { ...base, courseNo: course.id, teacherIds: teacherId ? [teacherId] : [], terms, published: false, studentIds: [], website: { ...opts.website } };
++}
+diff --git a/src/lib/class-records.test.ts b/src/lib/class-records.test.ts
+index fe63ee6..7701e73 100644
+--- a/src/lib/class-records.test.ts
++++ b/src/lib/class-records.test.ts
+@@ -18,4 +18,13 @@ describe('class membership records', () => {
+   it('rejects a faculty record enrolled as a student', () => {
+     expect(validateClassRecord({ ...record, studentIds: ['teacher-person'] }, users)).toBe('Enrollment must contain active student records.');
+   });
+-});
+\ No newline at end of file
++  it('lets a new draft class be saved before a teacher is assigned', () => {
++    expect(validateClassRecord({ ...record, teacherIds: [], studentIds: [], published: false }, users)).toBeNull();
++  });
++  it('requires a teacher once the class is published', () => {
++    expect(validateClassRecord({ ...record, teacherIds: [], published: true }, users)).toBe('Assign at least one active faculty record.');
++  });
++  it('rejects a teacher who is not an active faculty record', () => {
++    expect(validateClassRecord({ ...record, teacherIds: ['student-person'], published: false }, users)).toBe('Assign at least one active faculty record.');
++  });
++});
+diff --git a/src/lib/class-records.ts b/src/lib/class-records.ts
+index c68217c..51e56ff 100644
+--- a/src/lib/class-records.ts
++++ b/src/lib/class-records.ts
+@@ -8,12 +8,13 @@ export function enrollmentPeople(users: User[], role: 'teacher' | 'student') {
+     .sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
+ }
+ 
+-export function validateClassRecord(c: Pick<Section, 'name' | 'section' | 'terms' | 'teacherIds' | 'studentIds'>, users: User[]): string | null {
++/** A new class starts as a draft with no teacher, so it can be saved that way; a teacher is required once it is published. */
++export function validateClassRecord(c: Pick<Section, 'name' | 'section' | 'terms' | 'teacherIds' | 'studentIds'> & { published?: boolean }, users: User[]): string | null {
+   if (!c.name.trim() || !c.section.trim()) return 'Class name and section identifier are required.';
+   if (!c.terms.length || c.terms.some((id) => !/^\d{4}-S[12]$/.test(id)) || new Set(c.terms.map((id) => id.split('-')[0])).size !== 1) return 'Choose terms within one school year.';
+   const teachers = new Set(enrollmentPeople(users, 'teacher').map((u) => u.personId));
+   const students = new Set(enrollmentPeople(users, 'student').map((u) => u.personId));
+-  if (!c.teacherIds.length || c.teacherIds.some((id) => !teachers.has(id))) return 'Assign at least one active faculty record.';
++  if ((c.published && !c.teacherIds.length) || c.teacherIds.some((id) => !teachers.has(id))) return 'Assign at least one active faculty record.';
+   if (c.studentIds.some((id) => !students.has(id))) return 'Enrollment must contain active student records.';
+   return null;
+-}
+\ No newline at end of file
++}
+diff --git a/src/lib/school-store.test.tsx b/src/lib/school-store.test.tsx
+new file mode 100644
+index 0000000..6051c00
+--- /dev/null
++++ b/src/lib/school-store.test.tsx
+@@ -0,0 +1,64 @@
++import { act } from "react";
++import { createRoot } from "react-dom/client";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++
++// The router is replaced by a settable pathname so a test can change page in the same React commit as a store update.
++let path = "/admin/courses";
++vi.mock("@tanstack/react-router", () => ({ useRouterState: ({ select }: { select: (r: { location: { pathname: string } }) => unknown }) => select({ location: { pathname: path } }) }));
++
++// A small IndexedDB stand-in with real-browser timing: opening and each transaction take a moment, and transactions run in creation order.
++function installFakeIndexedDb() {
++  const data = new Map<string, unknown>();
++  let chain: Promise<void> = Promise.resolve();
++  const wait = () => new Promise<void>((r) => setTimeout(r, 5));
++  (globalThis as { indexedDB?: unknown }).indexedDB = {
++    open() {
++      const req: { result?: unknown; error?: unknown; onsuccess?: () => void; onerror?: () => void; onupgradeneeded?: () => void } = {};
++      const db = {
++        createObjectStore() {},
++        close() {},
++        transaction(_store: string, mode: string) {
++          const tx: { oncomplete?: () => void; onerror?: () => void; onabort?: () => void; error?: unknown; objectStore: () => unknown } = {
++            objectStore: () => ({
++              get(key: string) { const r: { result?: unknown; onsuccess?: () => void; onerror?: () => void } = {}; chain = chain.then(async () => { await wait(); r.result = data.get(key); r.onsuccess?.(); tx.oncomplete?.(); }); return r; },
++              put(value: unknown, key: string) { chain = chain.then(async () => { await wait(); data.set(key, value); tx.oncomplete?.(); }); return {}; },
++            }),
++          };
++          void mode;
++          return tx;
++        },
++      };
++      setTimeout(() => { req.result = db; req.onupgradeneeded?.(); req.onsuccess?.(); }, 1);
++      return req;
++    },
++  };
++  return data;
++}
++
++(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
++const settle = (ms = 150) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
++
++describe("school store", () => {
++  beforeEach(() => { localStorage.clear(); path = "/admin/courses"; installFakeIndexedDb(); vi.resetModules(); });
++  afterEach(() => { delete (globalThis as { indexedDB?: unknown }).indexedDB; });
++
++  it("keeps a class that is added in the same moment the page changes", async () => {
++    const { SchoolStoreProvider, useSchool } = await import("./school-store");
++    let api: ReturnType<typeof useSchool> | undefined;
++    const Probe = () => { api = useSchool(); return null; };
++    const ui = () => <SchoolStoreProvider><Probe /></SchoolStoreProvider>;
++    const root = createRoot(document.body.appendChild(document.createElement("div")));
++    act(() => { root.render(ui()); });
++    await settle();
++    expect(api?.ready).toBe(true);
++    // Same as the "+ Class" button: add the class, then go to its record page.
++    act(() => {
++      api!.update((s) => ({ ...s, sections: [...s.sections, { id: "101-2", code: "101-2", name: "English", section: "2", teacherId: "", block: "", room: "", letter: "", pct: 0, type: "ACADEMIC", days: [], time: "", courseNo: "101", teacherIds: [], terms: ["2026-S1"], published: false, studentIds: [], website: { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] } }] }));
++      path = "/admin/courses/101-2";
++      root.render(ui());
++    });
++    await settle(300);
++    expect(api?.sections.some((c) => c.id === "101-2")).toBe(true);
++    act(() => root.unmount());
++  });
++});
+diff --git a/src/routes/admin.courses.index.tsx b/src/routes/admin.courses.index.tsx
+index 265f36e..60ed997 100644
+--- a/src/routes/admin.courses.index.tsx
++++ b/src/routes/admin.courses.index.tsx
+@@ -114,8 +114,8 @@ function Courses() {
+                   <AxField label="Include in Scheduler"><AxToggle label="Include in scheduler" on={flagOn("scheduler")} onChange={(v) => setFlag("scheduler", v)} /></AxField>
+                   <AxField label="Include in Parent/Teacher Conferences"><AxToggle label="Include in parent/teacher conferences" on={flagOn("conferences")} onChange={(v) => setFlag("conferences", v)} /></AxField>
+                   <AxField label="Available for Request"><AxToggle label="Available for request" on={flagOn("request")} onChange={(v) => setFlag("request", v)} /></AxField>
+-                  <AxField label="Classification: AP"><AxToggle label="Classification AP" on={courseFlags[`course:${c.id}`]?.cls_ap ?? false} onChange={(v) => setFlag("cls_ap", v)} /></AxField>
+-                  <AxField label="Classification: Honors"><AxToggle label="Classification Honors" on={courseFlags[`course:${c.id}`]?.cls_honors ?? false} onChange={(v) => setFlag("cls_honors", v)} /></AxField>
++                  <AxField label="Classification: AP"><AxToggle label="Classification AP" on={courseFlags[`course:${c.id}`]?.["cls_ap"] ?? false} onChange={(v) => setFlag("cls_ap", v)} /></AxField>
++                  <AxField label="Classification: Honors"><AxToggle label="Classification Honors" on={courseFlags[`course:${c.id}`]?.["cls_honors"] ?? false} onChange={(v) => setFlag("cls_honors", v)} /></AxField>
+                 </div>
+                 <div><AxField label="Description"><textarea aria-label="Course description" className="h-[118px] w-full border border-vc-gray-light/80 bg-background p-2.5 text-[15px] outline-none focus:border-vc-link" maxLength={1000} value={c.description} onChange={(e) => patch({ description: e.target.value })} /></AxField></div>
+               </div>
+-- 
+2.43.0
+
