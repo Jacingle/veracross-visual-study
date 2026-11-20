@@ -23,10 +23,10 @@ function Login() {
   const src = bgSrc(settings.login.bg);
 
   const next = (e?: React.SyntheticEvent) => { e?.preventDefault(); if (!username.trim()) return; setError(""); setStep(2); };
-  const submit = (e?: React.SyntheticEvent) => {
+  const submit = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
-    const u = login(username, password);
-    if (!u) { setError(userExists(users, username) ? "The password you entered is incorrect." : "We couldn't find an account with that username."); setPassword(""); return; }
+    const { user: u, exists } = await login(username, password);
+    if (!u) { setError(exists ? "The password you entered is incorrect." : "We couldn't find an account with that username."); setPassword(""); return; }
   };
 
   return (

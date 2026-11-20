@@ -2,7 +2,7 @@
 // Browser-local only: a stand-in until the school moves to Lovable Cloud accounts.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
-import { canImpersonate, findLogin, type User } from "./auth-rules";
+import { canImpersonate, findLogin, userExists, type User } from "./auth-rules";
 import { ALL_ASSIGNMENTS, ALL_SECTIONS, EXTRA, MESSAGES, SEED_USERS, studentById, teacherRoster, today, type Assignment, type Category, type Course, type Student } from "./sis-data";
 import { classStatus, makeYear, yearStartFor, type ClassStatus } from "./terms";
 import { scoreOf } from "./gradebook";
@@ -100,7 +100,8 @@ const KEY = "cra-school-v2";
 type Ctx = State & {
   ready: boolean; user: User | null;
   update: (fn: (s: State) => State) => void;
-  login: (username: string, password: string) => User | null;
+  /** Checks the newest saved accounts (not just this tab's copy), so a just-created account can sign in. */
+  login: (username: string, password: string) => Promise<{ user: User | null; exists: boolean }>;
   logout: () => void;
   impersonate: (id: string) => boolean;
   stopImpersonating: () => void;
@@ -113,6 +114,13 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const lastRaw = useRef("");
   const readyRef = useRef(false);
+  // Another tab or window may have saved newer records (a just-created account, say): re-read when this one regains focus.
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const bump = () => { if (document.visibilityState !== "hidden") setTick((n) => n + 1); };
+    window.addEventListener("focus", bump); document.addEventListener("visibilitychange", bump);
+    return () => { window.removeEventListener("focus", bump); document.removeEventListener("visibilitychange", bump); };
+  }, []);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -139,7 +147,7 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
     if (!cancelled) { readyRef.current = true; setReady(true); }
     })();
     return () => { cancelled = true; };
-  }, [pathname]);
+  }, [pathname, tick]);
   useEffect(() => { if (ready) { const raw = JSON.stringify(s); lastRaw.current = raw; void saveSchool(raw).catch(() => toast.error("Changes could not be saved. Please allow browser storage and try again.")); } }, [s, ready]);
   const update = useCallback((fn: (s: State) => State) => setS(fn), []);
   // The administrator's assignment-type colors are read by every page through categoryColor().
@@ -152,7 +160,14 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(() => ({
     ...s, ready, update,
     user: s.users.find((u) => u.id === s.sessionId && u.active) ?? null,
-    login: (username, password) => { const u = findLogin(s.users, username, password); if (u) setS((x) => ({ ...x, sessionId: u.id })); return u; },
+    login: async (username, password) => {
+      await savesSettled();
+      let users = s.users;
+      try { const fresh = JSON.parse((await readSchool()) || "{}") as Partial<State>; if (fresh.users?.length) users = fresh.users; } catch { /* use this tab's copy */ }
+      const u = findLogin(users, username, password);
+      if (u) setS((x) => ({ ...x, users, sessionId: u.id }));
+      return { user: u, exists: userExists(users, username) };
+    },
     logout: () => setS((x) => ({ ...x, sessionId: null, impersonatorId: null })),
     impersonate: (id) => {
       const actor = s.users.find((u) => u.id === s.sessionId) ?? null;
