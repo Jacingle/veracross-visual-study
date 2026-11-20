@@ -3,9 +3,11 @@ import { buildSection, nextClassId } from "./class-create";
 import type { CourseDef, Section } from "./school-store";
 
 const course: CourseDef = { id: "BIO", name: "Biology", type: "ACADEMIC", dept: "", credits: 1, description: "" };
+const website: Section["website"] = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 
 describe("adding a class to a course", () => {
   it("numbers the first class 1 and skips IDs already taken", () => {
+    expect(nextClassId([], "BIO")).toEqual({ id: "BIO-1", section: "1" });
     // Two BIO classes exist (BIO-1 and BIO-3), so the count suggests 3, which is taken: the next free ID is BIO-4.
     expect(nextClassId([{ id: "BIO-1", courseNo: "BIO" }, { id: "BIO-3", courseNo: "BIO" }], "BIO")).toEqual({ id: "BIO-4", section: "4" });
   });
