@@ -1,6 +1,6 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen, ChevronRight, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronRight, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
