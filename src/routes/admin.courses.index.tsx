@@ -29,6 +29,9 @@ function Courses() {
   const years = schoolYears();
   const [year, setYear] = useState(years[1]?.id ?? years[0]?.id ?? "");
   const [q, setQ] = useState("");
+  const [classQuery, setClassQuery] = useState("");
+  const [portalFilter, setPortalFilter] = useState("");
+  const [termFilter, setTermFilter] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CourseDef | null>(null);
@@ -51,7 +54,7 @@ function Courses() {
   const courseRank = (no: string) => { const i = courses.findIndex((x) => x.id === no); return i < 0 ? 1e6 : i; };
   const yearSections = sections
     .map((s, position) => ({ s, position }))
-    .filter(({ s }) => s.terms.some((t) => t.startsWith(year)) && (!sel || s.courseNo === sel))
+    .filter(({ s }) => s.terms.some((t) => t.startsWith(year)) && (!sel || s.courseNo === sel) && `${s.code} ${s.name} ${s.room} ${s.block}`.toLowerCase().includes(classQuery.toLowerCase()) && (!portalFilter || s.published === (portalFilter === "published")) && (!termFilter || s.terms.includes(`${year}-${termFilter}`)))
     .sort((a, b) => courseRank(a.s.courseNo) - courseRank(b.s.courseNo) || a.position - b.position)
     .map(({ s }) => s);
 
@@ -113,12 +116,13 @@ function Courses() {
               </div>
               <div className="flex items-center gap-3 border-t border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => newClass(c)}>Add Record</AxAdd><span className="text-[13px] text-vc-gray">Adds a class for this course in the school year shown below.</span></div>
             </div>); })}
-          <div className="flex items-center gap-3 border-b border-vc-line bg-vc-panel px-4 py-2">
+          <div className="flex flex-wrap items-center gap-3 border-b border-vc-line bg-vc-panel px-4 py-2">
             <span className="text-[15px] font-semibold">Classes</span>
             <label className="ml-auto flex items-center gap-2">School Year
               <select aria-label="School year" value={year} onChange={(e) => setYear(e.target.value)} className="h-7 border border-vc-line bg-background px-2">{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></label>
           </div>
-          <div className="overflow-x-auto"><table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-[#fafafa] [&_tbody_tr]:h-[34px] min-w-[760px]">
+          <div className="flex flex-wrap gap-2 border-b border-vc-line px-3 py-2"><input aria-label="Find classes" placeholder="Class, room or block" value={classQuery} onChange={(e) => setClassQuery(e.target.value)} className={`${inp} max-w-60`} /><select aria-label="Filter class publication" value={portalFilter} onChange={(e) => setPortalFilter(e.target.value)} className="h-8 border border-vc-line bg-background px-2"><option value="">All portal statuses</option><option value="published">Published</option><option value="draft">Draft</option></select><select aria-label="Filter class term" value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className="h-8 border border-vc-line bg-background px-2"><option value="">All terms</option><option value="S1">Semester 1</option><option value="S2">Semester 2</option></select></div>
+          <div className="overflow-x-auto"><table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-background [&_tbody_tr]:h-[34px] min-w-[760px]">
             <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="px-3 py-1.5">Class ID</th><th>Description</th><th>Teacher(s)</th><th>Block</th><th>Room</th><th>Terms</th><th>Status</th><th>Portals</th><th className="pr-3 text-right">Enrolled</th></tr></thead>
             <tbody>{yearSections.map((c) => (
               <tr key={c.id} className="border-b border-vc-line hover:bg-vc-panel">

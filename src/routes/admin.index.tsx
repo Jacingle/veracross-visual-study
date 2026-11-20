@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { BookOpen, ClipboardList, Image, Clock, Search, Mail, Palette, Receipt, UserPlus, Users } from "lucide-react";
+import { ChevronDown, BookOpen, ClipboardList, Image, Clock, Search, Mail, Palette, Receipt, UserPlus, Users } from "lucide-react";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
-import { AxAction } from "@/components/admin/AxiomDetail";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/admin/")({
 
 const TILES = [
   { group: "Users & Security", items: [{ to: "/admin/users", label: "Users", icon: Users }, { to: "/admin/queries", label: "Find People", icon: Search }] },
-  { group: "Scheduling", items: [{ to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock }, { to: "/admin/queries", label: "Find Classes", icon: Search }] },
+  { group: "Scheduling", items: [{ to: "/admin/terms", label: "School Years & Terms", icon: Clock }, { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock }, { to: "/admin/queries", label: "Find Classes", icon: Search }] },
   { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/courses", label: "Class Enrollments", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
   { group: "Portals", items: [{ to: "/admin/settings", label: "Portal Settings", icon: Palette }, { to: "/admin/settings", label: "Backgrounds", icon: Image }] },
   { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
@@ -26,20 +26,13 @@ const TILES = [
 
 /** The green ADD button on the System homepage: hover (or focus) to choose what to add. */
 function AddMenu() {
-  const items = [
-    { label: "Course", to: "/admin/courses", search: { add: "course" as const } },
-    { label: "Class", to: "/admin/courses", search: {} },
-    { label: "Person / Account", to: "/admin/users", search: {} },
-    { label: "Assignment Type", to: "/admin/assignment-types", search: {} },
-  ] as const;
-  return (
-    <div className="group relative">
-      <AxAction aria-haspopup="menu">Add</AxAction>
-      <ul role="menu" className="absolute right-0 top-[34px] z-40 hidden min-w-[220px] border border-vc-line bg-background py-1 text-[15px] text-foreground shadow-lg group-focus-within:block group-hover:block">
-        {items.map((i) => <li key={i.label} role="none"><Link role="menuitem" to={i.to} search={i.search as never} className="block px-4 py-2 hover:bg-vc-tile">{i.label}</Link></li>)}
-      </ul>
-    </div>
-  );
+  return <DropdownMenu><DropdownMenuTrigger asChild><Button className="h-8 rounded-none bg-ax-go font-semibold uppercase text-primary-foreground">Add<ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+    <DropdownMenuItem asChild><Link to="/admin/courses" search={{ add: 'course' }}>Course</Link></DropdownMenuItem>
+    <DropdownMenuItem asChild><Link to="/admin/courses">Class / Registration</Link></DropdownMenuItem>
+    <DropdownMenuItem asChild><Link to="/admin/users" search={{ add: 'user' }}>Person / Account</Link></DropdownMenuItem>
+    <DropdownMenuItem asChild><Link to="/admin/scheduling">Scheduling Set</Link></DropdownMenuItem>
+    <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
+  </DropdownMenuContent></DropdownMenu>;
 }
 
 function AdminHome() {

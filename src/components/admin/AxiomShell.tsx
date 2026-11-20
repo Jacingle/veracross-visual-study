@@ -22,6 +22,7 @@ export const AXIOM_LINKS = [
   { to: "/admin/assignment-types", label: "Class Assignment Types", icon: Palette },
   { to: "/admin/portals", label: "Portals", icon: LayoutGrid },
   { to: "/admin/report-layouts", label: "Report Card Layouts", icon: FileText },
+  { to: "/admin/terms", label: "School Years & Terms", icon: Clock },
   { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock },
   { to: "/admin/messages", label: "Communications", icon: Mail },
   { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt },
@@ -40,7 +41,7 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"homepages" | "favorites" | "history">("homepages");
   const workspace = useAdminWorkspace(user?.id);
-  const path = typeof window === "undefined" ? "" : window.location.pathname + window.location.search;
+  const path = useRouterState({ select: (r) => r.location.href });
   useEffect(() => { if (workspace.ready && path) workspace.visit({ title, path }); }, [title, path, workspace.ready]);
   const [chooser, setChooser] = useState(false);
   const [q, setQ] = useState("");
@@ -76,7 +77,7 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
             {searching ? (
               <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => { if (!q) setSearching(false); }} placeholder="Search people, classes and users" aria-label="Search people, classes and users" className="min-w-0 flex-1 bg-background px-3 text-[14px] text-foreground outline-none" />
             ) : (
-              <div className="flex min-w-0 items-center gap-2 px-3 text-[16px] leading-none">
+              <div className="flex min-w-0 flex-1 items-center gap-2 px-3 text-[14px] leading-none">
                 {crumbs.length ? crumbs.map((c) => (c.to ? <Link key={c.label} to={c.to} className="truncate font-semibold hover:underline">{c.label}</Link> : <span key={c.label} className="truncate font-semibold">{c.label}</span>)) : <Link to="/admin" className="truncate font-semibold hover:underline">System</Link>}
                 <span className="truncate font-light">{title}</span>
               </div>)}
@@ -105,7 +106,7 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
         {title !== "System Administrator Homepage" && <span className="flex items-center gap-1.5"><ChevronRight className="size-3.5 text-muted-foreground" /><b className="font-semibold">{title}</b></span>}
       </div>
       <div className="flex">
-        <nav aria-label="Administration" className={`sticky top-[86px] hidden h-[calc(100vh-86px)] shrink-0 self-start overflow-y-auto border-r border-vc-line bg-background py-2 md:block ${compactRail ? "w-[52px]" : "w-[216px]"}`}>
+        <nav aria-label="Administration" className={`sticky top-[86px] hidden h-[calc(100vh-86px)] shrink-0 self-start overflow-y-auto border-r border-vc-line bg-background py-2 xl:block ${compactRail ? "w-[52px]" : "w-[190px]"}`}>
           {AXIOM_LINKS.map(({ to, label, icon: Icon }) => { const on = to === "/admin" ? pathname === "/admin" || pathname === "/admin/" : pathname.startsWith(to); return (
             <Link key={to} to={to} title={label} aria-current={on ? "page" : undefined} className={`flex items-center gap-2.5 border-l-[4px] px-3 py-2.5 text-[14px] ${on ? "border-vc-link bg-vc-tile font-semibold text-foreground" : "border-transparent text-vc-link-strong hover:bg-vc-panel"}`}><Icon className="size-[18px] shrink-0" />{!compactRail && <span className="truncate">{label}</span>}</Link>); })}
         </nav>
@@ -115,7 +116,7 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0 text-[13px]">
           <SheetHeader className="bg-ax-top px-4 py-3"><SheetTitle className="text-primary-foreground">{mode === "homepages" ? "Homepages" : mode === "favorites" ? "Favorites" : "Recent History"}</SheetTitle></SheetHeader>
-          <div className="px-2 py-2">{mode === 'homepages' ? AXIOM_LINKS.map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-3 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
+          <div className="px-2 py-2">{mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/terms', '/admin/scheduling', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
         </SheetContent>
       </Sheet>
     </div>

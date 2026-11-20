@@ -16,21 +16,21 @@ export type AxGroup = { heading?: string; items: { id: string; label: string }[]
 export function AxDetail({ groups, active, onSelect, title, meta, banner, children }: { groups: AxGroup[]; active: string; onSelect: (id: string) => void; title: string; meta?: ReactNode; banner?: ReactNode; children: ReactNode }) {
   return (
     <div className="-m-3 flex min-h-[calc(100vh-86px)] bg-background sm:-m-4">
-      <nav aria-label="Record sections" className="hidden w-[250px] shrink-0 bg-vc-tile py-3 md:block">
+      <nav aria-label="Record sections" className="hidden w-[180px] shrink-0 bg-ax-side py-2 lg:block">
         {groups.map((g, i) => (
           <div key={g.heading ?? i} className="mb-2">
             <div className="flex items-center gap-1.5 px-2.5 py-2 text-[15px] font-semibold uppercase text-foreground/70"><ChevronDown className="size-3" />{g.heading ?? "All"}</div>
             {g.items.map((it) => (
               <button key={it.id} onClick={() => onSelect(it.id)} aria-current={active === it.id ? "page" : undefined}
-                className={`block w-full border-l-[5px] px-[19px] py-[9px] text-left text-[17px] ${active === it.id ? "border-vc-link bg-vc-bar font-semibold text-foreground" : "border-transparent text-vc-link-strong/80 hover:bg-vc-bar/60"}`}>{it.label}</button>))}
+                className={`block w-full border-l-[5px] px-[19px] py-[9px] text-left text-[13px] ${active === it.id ? "border-vc-link bg-vc-bar font-semibold text-foreground" : "border-transparent text-vc-link-strong/80 hover:bg-vc-bar/60"}`}>{it.label}</button>))}
           </div>))}
       </nav>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3 border-b border-vc-line px-6 py-2.5">
-          <h1 className="text-[27px] font-light uppercase leading-9 tracking-tight">{title}</h1>
+          <h1 className="text-[22px] font-light uppercase leading-8">{title}</h1>
           <div className="text-[13px] text-vc-gray">{meta}</div>
         </div>
-        <div className="flex gap-1.5 overflow-x-auto border-b border-vc-line bg-vc-panel px-3 py-1.5 md:hidden">{groups.flatMap((g) => g.items).map((it) => <button key={it.id} onClick={() => onSelect(it.id)} className={`shrink-0 px-3 py-1 text-[13px] ${active === it.id ? "bg-vc-bar font-semibold" : "text-vc-link-strong"}`}>{it.label}</button>)}</div>
+        <div className="flex gap-1.5 overflow-x-auto border-b border-vc-line bg-vc-panel px-3 py-1.5 lg:hidden">{groups.flatMap((g) => g.items).map((it) => <button key={it.id} onClick={() => onSelect(it.id)} className={`shrink-0 px-3 py-1 text-[13px] ${active === it.id ? "bg-vc-bar font-semibold" : "text-vc-link-strong"}`}>{it.label}</button>)}</div>
         {banner}
         {children}
       </div>
@@ -38,14 +38,14 @@ export function AxDetail({ groups, active, onSelect, title, meta, banner, childr
   );
 }
 
-export const AxBanner = ({ children = "Fields in bold are required" }: { children?: ReactNode }) => <div className="flex items-center gap-3 bg-[#fffbd1] px-5 py-3 text-[17px]"><span className="grid size-[18px] place-items-center rounded-full bg-vc-gray-light text-[11px] font-bold text-primary-foreground">i</span>{children}</div>;
+export const AxBanner = ({ children = "Fields in bold are required" }: { children?: ReactNode }) => <div className="flex items-center gap-3 bg-vc-tile-warm px-5 py-2 text-[13px]"><span className="grid size-[18px] place-items-center rounded-full bg-vc-gray-light text-[11px] font-bold text-primary-foreground">i</span>{children}</div>;
 
-export const axInput = "h-[38px] w-full border border-vc-gray-light/80 bg-background px-2.5 text-[15px] shadow-[inset_0_1px_1px_rgba(0,0,0,.06)] outline-none focus:border-vc-link disabled:bg-vc-panel";
+export const axInput = "h-[30px] w-full border border-vc-gray-light/80 bg-background px-2.5 text-[13px] outline-none focus:border-vc-link disabled:bg-vc-panel";
 
 /** One labelled field: bold for required fields, a light dotted-underline label for optional ones. */
 export function AxField({ label, required = false, children }: { label: string; required?: boolean; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[minmax(0,150px)_minmax(0,1fr)] items-center gap-x-3 py-[4px]">
+    <div className="grid grid-cols-[minmax(0,115px)_minmax(0,1fr)] items-center gap-x-3 py-[4px]">
       <span className={`text-[13px] uppercase leading-4 ${required ? "font-bold text-foreground" : "border-b border-dotted border-vc-gray-light text-vc-gray-dark"} w-fit`}>{label}</span>
       <div className="min-w-0">{children}</div>
     </div>
@@ -55,8 +55,8 @@ export function AxField({ label, required = false, children }: { label: string; 
 /** YES / NO switch: green with a white knob when on, light grey when off. */
 export function AxToggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className={`relative flex h-[34px] w-[88px] items-center border text-[15px] font-semibold ${on ? "border-ax-go/70 bg-ax-go pl-3 text-primary-foreground" : "border-vc-gray-light bg-vc-panel pl-10 text-vc-gray"}`}>
-      {on ? "YES" : "NO"}<span className={`absolute inset-y-[3px] w-[30px] border border-vc-gray-light/70 bg-background ${on ? "right-[3px]" : "left-[3px]"}`} />
+    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className={`relative flex h-[28px] w-[72px] items-center border text-[12px] font-semibold ${on ? "border-ax-go/70 bg-ax-go pl-3 text-primary-foreground" : "border-vc-gray-light bg-vc-panel pl-10 text-vc-gray"}`}>
+      {on ? "YES" : "NO"}<span className={`absolute inset-y-[3px] w-[24px] border border-vc-gray-light/70 bg-background ${on ? "right-[3px]" : "left-[3px]"}`} />
     </button>
   );
 }

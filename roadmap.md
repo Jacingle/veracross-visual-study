@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Administrator research pass: grouped launchpad, working Add shortcuts, compact person/class records, class filters, school-year/term overview; verify desktop and phone
 - [ ] Research administrator navigation, then improve homepage/launchpad, searchable record queries, exports and validated class publishing; verify browser flow
 - [x] Class website matched to Veracross screenshots: tabs, teacher card, More class information, All Pages, page view, shared assignment pop-up, timeline, calendar, resources, posts; #007DDE site blue, top shadow on color/photo backgrounds, more background colors, teacher editors for pages/posts/resources
 - [ ] Class website: Photos and Discussions tabs, school events on the class calendar

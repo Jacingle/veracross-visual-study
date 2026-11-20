@@ -65,8 +65,7 @@ function Editor({ c }: { c: Section }) {
     const error = validateClassRecord({ ...d, studentIds: c.studentIds }, users);
     if (error) { toast.error(error); return; }
     if (d.published && (!d.block || !d.room)) { toast.error("Set a block and room before publishing."); return; }
-    const teacherId = d.teacherIds[0];
-    if (!teacherId) return;
+    const teacherId = d.teacherIds[0] ?? "";
     if (d.scheduleSetId && !schedule?.blocks.some((b) => b.id === d.scheduleBlockId)) { toast.error("Choose a block from the scheduling set."); return; }
     update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...d, name: d.name.trim(), section: d.section.trim(), studentIds: x.studentIds, website: x.website, teacherId, code: d.code.trim() || d.id } : x)) }));
     toast.success(d.published ? "Class saved — visible on teacher and student portals" : "Class saved as draft (not on portals)");
@@ -97,7 +96,7 @@ function Editor({ c }: { c: Section }) {
             </div>
             <div>
               <AxField label="Scheduling Set"><select aria-label="Scheduling set" className={axInput} value={d.scheduleSetId ?? ""} onChange={(e) => setD({ ...d, scheduleSetId: e.target.value || undefined, scheduleBlockId: undefined, block: "" })}><option value="">Manual timetable</option>{schedulingSets.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></AxField>
-              <AxField label="Max Students"><div className={`${axInput} flex items-center justify-end bg-vc-panel`}>{roster.length}</div></AxField>
+              <AxField label="Enrolled Students"><div className={`${axInput} flex items-center justify-end bg-vc-panel`}>{roster.length}</div></AxField>
               <AxField label="Published"><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
               <p className="mt-2 text-[12px] text-vc-gray">{d.published ? "Teachers and students can see this class." : "Hidden from teacher and student portals."}</p>
             </div>

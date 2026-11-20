@@ -30,6 +30,7 @@ import { Route as AdminQueriesRouteImport } from './routes/admin.queries'
 import { Route as AdminReportLayoutsRouteImport } from './routes/admin.report-layouts'
 import { Route as AdminSchedulingRouteImport } from './routes/admin.scheduling'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminTermsRouteImport } from './routes/admin.terms'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as ClassClassIdRouteImport } from './routes/class.$classId'
 import { Route as GradesClassIdRouteImport } from './routes/grades.$classId'
@@ -148,6 +149,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/admin/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTermsRoute = AdminTermsRouteImport.update({
+  id: '/admin/terms',
+  path: '/admin/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/admin/report-layouts': typeof AdminReportLayoutsRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/terms': typeof AdminTermsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
   '/grades/$classId': typeof GradesClassIdRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/admin/report-layouts': typeof AdminReportLayoutsRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/terms': typeof AdminTermsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
   '/grades/$classId': typeof GradesClassIdRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/admin/report-layouts': typeof AdminReportLayoutsRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/terms': typeof AdminTermsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
   '/grades/$classId': typeof GradesClassIdRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/admin/report-layouts'
     | '/admin/scheduling'
     | '/admin/settings'
+    | '/admin/terms'
     | '/admin/users'
     | '/class/$classId'
     | '/grades/$classId'
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
     | '/admin/report-layouts'
     | '/admin/scheduling'
     | '/admin/settings'
+    | '/admin/terms'
     | '/admin/users'
     | '/class/$classId'
     | '/grades/$classId'
@@ -409,6 +420,7 @@ export interface FileRouteTypes {
     | '/admin/report-layouts'
     | '/admin/scheduling'
     | '/admin/settings'
+    | '/admin/terms'
     | '/admin/users'
     | '/class/$classId'
     | '/grades/$classId'
@@ -445,6 +457,7 @@ export interface RootRouteChildren {
   AdminReportLayoutsRoute: typeof AdminReportLayoutsRoute
   AdminSchedulingRoute: typeof AdminSchedulingRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminTermsRoute: typeof AdminTermsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   ClassClassIdRoute: typeof ClassClassIdRoute
   GradesClassIdRoute: typeof GradesClassIdRoute
@@ -609,6 +622,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/terms': {
+      id: '/admin/terms'
+      path: '/admin/terms'
+      fullPath: '/admin/terms'
+      preLoaderRoute: typeof AdminTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/admin/users'
@@ -717,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminReportLayoutsRoute: AdminReportLayoutsRoute,
   AdminSchedulingRoute: AdminSchedulingRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminTermsRoute: AdminTermsRoute,
   AdminUsersRoute: AdminUsersRoute,
   ClassClassIdRoute: ClassClassIdRoute,
   GradesClassIdRoute: GradesClassIdRoute,
