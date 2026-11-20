@@ -1,14 +1,12 @@
-import { Button } from "@/components/ui/button";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { CalendarDays, ChevronLeft, ChevronRight, Paperclip, Plus } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Lock, Mail, MessageSquare, Paperclip, Plus, Unlock, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Switch } from "@/components/ui/switch";
 import { useCategoryStyle } from "@/lib/category-colors";
 import { parseISO } from "date-fns";
 import { today, type Assignment, type Category, type Student } from "@/lib/sis-data";
@@ -171,44 +169,73 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
   );
 }
 
+const sel = "h-[40px] w-full rounded-[6px] border border-[#d5d9de] bg-background px-2.5 text-[14px] outline-none focus:border-[#4a9be0]";
+const iconBtn = "grid size-[34px] place-items-center rounded-full text-foreground/55 hover:bg-[#eef1f4]";
+
 function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
-  const { scores, aStatus, pub, comments, update } = useSchool();
+  const { scores, aStatus, pub, comments, users, update } = useSchool();
   const set = (field: "scores" | "aStatus" | "comments", k: string, v: string) => update((s) => ({ ...s, [field]: { ...s[field], [k]: v } }));
   const [picked, setPicked] = useState<string[]>([]);
-  const [desc, setDesc] = useState(false);
-  const [bulk, setBulk] = useState<{ open: boolean; grade?: string | undefined; status?: string | undefined; published?: boolean | undefined }>({ open: false });
-  const rows = [...roster].sort((x, y) => (desc ? -1 : 1) * `${x.last}${x.first}`.localeCompare(`${y.last}${y.first}`));
+  const [fb, setFb] = useState<{ sid: string; text: string } | null>(null);
+  const [bulk, setBulk] = useState<{ open: boolean; grade?: string | undefined; status?: string | undefined; dropbox?: boolean | undefined }>({ open: false });
+  const rows = [...roster].sort((x, y) => `${x.last}${x.first}`.localeCompare(`${y.last}${y.first}`));
   const applyBulk = () => {
     if (!picked.length) { toast.error("Select one or more students first."); return; }
     if (bulk.grade !== undefined && !isScoreInput(bulk.grade)) { toast.error("Grade must be a number"); return; }
     update((x) => {
-      const n = { ...x, scores: { ...x.scores }, aStatus: { ...x.aStatus }, pub: { ...x.pub } };
-      for (const sid of picked) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined) n.scores[k] = bulk.grade; if (bulk.status !== undefined) n.aStatus[k] = bulk.status; if (bulk.published !== undefined) n.pub[k] = bulk.published; }
+      const n = { ...x, scores: { ...x.scores }, aStatus: { ...x.aStatus } };
+      for (const sid of picked) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined) n.scores[k] = bulk.grade; if (bulk.status !== undefined) n.aStatus[k] = bulk.status; }
       return n;
     });
     toast.success(`Updated ${picked.length} student${picked.length === 1 ? "" : "s"}`); setBulk({ open: false });
   };
+  const fbStudent = fb ? roster.find((s) => s.id === fb.sid) : undefined;
+  const fbKey = fb ? scoreKey(a.id, fb.sid) : "";
+  const cb = (on: boolean, f: (v: boolean) => void, label: string) => <label className="mb-3 block text-[13px] font-semibold uppercase tracking-wide text-foreground/70"><input type="checkbox" className="mr-2 size-4 align-[-3px]" checked={on} onChange={(e) => f(e.target.checked)} />{label}</label>;
   return (
-    <div className="relative">
-      <div className="mb-2 flex justify-end"><Button variant="outline" size="sm" onClick={() => setBulk({ open: !bulk.open })}>Bulk Edit</Button></div>
-      {bulk.open && <div className="absolute right-0 top-10 z-20 w-[240px] space-y-3 rounded-sm border border-vc-line bg-background p-3 text-[12px] shadow-lg">
-        <label className="block"><input type="checkbox" checked={bulk.grade !== undefined} onChange={(e) => setBulk({ ...bulk, grade: e.target.checked ? "" : undefined })} /> GRADE<input aria-label="Bulk grade" disabled={bulk.grade === undefined} className="mt-1 h-7 w-full border border-vc-line px-1" value={bulk.grade ?? ""} onChange={(e) => setBulk({ ...bulk, grade: e.target.value })} /></label>
-        <label className="block"><input type="checkbox" checked={bulk.status !== undefined} onChange={(e) => setBulk({ ...bulk, status: e.target.checked ? (STATUSES[0] ?? "") : undefined })} /> COMPLETION STATUS<select aria-label="Bulk completion status" disabled={bulk.status === undefined} className="mt-1 h-7 w-full border border-vc-line" value={bulk.status ?? ""} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></label>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={bulk.published !== undefined} onChange={(e) => setBulk({ ...bulk, published: e.target.checked ? true : undefined })} /> PUBLISHED?<Switch aria-label="Bulk published" disabled={bulk.published === undefined} checked={bulk.published ?? false} onCheckedChange={(v) => setBulk({ ...bulk, published: v })} /></label>
-        <Button size="sm" className="w-full bg-vc-success" onClick={applyBulk}>Update</Button>
+    <div className="relative px-6 pb-8 pt-4">
+      <div className="mb-3 flex items-center justify-end gap-2">
+        <button type="button" onClick={() => setBulk({ ...bulk, open: !bulk.open })} className="h-[40px] rounded-[6px] border border-[#d5d9de] px-4 text-[14px] font-medium hover:bg-[#f4f6f8]">Bulk Edit</button></div>
+      {bulk.open && <div className="absolute right-6 top-[58px] z-20 w-[280px] rounded-[8px] border border-vc-line bg-background p-4 shadow-xl">
+        {cb(bulk.grade !== undefined, (v) => setBulk({ ...bulk, grade: v ? "" : undefined }), "Grade")}
+        {bulk.grade !== undefined && <input aria-label="Bulk grade" className={`${sel} -mt-1 mb-3`} value={bulk.grade} onChange={(e) => setBulk({ ...bulk, grade: e.target.value })} />}
+        {cb(bulk.status !== undefined, (v) => setBulk({ ...bulk, status: v ? "" : undefined }), "Completion Status")}
+        {bulk.status !== undefined && <select aria-label="Bulk completion status" className={`${sel} -mt-1 mb-3`} value={bulk.status} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{STATUSES.map((x) => <option key={x} value={x}>{x || "Pending"}</option>)}</select>}
+        {/* Dropbox status is not wired up yet; the option is kept so the layout matches. */}
+        {cb(!!bulk.dropbox, (v) => setBulk({ ...bulk, dropbox: v }), "Dropbox Status")}
+        <button type="button" onClick={applyBulk} className="mt-1 h-[40px] w-full rounded-[6px] bg-[#4caf50] text-[14px] font-semibold text-primary-foreground">Update {picked.length || ""} Student{picked.length === 1 ? "" : "s"}</button>
       </div>}
-    <table className="w-full text-[13px]">
-      <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th><input type="checkbox" aria-label="Select all students" checked={picked.length === roster.length && roster.length > 0} onChange={(e) => setPicked(e.target.checked ? roster.map((x) => x.id) : [])} /></th><th className="py-1.5"><button type="button" onClick={() => setDesc(!desc)} className="uppercase">Student {desc ? "Z→A" : "A→Z"}</button></th><th>Grade</th><th>Assignment Status</th><th>Comment</th><th className="text-right">Published?</th></tr></thead>
-      <tbody>{rows.map((s) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? ""); return (
-        <tr key={s.id} className="border-b border-vc-line">
-          <td className="w-6"><input type="checkbox" aria-label={`Select ${s.first}`} checked={picked.includes(s.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, s.id] : picked.filter((x) => x !== s.id))} /></td>
-          <td className="py-2"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-10 rounded-full" /><div className="leading-tight"><div className="text-[15px] font-semibold">{s.first}</div><div className="text-[14px]">{s.last}</div></div></div></td>
-          <td><input aria-label={`Score for ${s.first}`} className="h-8 w-14 rounded-sm border border-vc-line text-center" value={v} onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /> <span className="text-muted-foreground">/{a.points}</span></td>
-          <td><select aria-label={`Completion for ${s.first}`} className="h-8 w-[170px] rounded-sm border border-vc-line px-1 font-semibold" value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></td>
-          <td><input aria-label={`Comment for ${s.first}`} className="h-8 w-full rounded-sm border border-vc-line px-1.5" maxLength={300} value={comments[`a|${k}`] ?? ""} onChange={(e) => set("comments", `a|${k}`, e.target.value)} /></td>
-          <td className="text-right"><Switch aria-label={`Publish for ${s.first}`} checked={pub[k] !== false} onCheckedChange={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></td>
-        </tr>); })}</tbody>
-    </table>
+      <div className="grid grid-cols-[28px_minmax(150px,1.3fr)_minmax(120px,0.8fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto_90px] items-center gap-x-3 border-b border-vc-line pb-2 text-[12px] font-semibold uppercase text-vc-gray">
+        <input type="checkbox" aria-label="Select all students" checked={picked.length === roster.length && roster.length > 0} onChange={(e) => setPicked(e.target.checked ? roster.map((x) => x.id) : [])} />
+        <span>Student</span><span>Grade</span><span>Assignment Status</span><span>Dropbox Status</span><span className="w-[110px]" /><span className="text-right">Published?</span></div>
+      {rows.map((s) => {
+        const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? "");
+        const locked = comments[`l|${k}`] === "1"; const email = users.find((u) => u.personId === s.id)?.email; const has = !!comments[`a|${k}`];
+        return (
+          <div key={s.id} className="grid grid-cols-[28px_minmax(150px,1.3fr)_minmax(120px,0.8fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto_90px] items-center gap-x-3 border-b border-vc-line py-3">
+            <input type="checkbox" aria-label={`Select ${s.first}`} checked={picked.includes(s.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, s.id] : picked.filter((x) => x !== s.id))} />
+            <div className="flex items-center gap-3"><PersonPhoto personId={s.id} className="size-11 rounded-full" /><div className="leading-tight"><div className="text-[15px] font-semibold">{s.first}</div><div className="text-[14px] text-vc-gray">{s.last}</div></div></div>
+            <div className="flex items-center gap-2"><input aria-label={`Score for ${s.first}`} disabled={locked} className={`${sel} w-[76px] text-center disabled:bg-[#f1f3f5]`} value={v} placeholder="-" onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /><span className="text-[14px] text-vc-gray">/{a.points}</span></div>
+            <select aria-label={`Assignment status for ${s.first}`} className={sel} value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "Pending"}</option>)}</select>
+            <select aria-label={`Dropbox status for ${s.first}`} disabled className={`${sel} bg-[#f1f3f5] text-vc-gray`}><option>Pending</option></select>
+            <div className="flex">
+              <button type="button" title="Feedback" aria-label={`Feedback for ${s.first}`} onClick={() => setFb({ sid: s.id, text: "" })} className={`${iconBtn} ${has ? "text-[#4a9be0]" : ""}`}><MessageSquare className="size-[19px]" fill={has ? "currentColor" : "none"} /></button>
+              <button type="button" title={locked ? "Unlock grade" : "Lock grade"} aria-pressed={locked} onClick={() => set("comments", `l|${k}`, locked ? "" : "1")} className={`${iconBtn} ${locked ? "text-foreground" : ""}`}>{locked ? <Lock className="size-[19px]" /> : <Unlock className="size-[19px]" />}</button>
+              {email ? <a href={`mailto:${email}`} title={`Email ${s.first}`} aria-label={`Email ${s.first}`} className={iconBtn}><Mail className="size-[19px]" /></a> : <span className={`${iconBtn} opacity-40`}><Mail className="size-[19px]" /></span>}</div>
+            <div className="flex justify-end"><Toggle label={`Published for ${s.first}`} on={pub[k] !== false} set={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></div>
+          </div>); })}
+      {fb && fbStudent && <aside className="fixed inset-y-0 right-0 z-50 flex w-[380px] max-w-full flex-col border-l border-vc-line bg-background shadow-2xl">
+        <div className="flex items-center justify-between border-b border-vc-line px-5 py-4"><div className="flex items-center gap-3"><PersonPhoto personId={fbStudent.id} className="size-10 rounded-full" /><div className="leading-tight"><div className="text-[16px] font-semibold">{fbStudent.first} {fbStudent.last}</div><div className="text-[13px] text-vc-gray">{a.title}</div></div></div>
+          <button type="button" aria-label="Close feedback" onClick={() => setFb(null)} className={iconBtn}><X className="size-5" /></button></div>
+        <div className="border-b border-vc-line px-5 py-2 text-[14px] font-semibold text-[#4a9be0]">Feedback</div>
+        <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+          <div className="rounded-[8px] bg-[#f4f6f8] p-3 text-[13px] text-vc-gray">{comments[`s|${fbKey}`] ? <><div className="mb-1 font-semibold text-foreground">{fbStudent.first}'s comment</div>{comments[`s|${fbKey}`]}</> : "No comment or attachment has been submitted by this student."}</div>
+          {comments[`a|${fbKey}`] && <div className="ml-auto max-w-[88%] rounded-[12px] rounded-br-[2px] bg-[#cfe5fb] p-3 text-[14px]">{comments[`a|${fbKey}`]}</div>}
+        </div>
+        <form className="border-t border-vc-line p-4" onSubmit={(e) => { e.preventDefault(); if (!fb.text.trim()) return; set("comments", `a|${fbKey}`, fb.text.trim()); setFb({ ...fb, text: "" }); toast.success("Feedback posted"); }}>
+          <textarea aria-label="Give Feedback" placeholder="Give Feedback…" maxLength={300} className="h-[90px] w-full resize-none rounded-[6px] border border-[#d5d9de] p-3 text-[14px] outline-none focus:border-[#4a9be0]" value={fb.text} onChange={(e) => setFb({ ...fb, text: e.target.value })} />
+          <div className="mt-2 flex justify-end"><button className="h-[38px] rounded-[6px] bg-[#4a9be0] px-5 text-[14px] font-semibold text-primary-foreground">Post</button></div></form>
+      </aside>}
     </div>
   );
 }
