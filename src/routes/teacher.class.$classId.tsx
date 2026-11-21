@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Bell, BookOpen, ChevronDown, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Globe, Image, Library, MessageSquareText, Settings, UsersRound } from "lucide-react";
-import { useState } from "react";
+import { Component, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Detail } from "@/components/portal/GradeDetail";
@@ -28,7 +28,7 @@ const UNDER_GRADEBOOK = ["assignments", "weights", "reports"];
 export const Route = createFileRoute("/teacher/class/$classId")({
   validateSearch: z.object({
     tab: z.enum(["overview", "attendance", "assignments", "gradebook", "grades", "weights", "reports", "website", "notifications", "calendar", "photos", "settings", "gradedetail"]).optional(),
-    aid: z.string().optional(), sub: z.enum(["details", "students"]).optional(), sid: z.string().optional(), date: z.string().optional(),
+    aid: z.coerce.string().optional(), sub: z.enum(["details", "students"]).optional(), sid: z.coerce.string().optional(), date: z.coerce.string().optional(),
   }),
   head: ({ params }) => pageHead(`${params.classId} · Class Management`, "Attendance, assignments, gradebook, comments and website for this class."),
   component: ClassManager,
@@ -42,6 +42,12 @@ function ClassManager() {
   if (!c) return <PortalShell portal="teacher" area="teacher"><p className="p-8 text-[14px]">This class isn't available — it may be unpublished or not assigned to you. <Link to="/teacher" className="text-vc-link-strong">Back to faculty home</Link></p></PortalShell>;
   return search.tab === "gradedetail" ? <StudentPaper c={c} sid={search.sid} /> : <Manager key={c.id} c={c} mine={mineAll} />;
 }
+/** Shows what went wrong instead of a blank error page, so a broken document can be reported precisely. */
+class PaperGuard extends Component<{ children: ReactNode }, { err: Error | null }> {
+  state = { err: null as Error | null };
+  static getDerivedStateFromError(err: Error) { return { err }; }
+  render() { return this.state.err ? <div className="p-8 text-[14px]"><b>This grade detail couldn't be shown.</b><pre className="mt-2 whitespace-pre-wrap text-[12px] text-destructive">{this.state.err.message}</pre></div> : this.props.children; }
+}
 /** A student's Grade Detail, same paper the student sees; opened in a new tab from the gradebook. */
 function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
   const { scores } = useSchool();
@@ -49,7 +55,7 @@ function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
   const s = rosterOf(c).find((x) => x.id === sid);
   const list = all.map((a) => ({ ...a, score: scoreOf(scores, a, sid ?? "") }));
   if (!s) return <div className="min-h-screen bg-vc-paper"><p className="p-8 text-[14px]">That student isn't in this class. <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong">Back to the gradebook</Link></p></div>;
-  return <div className="min-h-screen bg-vc-paper"><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></div>;
+  return <div className="min-h-screen bg-vc-paper"><PaperGuard><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PaperGuard></div>;
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
@@ -63,7 +69,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
   return (
     <PortalShell portal="teacher" area="teacher" bare>
-      <div className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
+      <div style={{ zoom: 1.12 }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[17px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[190px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
       <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[17px]`}>
         <div className="mb-[29px] flex items-start gap-[9px] pl-[17px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />

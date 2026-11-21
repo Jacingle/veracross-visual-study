@@ -189,7 +189,7 @@ export function useSchool() { const c = useContext(C); if (!c) throw new Error("
 
 const short: Record<string, string> = { HOMEWORK: "HW", QUIZ: "QZ", TEST: "Test", COLLABORATION: "Col", "CLASSWORK/HOMEWORK": "CwHw", VOCABULARY: "Vocab", WRITING: "Wr", READING: "Rd" };
 export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment {
-  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: c.details.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(), custom: true };
+  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: (c.details ?? "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(), custom: true };
 }
 /** Classes the signed-in person sees: published ones they teach or are enrolled in (admins see all). */
 export function useMySections(): (Section & { status: ClassStatus })[] {
