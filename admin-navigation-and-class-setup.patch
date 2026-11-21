@@ -1,0 +1,1981 @@
+diff --git a/src/components/admin/AdminTools.tsx b/src/components/admin/AdminTools.tsx
+index 39fc23e..853213e 100644
+--- a/src/components/admin/AdminTools.tsx
++++ b/src/components/admin/AdminTools.tsx
+@@ -1,26 +1,29 @@
+-import { Link } from "@tanstack/react-router";
++import { Link, useRouterState } from "@tanstack/react-router";
+ import { Plus, Zap } from "lucide-react";
+ import { useState } from "react";
+ import { toast } from "sonner";
+ import { Button } from "@/components/ui/button";
+ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
++import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+ import type { Role } from "@/lib/auth-rules";
+ import { buildAccounts, parseBatch } from "@/lib/batch-accounts";
+ import { useSchool } from "@/lib/school-store";
+ import { SCHOOL } from "@/lib/sis-data";
++import { useRecordWindow } from "@/lib/record-window";
++import { useAdminWorkspace } from "@/lib/admin-workspace";
+ 
+ const iconBtn = "grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20";
+ const act = "block w-full px-0 py-1 text-left text-[16px] text-vc-link-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline";
+ 
+-/** The + button in the Axiom toolbar: add a record from anywhere. */
++/** The + button in the Axiom toolbar: add a record from anywhere. Courses and classes open in their own window. */
+ export function AddMenu() {
++  const openRecord = useRecordWindow();
+   return (
+     <DropdownMenu>
+       <DropdownMenuTrigger asChild><button type="button" aria-label="Add" title="Add" className={iconBtn}><Plus className="size-5" strokeWidth={3} /></button></DropdownMenuTrigger>
+       <DropdownMenuContent align="end" className="min-w-[200px] text-[14px]">
+-        <DropdownMenuItem asChild><Link to="/admin/courses" search={{ add: "course" }}>Course</Link></DropdownMenuItem>
+-        <DropdownMenuItem asChild><Link to="/admin/courses">Class (pick a course, then + Class)</Link></DropdownMenuItem>
++        <DropdownMenuItem onSelect={() => openRecord("/admin/course/new")}>Course</DropdownMenuItem>
++        <DropdownMenuItem onSelect={() => openRecord("/admin/class/new")}>Class</DropdownMenuItem>
+         <DropdownMenuItem asChild><Link to="/admin/users" search={{ add: "user" }}>Person / User Account</Link></DropdownMenuItem>
+         <DropdownMenuItem asChild><Link to="/admin/scheduling">Scheduling Set</Link></DropdownMenuItem>
+         <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
+@@ -29,6 +32,24 @@ export function AddMenu() {
+   );
+ }
+ 
++/** The lightning-bolt menu on a saved record: Save to Workspace, Copy Record, Delete. */
++export function RecordActions({ title, onCopy, onDelete }: { title: string; onCopy: () => void; onDelete: () => void }) {
++  const { user } = useSchool();
++  const workspace = useAdminWorkspace(user?.id);
++  const path = useRouterState({ select: (r) => r.location.href });
++  return (
++    <DropdownMenu>
++      <DropdownMenuTrigger asChild><button type="button" aria-label="Record actions" title="Actions" className={iconBtn}><Zap className="size-5" fill="currentColor" /></button></DropdownMenuTrigger>
++      <DropdownMenuContent align="end" className="min-w-[190px] text-[14px]">
++        <DropdownMenuItem onSelect={() => { if (!workspace.favorites.some((f) => f.path === path)) workspace.toggleFavorite({ title, path }); toast.success("Saved to your Favorites"); }}>Save to Workspace...</DropdownMenuItem>
++        <DropdownMenuItem onSelect={onCopy}>Copy Record...</DropdownMenuItem>
++        <DropdownMenuSeparator />
++        <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
++      </DropdownMenuContent>
++    </DropdownMenu>
++  );
++}
++
+ /** The lightning-bolt button: batch tools for user accounts, as on the Veracross System homepage. */
+ export function ActionsMenu() {
+   const { users, user: me, update } = useSchool();
+diff --git a/src/components/admin/AdvancedSearch.tsx b/src/components/admin/AdvancedSearch.tsx
+new file mode 100644
+index 0000000..8ed5aa4
+--- /dev/null
++++ b/src/components/admin/AdvancedSearch.tsx
+@@ -0,0 +1,71 @@
++import { useEffect, useMemo, useState } from "react";
++import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
++
++export type SearchRow = { id: string; first?: string; last?: string; grade?: number; cells: string[] };
++type Props = {
++  open: boolean; onClose: () => void;
++  /** "Person" or "Course": shown in the title and on the select button. */
++  noun: string; kind: "person" | "course";
++  heads: string[]; rows: SearchRow[];
++  multi?: boolean; /** Ids already chosen: shown ticked and left out of the results. */ exclude?: string[];
++  onSelect: (ids: string[]) => void; onAddNew?: () => void;
++};
++const MAX = 100;
++const box = "h-8 w-full border border-vc-line bg-background px-2 text-[13px] outline-none focus:border-vc-link";
++const lbl = "mb-1 mt-3 block text-[11px] font-semibold uppercase text-vc-gray-dark";
++
++/** Veracross-style "Advanced Search" popup: filters on the left, results with tick boxes on the right. */
++export function AdvancedSearch({ open, onClose, noun, kind, heads, rows, multi = false, exclude = [], onSelect, onAddNew }: Props) {
++  const [last, setLast] = useState(""); const [first, setFirst] = useState(""); const [text, setText] = useState("");
++  const [grades, setGrades] = useState<number[]>([]);
++  const [applied, setApplied] = useState({ last: "", first: "", text: "", grades: [] as number[] });
++  const [picked, setPicked] = useState<string[]>([]);
++  useEffect(() => { if (open) { setLast(""); setFirst(""); setText(""); setGrades([]); setApplied({ last: "", first: "", text: "", grades: [] }); setPicked([]); } }, [open]);
++  const allGrades = useMemo(() => [...new Set(rows.map((r) => r.grade).filter((g): g is number => g !== undefined))].sort((a, b) => a - b), [rows]);
++  const shown = useMemo(() => rows.filter((r) => !exclude.includes(r.id)
++    && (kind === "person"
++      ? (!applied.last || (r.last ?? "").toLowerCase().includes(applied.last.toLowerCase())) && (!applied.first || (r.first ?? "").toLowerCase().includes(applied.first.toLowerCase())) && (!applied.grades.length || (r.grade !== undefined && applied.grades.includes(r.grade)))
++      : !applied.text || r.cells.join(" ").toLowerCase().includes(applied.text.toLowerCase()))), [rows, exclude, kind, applied]);
++  const run = () => setApplied({ last: last.trim(), first: first.trim(), text: text.trim(), grades });
++  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : multi ? [...p, id] : [id]));
++  const choose = () => { if (!picked.length) return; onSelect(picked); onClose(); };
++  return (
++    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
++      <DialogContent className="flex max-h-[88vh] w-[min(920px,96vw)] max-w-none flex-col gap-0 rounded-none p-0 text-[13px]">
++        <DialogHeader className="px-5 pb-2 pt-4"><DialogTitle className="text-[20px] font-normal">Advanced Search: {noun}</DialogTitle></DialogHeader>
++        <div className="grid min-h-0 flex-1 grid-cols-1 border-y border-vc-line sm:grid-cols-[230px_minmax(0,1fr)]">
++          <form onSubmit={(e) => { e.preventDefault(); run(); }} className="overflow-y-auto border-b border-vc-line bg-vc-panel px-4 pb-4 sm:border-b-0 sm:border-r">
++            {kind === "person" ? <>
++              <label className={lbl} htmlFor="adv-last">Last Name</label><input id="adv-last" className={box} value={last} onChange={(e) => setLast(e.target.value)} />
++              <label className={lbl} htmlFor="adv-first">First Name</label><input id="adv-first" className={box} value={first} onChange={(e) => setFirst(e.target.value)} />
++              {allGrades.length > 0 && <fieldset><legend className={lbl}>Current Grade</legend>
++                <div className="max-h-40 overflow-y-auto border border-vc-line bg-background p-1">{allGrades.map((g) => <label key={g} className="flex items-center gap-2 px-1 py-0.5"><input type="checkbox" checked={grades.includes(g)} onChange={(e) => setGrades((p) => (e.target.checked ? [...p, g] : p.filter((x) => x !== g)))} />Grade {g}</label>)}</div>
++                <div className="mt-1 flex gap-3 text-[12px]"><button type="button" className="text-vc-link-strong hover:underline" onClick={() => setGrades(allGrades)}>Select All</button><button type="button" className="text-vc-link-strong hover:underline" onClick={() => setGrades([])}>Select None</button></div></fieldset>}
++            </> : <><label className={lbl} htmlFor="adv-text">Name or ID</label><input id="adv-text" className={box} value={text} onChange={(e) => setText(e.target.value)} /></>}
++            <button type="submit" className="mt-4 h-8 w-full bg-ax-bar px-3 text-[13px] font-semibold text-primary-foreground hover:brightness-95">Run Query</button>
++          </form>
++          <div className="min-h-[260px] overflow-auto">
++            <table className="w-full min-w-[460px] border-collapse">
++              <thead className="sticky top-0 bg-ax-head"><tr><th className="w-9 px-2 py-2" />{heads.map((h) => <th key={h} className="px-2 py-2 text-left font-semibold">{h}</th>)}</tr></thead>
++              <tbody>{shown.slice(0, MAX).map((r) => (
++                <tr key={r.id} onClick={() => toggle(r.id)} className={`cursor-pointer border-b border-vc-line ${picked.includes(r.id) ? "bg-vc-tile-warm" : "hover:bg-vc-panel"}`}>
++                  <td className="px-2 py-1.5"><input type="checkbox" aria-label={`Select ${r.cells[0]}`} checked={picked.includes(r.id)} onChange={() => toggle(r.id)} onClick={(e) => e.stopPropagation()} /></td>
++                  {r.cells.map((c, i) => <td key={i} className="px-2 py-1.5">{c}</td>)}
++                </tr>))}</tbody>
++            </table>
++            {!shown.length && <p className="px-4 py-10 text-center text-[15px] text-vc-gray">No results. Change the search and choose Run Query.</p>}
++          </div>
++        </div>
++        <div className="flex flex-wrap items-center gap-2 px-5 py-3">
++          <button type="button" onClick={run} className="h-9 bg-ax-bar px-4 text-[14px] text-primary-foreground hover:brightness-95">Run Query</button>
++          {onAddNew && <button type="button" onClick={onAddNew} className="h-9 bg-ax-bar px-4 text-[14px] text-primary-foreground hover:brightness-95">Add New Record...</button>}
++          <span className="ml-2 text-[12px] text-vc-gray">{shown.length > MAX ? `Top ${MAX} of ${shown.length} records` : `${shown.length} ${shown.length === 1 ? "record" : "records"}`}</span>
++          <div className="ml-auto flex items-center gap-4">
++            <button type="button" disabled={!picked.length} onClick={choose} className="h-9 bg-ax-go px-4 text-[14px] font-semibold text-primary-foreground hover:brightness-95 disabled:opacity-50">Select {noun}{multi && picked.length > 1 ? ` (${picked.length})` : ""}</button>
++            <button type="button" onClick={onClose} className="text-[15px] text-vc-gray hover:underline">Cancel</button>
++          </div>
++        </div>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/src/components/admin/AxiomShell.tsx b/src/components/admin/AxiomShell.tsx
+index 96a65dc..ca7b170 100644
+--- a/src/components/admin/AxiomShell.tsx
++++ b/src/components/admin/AxiomShell.tsx
+@@ -1,24 +1,27 @@
+ import { PersonPhoto } from "@/components/common/PersonPhoto";
+ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+-import { ArrowLeft, BookOpen, ChevronRight, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
++import { ArrowLeft, BookOpen, ChevronRight, ClipboardList, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+ import { useEffect, useMemo, useState, type ReactNode } from "react";
+ import { RoleGate } from "@/components/auth/RoleGate";
+ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+ import { ActionsMenu, AddMenu } from "@/components/admin/AdminTools";
+ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+ import { SCHOOL, STUDENTS, TEACHERS, courseTitle } from "@/lib/sis-data";
++import { HOMEPAGES, SYSTEM_HOME, pageHits } from "@/lib/admin-homepages";
++import { useRecordWindow } from "@/lib/record-window";
+ import { useSchool } from "@/lib/school-store";
+ import { PortalChooser } from '@/components/portal/PortalChooser';
+ import { useAdminWorkspace } from "@/lib/admin-workspace";
+ import { Button } from '@/components/ui/button';
+ 
+-type Crumb = { label: string; to?: "/admin/courses" | "/admin/users" | "/admin/settings" };
++type Crumb = { label: string; to?: "/admin/courses" | "/admin/classes" | "/admin/users" | "/admin/settings" };
+ 
+ export const AXIOM_LINKS = [
+   { to: "/admin", label: "System Administrator Homepage", icon: Home },
+   { to: "/admin/queries", label: "Queries & Records", icon: Search },
+   { to: "/admin/users", label: "Users & Security", icon: Users },
+   { to: "/admin/courses", label: "Courses & Enrollment", icon: BookOpen },
++  { to: "/admin/classes", label: "Classes", icon: ClipboardList },
+   { to: "/admin/settings", label: "Portal Settings", icon: Palette },
+   { to: "/admin/assignment-types", label: "Class Assignment Types", icon: Palette },
+   { to: "/admin/portals", label: "Portals", icon: LayoutGrid },
+@@ -30,15 +33,16 @@ export const AXIOM_LINKS = [
+ ] as const;
+ 
+ /** Axiom (admin) frame: Launchpad, global search, breadcrumb bar, grey workspace. */
+-export function AxiomShell({ title, crumbs = [], actions, compactRail = false, side, onUpdate, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; compactRail?: boolean; /** Left section menu for detail screens. */ side?: ReactNode; /** Shows the green UPDATE button in the toolbar. */ onUpdate?: (() => void) | undefined; children: ReactNode }) {
++export function AxiomShell({ title, crumbs = [], actions, compactRail = false, side, onUpdate, recordMenu, children }: { title: string; crumbs?: Crumb[]; actions?: ReactNode; /** Replaces the lightning-bolt menu on a record screen (Save to Workspace, Copy Record, Delete). */ recordMenu?: ReactNode; compactRail?: boolean; /** Left section menu for detail screens. */ side?: ReactNode; /** Shows the green UPDATE button in the toolbar. */ onUpdate?: (() => void) | undefined; children: ReactNode }) {
+   const bar = <>{actions}{onUpdate && <button type="button" onClick={onUpdate} className="h-[30px] rounded-[3px] bg-ax-save px-5 text-[13px] font-bold tracking-wide text-primary-foreground active:brightness-90">UPDATE</button>}</>;
+-  return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={bar} compactRail={compactRail}>{side ? <div className="flex bg-background">{side}<main className="min-w-0 flex-1">{children}</main></div> : children}</Frame></RoleGate>;
++  return <RoleGate area="admin"><Frame title={title} crumbs={crumbs} actions={bar} compactRail={compactRail} recordMenu={recordMenu}>{side ? <div className="flex bg-background">{side}<main className="min-w-0 flex-1">{children}</main></div> : children}</Frame></RoleGate>;
+ }
+ 
+-function Frame({ title, crumbs, actions, compactRail, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; compactRail: boolean; children: ReactNode }) {
++function Frame({ title, crumbs, actions, compactRail, recordMenu, children }: { title: string; crumbs: Crumb[]; actions: ReactNode; compactRail: boolean; recordMenu: ReactNode; children: ReactNode }) {
+   const pathname = useRouterState({ select: (r) => r.location.pathname });
+-  const { user, logout, users, sections } = useSchool();
++  const { user, logout, users, sections, courses } = useSchool();
+   const nav = useNavigate();
++  const openRecord = useRecordWindow();
+   const [open, setOpen] = useState(false);
+   const [mode, setMode] = useState<"homepages" | "favorites" | "history">("homepages");
+   const workspace = useAdminWorkspace(user?.id);
+@@ -51,13 +55,20 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
+     const t = q.trim().toLowerCase();
+     if (t.length < 2) return [];
+     return [
+-      ...AXIOM_LINKS.filter((l) => l.label.toLowerCase().includes(t)).map((l) => ({ kind: "Homepage", label: l.label, go: () => nav({ to: l.to }) })),
++      ...pageHits(t).map((p) => ({ kind: p.kind, label: p.label, go: () => {
++        const h = p.hit;
++        if ("homepage" in h) nav({ to: "/admin/home/$pageId", params: { pageId: h.homepage } });
++        else if ("action" in h) { if (h.action === "new-course") openRecord("/admin/course/new"); else if (h.action === "new-class") openRecord("/admin/class/new"); else nav({ to: "/admin/users", search: { add: "user" } }); }
++        else nav({ to: h.to, search: (h.search ?? {}) as never });
++      } })),
++      ...AXIOM_LINKS.filter((l) => l.label.toLowerCase().includes(t) && !pageHits(t).some((p) => p.label === l.label)).map((l) => ({ kind: "Page", label: l.label, go: () => nav({ to: l.to }) })),
++      ...courses.filter((c) => `${c.id} ${c.name}`.toLowerCase().includes(t)).slice(0, 4).map((c) => ({ kind: "Course", label: `${c.name} (${c.id})`, go: () => nav({ to: "/admin/course/$courseNo", params: { courseNo: c.id } }) })),
+       ...sections.filter((c) => courseTitle(c).toLowerCase().includes(t) || c.id.includes(t)).slice(0, 5).map((c) => ({ kind: "Class", label: courseTitle(c), go: () => nav({ to: "/admin/courses/$courseId", params: { courseId: c.id } }) })),
+       ...users.filter((u) => `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(t)).slice(0, 4).map((u) => ({ kind: "User", label: `${u.first} ${u.last} (${u.email})`, go: () => nav({ to: "/admin/users", search: { q: u.email } }) })),
+       ...TEACHERS.filter((x) => `${x.first} ${x.last}`.toLowerCase().includes(t)).slice(0, 4).map((x) => ({ kind: "Faculty", label: `${x.prefix} ${x.first} ${x.last}`, go: () => nav({ to: "/directories", search: { type: "faculty", last: x.last } }) })),
+       ...STUDENTS.filter((x) => `${x.first} ${x.last}`.toLowerCase().includes(t)).slice(0, 5).map((x) => ({ kind: "Student", label: `${x.first} ${x.last} · Grade ${x.grade}`, go: () => nav({ to: "/directories", search: { type: "students", first: x.first, last: x.last } }) })),
+     ];
+-  }, [q, users, sections, nav]);
++  }, [q, users, sections, courses, nav, openRecord]);
+   return (
+     <div className="min-h-screen bg-ax-side text-[13px]">
+       <header className="sticky top-0 z-30">
+@@ -73,22 +84,25 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
+         <div className="flex min-h-[46px] flex-wrap items-center gap-1 bg-ax-bar px-2 py-1 text-primary-foreground shadow-sm sm:flex-nowrap">
+           <Button variant="ghost" size="icon" onClick={() => { setMode("homepages"); setOpen(true); }} aria-label="Open Launchpad" title="Launchpad" className="size-9 shrink-0 rounded-none text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Rocket className="size-6 fill-current" /></Button>
+           <Button variant="ghost" size="icon" onClick={() => { setMode("favorites"); setOpen(true); }} aria-label="Favorites" title="Favorites" className="size-9 shrink-0 rounded-none text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Star className="size-6 fill-current" /></Button>
+-          <div className="relative flex h-[34px] min-w-0 flex-1 items-stretch border border-primary-foreground/60">
+-            <button onClick={() => setSearching((v) => !v)} aria-label="Search Axiom" className="grid w-[46px] shrink-0 place-items-center border-r border-primary-foreground/60 hover:bg-primary-foreground/10"><Search className="size-5" /></button>
++          <div role="search" onClick={() => setSearching(true)} className={`relative flex h-[34px] min-w-0 flex-1 cursor-text items-stretch border ${searching ? "border-background bg-background text-foreground" : "border-primary-foreground/60"}`}>
++            <button type="button" onClick={(e) => { e.stopPropagation(); setSearching((v) => !v); }} aria-label="Search Axiom" className={`grid w-[46px] shrink-0 place-items-center border-r ${searching ? "border-vc-line hover:bg-vc-panel" : "border-primary-foreground/60 hover:bg-primary-foreground/10"}`}><Search className="size-5" /></button>
+             {searching ? (
+-              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => { if (!q) setSearching(false); }} placeholder="Search people, classes and users" aria-label="Search people, classes and users" className="min-w-0 flex-1 bg-background px-3 text-[14px] text-foreground outline-none" />
++              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => setTimeout(() => { setSearching(false); setQ(""); }, 150)}
++                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearching(false); } else if (e.key === "Enter" && results[0]) { const r = results[0]; setQ(""); setSearching(false); r.go(); } }}
++                placeholder="Search pages, courses, classes and people" aria-label="Search pages, courses, classes and people" className="min-w-0 flex-1 bg-transparent px-3 text-[14px] text-foreground outline-none" />
+             ) : (
+               <div className="flex min-w-0 flex-1 items-center gap-2 px-3 text-[14px] leading-none">
+-                {crumbs.length ? crumbs.map((c) => (c.to ? <Link key={c.label} to={c.to} className="truncate font-semibold hover:underline">{c.label}</Link> : <span key={c.label} className="truncate font-semibold">{c.label}</span>)) : <Link to="/admin" className="truncate font-semibold hover:underline">System</Link>}
++                {crumbs.length ? crumbs.map((c) => <span key={c.label} className="truncate font-semibold">{c.label}</span>) : <span className="truncate font-semibold">System</span>}
+                 <span className="truncate font-light">{title}</span>
+               </div>)}
+-            {searching && results.length > 0 && (
+-              <ul className="absolute left-0 right-0 top-[42px] max-h-80 overflow-y-auto border border-vc-line bg-background text-[13px] text-foreground shadow-lg">
+-                {results.map((r, i) => <li key={i}><button onClick={() => { setQ(""); setSearching(false); r.go(); }} className="flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-vc-panel"><span className="w-14 text-[10px] font-semibold uppercase text-muted-foreground">{r.kind}</span>{r.label}</button></li>)}
++            {searching && q.trim().length >= 2 && (
++              <ul className="absolute left-0 right-0 top-[36px] z-40 max-h-80 overflow-y-auto border border-vc-line bg-background text-[13px] text-foreground shadow-lg">
++                {results.map((r, i) => <li key={i}><button onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(""); setSearching(false); r.go(); }} className="flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-vc-panel"><span className="w-[72px] shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">{r.kind}</span>{r.label}</button></li>)}
++                {!results.length && <li className="px-3 py-2 text-muted-foreground">No pages, records or people match.</li>}
+               </ul>)}
+           </div>
+           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2 text-[12px]">{actions}</div>
+-          <div className="flex shrink-0 items-stretch border border-primary-foreground/40"><ActionsMenu /><AddMenu /></div>
++          <div className="flex shrink-0 items-stretch border border-primary-foreground/40">{recordMenu ?? <ActionsMenu />}<AddMenu /></div>
+           <DropdownMenu>
+             <Button variant="ghost" onClick={() => setChooser(true)} aria-label="Account menu" className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-foreground/25 p-0 text-[12px] outline-none"><PersonPhoto personId={user?.personId} className="size-8" /></Button>
+             <DropdownMenuContent align="end" className="text-[13px]">
+@@ -118,7 +132,10 @@ function Frame({ title, crumbs, actions, compactRail, children }: { title: strin
+       <Sheet open={open} onOpenChange={setOpen}>
+         <SheetContent side="left" className="w-[300px] p-0 text-[13px]">
+           <SheetHeader className="bg-ax-top px-4 py-3"><SheetTitle className="text-primary-foreground">{mode === "homepages" ? "Homepages" : mode === "favorites" ? "Favorites" : "Recent History"}</SheetTitle></SheetHeader>
+-          <div className="px-2 py-2">{mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/terms', '/admin/scheduling', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
++          <div className="px-2 py-2">{mode === 'homepages' && <div><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">Homepages</h3>
++            <Link to="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Home className="size-4 text-ax-top" />{SYSTEM_HOME.title}</Link>
++            {HOMEPAGES.map((h) => <Link key={h.id} to="/admin/home/$pageId" params={{ pageId: h.id }} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><LayoutGrid className="size-4 text-ax-top" />{h.title}</Link>)}</div>}
++          {mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group === 'System' ? 'System pages' : group === 'Academics' ? 'Academics pages' : 'People & Communications pages'}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/classes', '/admin/terms', '/admin/scheduling', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
+         </SheetContent>
+       </Sheet>
+     </div>
+diff --git a/src/components/admin/CourseTypeSelect.tsx b/src/components/admin/CourseTypeSelect.tsx
+new file mode 100644
+index 0000000..6cac5fe
+--- /dev/null
++++ b/src/components/admin/CourseTypeSelect.tsx
+@@ -0,0 +1,12 @@
++import { axInput } from "@/components/admin/AxiomDetail";
++import { MAIN_TYPES, OTHER_TYPES, TYPE_LABEL, normalizeCourseType, type CourseType } from "@/lib/course-types";
++
++/** Course type dropdown. Advisory, Group and Homeroom are listed under "Other Classes". */
++export function CourseTypeSelect({ value, onChange, label = "Course type" }: { value: CourseType; onChange: (t: CourseType) => void; label?: string }) {
++  return (
++    <select aria-label={label} className={axInput} value={value} onChange={(e) => onChange(normalizeCourseType(e.target.value))}>
++      <optgroup label="Classes">{MAIN_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}</optgroup>
++      <optgroup label="Other Classes">{OTHER_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}</optgroup>
++    </select>
++  );
++}
+diff --git a/src/components/admin/PersonField.tsx b/src/components/admin/PersonField.tsx
+new file mode 100644
+index 0000000..1d7f974
+--- /dev/null
++++ b/src/components/admin/PersonField.tsx
+@@ -0,0 +1,37 @@
++import { ExternalLink, Search } from "lucide-react";
++import { useEffect, useState } from "react";
++
++type Props = {
++  label: string; ids: string[]; onChange: (ids: string[]) => void;
++  nameOf: (id: string) => string; onSearch: () => void; onOpen?: (id: string) => void;
++  /** One person (Teacher) or several (Teacher's Aide). */ multi?: boolean; placeholder?: string;
++};
++
++/**
++ * A person lookup field. Click a name to highlight it (Ctrl/Shift-click adds more, Ctrl+A highlights all),
++ * then press Delete or Backspace to remove them. Backspace with nothing highlighted highlights the last name first.
++ */
++export function PersonField({ label, ids, onChange, nameOf, onSearch, onOpen, multi = false, placeholder = "" }: Props) {
++  const [sel, setSel] = useState<string[]>([]);
++  useEffect(() => { setSel((s) => s.filter((id) => ids.includes(id))); }, [ids]);
++  const remove = () => { if (!sel.length) return; onChange(ids.filter((id) => !sel.includes(id))); setSel([]); };
++  const onKey = (e: React.KeyboardEvent) => {
++    if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); if (sel.length) remove(); else if (e.key === "Backspace" && ids.length) setSel([ids[ids.length - 1]!]); }
++    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") { e.preventDefault(); setSel(ids); }
++    else if (e.key === "Enter") { e.preventDefault(); onSearch(); }
++    else if (e.key === "Escape") setSel([]);
++  };
++  const click = (id: string, e: React.MouseEvent) => { e.stopPropagation(); setSel((s) => (multi && (e.ctrlKey || e.metaKey || e.shiftKey) ? (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]) : [id])); };
++  const last = ids[ids.length - 1];
++  return (
++    <div className="flex items-stretch">
++      <div tabIndex={0} role="group" aria-label={`${label}. Click a name, then press Delete to remove it.`} onKeyDown={onKey} onClick={(e) => e.currentTarget.focus()}
++        className="flex min-h-[30px] min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-0.5 border border-vc-gray-light/80 bg-background px-1.5 py-0.5 text-[13px] outline-none focus:border-vc-link">
++        {ids.map((id) => <button type="button" key={id} aria-pressed={sel.includes(id)} onClick={(e) => click(id, e)} className={`px-1 text-left ${sel.includes(id) ? "bg-ax-bar text-primary-foreground" : "hover:bg-vc-panel"}`}>{nameOf(id)}</button>)}
++        {!ids.length && <span className="px-1 text-vc-gray-light">{placeholder}</span>}
++      </div>
++      <button type="button" onClick={onSearch} aria-label={`Search ${label}`} title="Advanced search" className="grid w-8 shrink-0 place-items-center border border-l-0 border-vc-gray-light/80 bg-background hover:bg-vc-panel"><Search className="size-4" /></button>
++      <button type="button" disabled={!last || !onOpen} onClick={() => last && onOpen?.(last)} aria-label={`Open ${label} record`} title="Open record" className="grid w-8 shrink-0 place-items-center border border-l-0 border-vc-gray-light/80 bg-background text-vc-link hover:bg-vc-panel disabled:text-vc-gray-light"><ExternalLink className="size-4" /></button>
++    </div>
++  );
++}
+diff --git a/src/components/admin/RecordWindow.tsx b/src/components/admin/RecordWindow.tsx
+new file mode 100644
+index 0000000..0c8368f
+--- /dev/null
++++ b/src/components/admin/RecordWindow.tsx
+@@ -0,0 +1,20 @@
++import { Plus, Zap } from "lucide-react";
++import type { ReactNode } from "react";
++import { RoleGate } from "@/components/auth/RoleGate";
++
++/** Frame for a record opened in its own window: blue title bar, one green action button, then the form full width. */
++export function RecordWindow({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
++  return (
++    <RoleGate area="admin">
++      <div className="min-h-screen bg-background text-[13px]">
++        <header className="sticky top-0 z-30 flex h-[46px] items-center gap-2 bg-ax-bar px-3 text-primary-foreground shadow-sm">
++          <h1 className="min-w-0 flex-1 truncate text-[16px] font-normal">{title}</h1>
++          {action}
++          <span aria-hidden className="grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10"><Zap className="size-5" fill="currentColor" /></span>
++          <span aria-hidden className="grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10"><Plus className="size-5" strokeWidth={3} /></span>
++        </header>
++        {children}
++      </div>
++    </RoleGate>
++  );
++}
+diff --git a/src/lib/admin-homepages.test.ts b/src/lib/admin-homepages.test.ts
+new file mode 100644
+index 0000000..37c053d
+--- /dev/null
++++ b/src/lib/admin-homepages.test.ts
+@@ -0,0 +1,23 @@
++import { describe, expect, it } from "vitest";
++import { HOMEPAGES, homepageById, pageHits } from "./admin-homepages";
++
++describe("administrator homepages", () => {
++  it("has an Academic Configuration homepage with numbered sections", () => {
++    const h = homepageById("academic-configuration");
++    expect(h?.title).toBe("Academic Configuration");
++    expect(h?.sections.map((s) => s.title)[0]).toBe("1. Academic Hierarchy");
++  });
++  it("finds homepages and the pages listed on them", () => {
++    expect(pageHits("academic conf").some((x) => x.kind === "Homepage")).toBe(true);
++    const types = pageHits("assignment types");
++    expect(types).toHaveLength(1);
++    expect(types[0]?.kind).toBe("Page");
++  });
++  it("lists a page once even when several homepages link to it", () => {
++    expect(pageHits("school years")).toHaveLength(1);
++  });
++  it("returns nothing for an empty search", () => {
++    expect(pageHits("  ")).toEqual([]);
++    expect(HOMEPAGES.length).toBeGreaterThan(1);
++  });
++});
+diff --git a/src/lib/admin-homepages.ts b/src/lib/admin-homepages.ts
+new file mode 100644
+index 0000000..3ddb30a
+--- /dev/null
++++ b/src/lib/admin-homepages.ts
+@@ -0,0 +1,90 @@
++// Axiom (administrator) homepages. Each homepage is a full page of grouped links, like Veracross "Academic Configuration".
++// Links point only at screens that exist in this app; add a link here when a new screen is built.
++export type AdminPath =
++  | "/admin" | "/admin/queries" | "/admin/users" | "/admin/courses" | "/admin/classes" | "/admin/settings" | "/admin/assignment-types"
++  | "/admin/portals" | "/admin/report-layouts" | "/admin/terms" | "/admin/scheduling" | "/admin/messages" | "/admin/purchases";
++
++export type HomeLink =
++  | { label: string; to: AdminPath; search?: Record<string, string> }
++  /** A button that opens a blank record in a new window. */
++  | { label: string; action: "new-course" | "new-class" | "new-person" };
++export type HomeGroup = { heading: string; links: HomeLink[] };
++export type HomeSection = { title: string; groups: HomeGroup[] };
++export type Homepage = { id: string; title: string; heading: string; sections: HomeSection[] };
++
++export const SYSTEM_HOME = { title: "System Administrator Homepage", to: "/admin" as const };
++
++const link = (label: string, to: AdminPath, search?: Record<string, string>): HomeLink => (search ? { label, to, search } : { label, to });
++
++export const HOMEPAGES: Homepage[] = [
++  {
++    id: "academic-configuration", title: "Academic Configuration", heading: "Academic Foundation",
++    sections: [
++      { title: "1. Academic Hierarchy", groups: [
++        { heading: "General", links: [link("School Years & Terms", "/admin/terms")] },
++        { heading: "Course Structure", links: [{ label: "Add Course", action: "new-course" }, link("Courses", "/admin/courses"), link("Classes", "/admin/classes")] },
++      ] },
++      { title: "2. Grading Configuration", groups: [
++        { heading: "Assignments", links: [link("Assignment Types", "/admin/assignment-types")] },
++        { heading: "Grades & Comments", links: [link("Report Card Layouts", "/admin/report-layouts")] },
++      ] },
++      { title: "3. Scheduling", groups: [
++        { heading: "General", links: [link("School Years & Terms", "/admin/terms")] },
++        { heading: "Blocks Configuration", links: [link("Scheduling Sets", "/admin/scheduling")] },
++      ] },
++      { title: "4. Classes Setup", groups: [
++        { heading: "General", links: [{ label: "Add Class", action: "new-class" }, link("Classes", "/admin/classes"), link("Unpublished Classes", "/admin/queries", { source: "classes", status: "draft" })] },
++        { heading: "Course & Class Configuration", links: [link("Courses", "/admin/courses")] },
++      ] },
++      { title: "5. Academic Documents", groups: [
++        { heading: "Report Cards", links: [link("Report Card Layouts", "/admin/report-layouts")] },
++      ] },
++    ],
++  },
++  {
++    id: "people-records", title: "People & Records", heading: "People and Records",
++    sections: [
++      { title: "1. People", groups: [
++        { heading: "Accounts", links: [link("Users & Security", "/admin/users"), { label: "Add Person", action: "new-person" }] },
++        { heading: "Find", links: [link("Queries & Records", "/admin/queries"), link("Inactive Accounts", "/admin/queries", { source: "people", status: "inactive" })] },
++      ] },
++    ],
++  },
++  {
++    id: "communications", title: "Communications & Business", heading: "Communications and Business",
++    sections: [
++      { title: "1. Communications", groups: [{ heading: "Messages", links: [link("Send a Message", "/admin/messages")] }] },
++      { title: "2. Business", groups: [{ heading: "Approvals", links: [link("Purchase Approvals", "/admin/purchases")] }] },
++    ],
++  },
++  {
++    id: "portals", title: "Portals", heading: "Portals",
++    sections: [
++      { title: "1. Portal Setup", groups: [{ heading: "Portals", links: [link("Portals", "/admin/portals"), link("Portal Settings", "/admin/settings")] }] },
++    ],
++  },
++];
++
++export const homepageById = (id: string) => HOMEPAGES.find((h) => h.id === id);
++
++export type PageHit = { kind: "Homepage" | "Page"; label: string; hit: { homepage: string } | { to: AdminPath; search?: Record<string, string> } | { action: "new-course" | "new-class" | "new-person" } };
++
++/** Everything the Axiom search bar can jump to besides records: homepages, and the pages (tabs) listed on them. */
++export function pageHits(term: string): PageHit[] {
++  const t = term.trim().toLowerCase();
++  if (!t) return [];
++  const out: PageHit[] = [];
++  const seen = new Set<string>();
++  if (SYSTEM_HOME.title.toLowerCase().includes(t)) out.push({ kind: "Homepage", label: SYSTEM_HOME.title, hit: { to: "/admin" } });
++  for (const h of HOMEPAGES) {
++    if (h.title.toLowerCase().includes(t)) out.push({ kind: "Homepage", label: h.title, hit: { homepage: h.id } });
++    for (const s of h.sections) for (const g of s.groups) for (const l of g.links) {
++      if (!l.label.toLowerCase().includes(t)) continue;
++      const key = "action" in l ? `a:${l.action}` : `${l.to}:${JSON.stringify(l.search ?? {})}`;
++      if (seen.has(key)) continue;
++      seen.add(key);
++      out.push({ kind: "Page", label: "action" in l ? l.label : `${l.label}`, hit: "action" in l ? { action: l.action } : l.search ? { to: l.to, search: l.search } : { to: l.to } });
++    }
++  }
++  return out;
++}
+diff --git a/src/lib/admin-tools.ts b/src/lib/admin-tools.ts
+index e5ff20e..80b0c24 100644
+--- a/src/lib/admin-tools.ts
++++ b/src/lib/admin-tools.ts
+@@ -15,5 +15,5 @@ export function downloadCsv(name: string, rows: (string | number | boolean)[][])
+   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+ }
+ export function publishingError(c: Pick<Section, 'name' | 'section' | 'terms' | 'teacherIds' | 'studentIds' | 'block' | 'room'>, users: User[]) {
+-  return validateClassRecord(c, users) ?? (!c.block.trim() || !c.room.trim() ? 'Set a block and room before publishing.' : null);
++  return validateClassRecord({ ...c, published: true }, users) ?? (!c.block.trim() || !c.room.trim() ? 'Set a block and room before publishing.' : null);
+ }
+\ No newline at end of file
+diff --git a/src/lib/class-records.test.ts b/src/lib/class-records.test.ts
+index fe63ee6..02f4e98 100644
+--- a/src/lib/class-records.test.ts
++++ b/src/lib/class-records.test.ts
+@@ -3,12 +3,13 @@ import { enrollmentPeople, validateClassRecord } from './class-records';
+ import type { User } from './auth-rules';
+ const users: User[] = [
+   { id: 't', personId: 'teacher-person', role: 'teacher', first: 'Ada', last: 'Teacher', active: true, email: 't@example.org', password: 'test' },
++  { id: 't2', personId: 'aide-person', role: 'teacher', first: 'Al', last: 'Aide', active: true, email: 'a@example.org', password: 'test' },
+   { id: 's', personId: 'student-person', role: 'student', first: 'Sam', last: 'Student', active: true, email: 's@example.org', password: 'test' },
+ ];
+ const record = { name: 'Biology', section: 'A', terms: ['2026-S1'], teacherIds: ['teacher-person'], studentIds: ['student-person'] };
+ describe('class membership records', () => {
+   it('includes created faculty and student person IDs', () => {
+-    expect(enrollmentPeople(users, 'teacher').map((u) => u.personId)).toEqual(['teacher-person']);
++    expect(enrollmentPeople(users, 'teacher').map((u) => u.personId)).toEqual(['aide-person', 'teacher-person']);
+     expect(enrollmentPeople(users, 'student').map((u) => u.personId)).toEqual(['student-person']);
+     expect(validateClassRecord(record, users)).toBeNull();
+   });
+@@ -18,4 +19,18 @@ describe('class membership records', () => {
+   it('rejects a faculty record enrolled as a student', () => {
+     expect(validateClassRecord({ ...record, studentIds: ['teacher-person'] }, users)).toBe('Enrollment must contain active student records.');
+   });
+-});
+\ No newline at end of file
++  it('allows one teacher and any number of aides', () => {
++    expect(validateClassRecord({ ...record, aideIds: ['aide-person'] }, users)).toBeNull();
++  });
++  it('rejects a second teacher, and a teacher who is also an aide', () => {
++    expect(validateClassRecord({ ...record, teacherIds: ['teacher-person', 'aide-person'] }, users)).toBe("A class has one teacher. Add anyone else as a teacher's aide.");
++    expect(validateClassRecord({ ...record, aideIds: ['teacher-person'] }, users)).toBe("The teacher can't also be an aide.");
++  });
++  it('rejects a student as an aide', () => {
++    expect(validateClassRecord({ ...record, aideIds: ['student-person'] }, users)).toBe("A teacher's aide must be an active faculty record.");
++  });
++  it('lets a draft class have no teacher but not a published one', () => {
++    expect(validateClassRecord({ ...record, teacherIds: [] }, users)).toBeNull();
++    expect(validateClassRecord({ ...record, teacherIds: [], published: true }, users)).toBe('Assign at least one active faculty record.');
++  });
++});
+diff --git a/src/lib/class-records.ts b/src/lib/class-records.ts
+index c68217c..c124ce9 100644
+--- a/src/lib/class-records.ts
++++ b/src/lib/class-records.ts
+@@ -8,12 +8,17 @@ export function enrollmentPeople(users: User[], role: 'teacher' | 'student') {
+     .sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
+ }
+ 
+-export function validateClassRecord(c: Pick<Section, 'name' | 'section' | 'terms' | 'teacherIds' | 'studentIds'>, users: User[]): string | null {
++export function validateClassRecord(c: Pick<Section, 'name' | 'section' | 'terms' | 'teacherIds' | 'studentIds'> & { aideIds?: string[] | undefined; published?: boolean | undefined }, users: User[]): string | null {
+   if (!c.name.trim() || !c.section.trim()) return 'Class name and section identifier are required.';
+   if (!c.terms.length || c.terms.some((id) => !/^\d{4}-S[12]$/.test(id)) || new Set(c.terms.map((id) => id.split('-')[0])).size !== 1) return 'Choose terms within one school year.';
+   const teachers = new Set(enrollmentPeople(users, 'teacher').map((u) => u.personId));
+   const students = new Set(enrollmentPeople(users, 'student').map((u) => u.personId));
+-  if (!c.teacherIds.length || c.teacherIds.some((id) => !teachers.has(id))) return 'Assign at least one active faculty record.';
++  if (c.teacherIds.length > 1) return "A class has one teacher. Add anyone else as a teacher's aide.";
++  if (c.teacherIds.some((id) => !teachers.has(id))) return 'Assign at least one active faculty record.';
++  if (c.published && !c.teacherIds.length) return 'Assign at least one active faculty record.';
++  const aides = c.aideIds ?? [];
++  if (aides.some((id) => !teachers.has(id))) return "A teacher's aide must be an active faculty record.";
++  if (aides.some((id) => c.teacherIds.includes(id))) return "The teacher can't also be an aide.";
+   if (c.studentIds.some((id) => !students.has(id))) return 'Enrollment must contain active student records.';
+   return null;
+-}
+\ No newline at end of file
++}
+diff --git a/src/lib/course-records.test.ts b/src/lib/course-records.test.ts
+new file mode 100644
+index 0000000..d907a43
+--- /dev/null
++++ b/src/lib/course-records.test.ts
+@@ -0,0 +1,28 @@
++import { describe, expect, it } from "vitest";
++import { defaultCourseFlags, makeCourseId, makeSectionId, validateCourse } from "./course-records";
++
++describe("course records", () => {
++  it("starts new courses like Veracross", () => {
++    const f = defaultCourseFlags();
++    expect([f["report"], f["conferences"], f["reviews"]]).toEqual([true, true, true]);
++    expect([f["transcript"], f["gpa"], f["archive"], f["request"], f["scheduler"]]).toEqual([false, false, false, false, false]);
++  });
++  it("makes a unique course ID from the name", () => {
++    expect(makeCourseId("K Homeroom", [])).toBe("KHOME");
++    expect(makeCourseId("Mathematics 6", [])).toBe("MATH6");
++    expect(makeCourseId("K Homeroom", ["KHOME"])).toBe("KHOME-2");
++    expect(makeCourseId("   ", [])).toBe("COURSE");
++  });
++  it("makes a safe, unique class key from a typed Class ID", () => {
++    expect(makeSectionId("K-HR: 1", [])).toBe("K-HR-1");
++    expect(makeSectionId("K-HR: 1", ["K-HR-1"])).toBe("K-HR-1-2");
++  });
++  it("requires a name and subject, and allows a blank course ID", () => {
++    const ok = { id: "", name: "K Homeroom", dept: "Lower School", credits: 0 };
++    expect(validateCourse(ok, [])).toBeNull();
++    expect(validateCourse({ ...ok, name: " " }, [])).toBe("Course name is required.");
++    expect(validateCourse({ ...ok, dept: "" }, [])).toBe("Subject is required.");
++    expect(validateCourse({ ...ok, id: "A" }, ["A"])).toBe("That course ID already exists.");
++    expect(validateCourse({ ...ok, id: "A" }, ["A"], true)).toBeNull();
++  });
++});
+diff --git a/src/lib/course-records.ts b/src/lib/course-records.ts
+new file mode 100644
+index 0000000..6873167
+--- /dev/null
++++ b/src/lib/course-records.ts
+@@ -0,0 +1,35 @@
++import type { CourseDef } from "./school-store";
++
++/** Defaults for a new course's YES/NO switches (the same ones Veracross starts a new course with). */
++export const defaultCourseFlags = (): Record<string, boolean> => ({
++  report: true, transcript: false, gpa: false, archive: false,
++  request: false, scheduler: false, conferences: true, reviews: true,
++});
++
++/** A short course ID from the name when the person leaves Course ID blank: "K Homeroom" becomes KHOME. */
++export function makeCourseId(name: string, taken: string[]): string {
++  const words = name.trim().split(/\s+/).map((w) => w.replace(/[^A-Za-z0-9]/g, "")).filter(Boolean);
++  const base = words.map((w) => w.slice(0, words.length > 1 ? 4 : 8)).join("").toUpperCase().slice(0, 12) || "COURSE";
++  if (!taken.includes(base)) return base;
++  let n = 2;
++  while (taken.includes(`${base}-${n}`)) n += 1;
++  return `${base}-${n}`;
++}
++
++/** A class key from the Class ID the person typed ("K-HR: 1" becomes K-HR-1), unique among existing classes. */
++export function makeSectionId(code: string, taken: string[]): string {
++  const base = code.trim().replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "class";
++  if (!taken.includes(base)) return base;
++  let n = 2;
++  while (taken.includes(`${base}-${n}`)) n += 1;
++  return `${base}-${n}`;
++}
++
++export function validateCourse(c: Pick<CourseDef, "id" | "name" | "dept" | "credits">, taken: string[], editing = false): string | null {
++  if (!c.name.trim()) return "Course name is required.";
++  if (!c.dept.trim()) return "Subject is required.";
++  if (!editing && c.id && !/^[A-Za-z0-9_-]{1,20}$/.test(c.id)) return "Course ID: up to 20 letters, digits, hyphens or underscores.";
++  if (!editing && c.id && taken.includes(c.id)) return "That course ID already exists.";
++  if (!Number.isFinite(c.credits) || c.credits < 0) return "Credits must be a nonnegative number.";
++  return null;
++}
+diff --git a/src/lib/course-types.test.ts b/src/lib/course-types.test.ts
+new file mode 100644
+index 0000000..f1588e9
+--- /dev/null
++++ b/src/lib/course-types.test.ts
+@@ -0,0 +1,21 @@
++import { describe, expect, it } from "vitest";
++import { DEFAULT_COURSE_TYPE, isOtherClass, normalizeCourseType, splitClasses } from "./course-types";
++
++describe("course types", () => {
++  it("defaults to Academic and upgrades retired types", () => {
++    expect(DEFAULT_COURSE_TYPE).toBe("ACADEMIC");
++    expect(normalizeCourseType("ARTS")).toBe("ACADEMIC");
++    expect(normalizeCourseType(undefined)).toBe("ACADEMIC");
++    expect(normalizeCourseType("HOMEROOM")).toBe("HOMEROOM");
++  });
++  it("treats advisory, group and homeroom as other classes", () => {
++    expect(["ADVISORY", "GROUP", "HOMEROOM"].every(isOtherClass)).toBe(true);
++    expect(["ACADEMIC", "ATHLETIC"].some(isOtherClass)).toBe(false);
++  });
++  it("splits classes and sorts other classes by faculty", () => {
++    const last: Record<string, string> = { a: "Zed", b: "Abe" };
++    const out = splitClasses([{ type: "ACADEMIC", teacherIds: ["a"] }, { type: "GROUP", teacherIds: ["a"] }, { type: "HOMEROOM", teacherIds: ["b"] }], (id) => last[id] ?? "");
++    expect(out.academic).toHaveLength(1);
++    expect(out.other.map((c) => c.type)).toEqual(["HOMEROOM", "GROUP"]);
++  });
++});
+diff --git a/src/lib/course-types.ts b/src/lib/course-types.ts
+new file mode 100644
+index 0000000..cb43560
+--- /dev/null
++++ b/src/lib/course-types.ts
+@@ -0,0 +1,19 @@
++/** Course types. Advisory, Group and Homeroom are "Other Classes"; Academic and Athletic are regular classes. */
++export const COURSE_TYPES = ["ACADEMIC", "ATHLETIC", "ADVISORY", "GROUP", "HOMEROOM"] as const;
++export type CourseType = (typeof COURSE_TYPES)[number];
++
++export const DEFAULT_COURSE_TYPE: CourseType = "ACADEMIC";
++export const MAIN_TYPES: readonly CourseType[] = ["ACADEMIC", "ATHLETIC"];
++export const OTHER_TYPES: readonly CourseType[] = ["ADVISORY", "GROUP", "HOMEROOM"];
++export const TYPE_LABEL: Record<CourseType, string> = { ACADEMIC: "Academic", ATHLETIC: "Athletic", ADVISORY: "Advisory", GROUP: "Group", HOMEROOM: "Homeroom" };
++
++export const isOtherClass = (type: string) => (OTHER_TYPES as readonly string[]).includes(type);
++
++/** Saved records from before these types existed (for example ARTS) become Academic. */
++export const normalizeCourseType = (type: unknown): CourseType => ((COURSE_TYPES as readonly unknown[]).includes(type) ? (type as CourseType) : DEFAULT_COURSE_TYPE);
++
++/** Splits a class list into regular classes and "Other Classes", keeping the given order. Other classes are sorted by faculty. */
++export function splitClasses<T extends { type: string; teacherIds?: string[] }>(list: T[], teacherLast: (id: string) => string = () => ""): { academic: T[]; other: T[] } {
++  const key = (c: T) => teacherLast(c.teacherIds?.[0] ?? "").toLowerCase();
++  return { academic: list.filter((c) => !isOtherClass(c.type)), other: list.filter((c) => isOtherClass(c.type)).sort((a, b) => key(a).localeCompare(key(b))) };
++}
+diff --git a/src/lib/record-window.ts b/src/lib/record-window.ts
+new file mode 100644
+index 0000000..1e67d17
+--- /dev/null
++++ b/src/lib/record-window.ts
+@@ -0,0 +1,13 @@
++import { useNavigate } from "@tanstack/react-router";
++
++export type RecordWindowPath = "/admin/course/new" | "/admin/class/new";
++
++/** New records open in their own window, as in Veracross. If the browser blocks the popup, the record opens in this tab instead. */
++export function useRecordWindow() {
++  const nav = useNavigate();
++  return (to: RecordWindowPath, search?: Record<string, string>) => {
++    const qs = search && Object.keys(search).length ? `?${new URLSearchParams(search).toString()}` : "";
++    const w = typeof window === "undefined" ? null : window.open(`${to}${qs}`, "_blank", "popup=yes,width=1180,height=820");
++    if (!w) nav({ to, search: (search ?? {}) as never });
++  };
++}
+diff --git a/src/lib/school-store.tsx b/src/lib/school-store.tsx
+index 92c04b2..1e16349 100644
+--- a/src/lib/school-store.tsx
++++ b/src/lib/school-store.tsx
+@@ -12,6 +12,7 @@ import blossoms from "@/assets/faculty-bg.jpg";
+ import graduation from "@/assets/portal-bg.jpg";
+ import painting from "@/assets/class-bg.jpg";
+ import { setTypeColors } from "./type-colors";
++import { isOtherClass, normalizeCourseType } from "./course-types";
+ import { readSchool, saveSchool, savesSettled } from "./browser-save";
+ import { useRouterState } from "@tanstack/react-router";
+ import { toast } from "sonner";
+@@ -33,11 +34,11 @@ export type Website = { bg: "none" | "color" | "photo"; color: string; photo: st
+ export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
+ /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
+ export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
+-export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
++export type Section = Course & { courseNo: string; teacherIds: string[]; /** Teacher's aides: any number, in addition to the one teacher. */ aideIds?: string[] | undefined; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
+ 
+ const Y = String(yearStartFor(new Date()));
+ const FY = [`${Y}-S1`, `${Y}-S2`];
+-const SEED_COURSES: CourseDef[] = [...new Map(ALL_SECTIONS.map((c) => [c.id.split("-")[0]!, { id: c.id.split("-")[0]!, name: c.name, type: c.type, dept: "", credits: c.type === "ADVISORY" ? 0 : 1, description: "" }])).values()];
++const SEED_COURSES: CourseDef[] = [...new Map(ALL_SECTIONS.map((c) => [c.id.split("-")[0]!, { id: c.id.split("-")[0]!, name: c.name, type: c.type, dept: "", credits: isOtherClass(c.type) ? 0 : 1, description: "" }])).values()];
+ const SEED_SECTIONS: Section[] = ALL_SECTIONS.map((c) => ({
+   ...c, courseNo: c.id.split("-")[0]!, teacherIds: [c.teacherId], published: true,
+   terms: c.id === "210-1" ? [`${Y}-S2`] : FY, // Honors Biology starts next semester (shows under Future)
+@@ -139,6 +140,9 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
+         v.users = (v.users ?? INITIAL.users).map((u) => u.id === "u-teacher" && u.personId === "t3" ? { ...u, personId: "p-teacher", first: "Faculty", last: "Account" } : u.id === "u-student" && u.personId === "me" ? { ...u, personId: "p-student", first: "Student", last: "Account" } : u);
+         v.sampleCleared = true;
+       }
++      if (v.courses) v.courses = v.courses.map((c) => ({ ...c, type: normalizeCourseType(c.type) }));
++      // A class has one teacher; extra teachers saved by older versions become teacher's aides.
++      if (v.sections) v.sections = v.sections.map((c) => ({ ...c, type: normalizeCourseType(c.type), ...(c.teacherIds.length > 1 ? { teacherIds: c.teacherIds.slice(0, 1), aideIds: [...new Set([...(c.aideIds ?? []), ...c.teacherIds.slice(1)])] } : {}) }));
+       const users = v.users?.length ? v.users : INITIAL.users;
+       const st = { ...DEFAULT_SETTINGS, ...v.settings };
+       const first = !readyRef.current;
+diff --git a/src/lib/sis-data.ts b/src/lib/sis-data.ts
+index f27478b..7eaaebd 100644
+--- a/src/lib/sis-data.ts
++++ b/src/lib/sis-data.ts
+@@ -1,12 +1,13 @@
+ // Fictional Cedar Ridge Academy dataset. Single source of truth: every page reads from here.
+ import { addDays, format, isWeekend, startOfDay } from "date-fns";
++import { isOtherClass, type CourseType } from "./course-types";
+ 
+ export const SCHOOL = { name: "Cedar Ridge Academy", short: "CRA", domain: "cedarridge.edu" };
+ 
+ export type Teacher = { id: string; prefix: string; first: string; last: string; email: string; dept: string; title: string };
+ export type Course = {
+   id: string; code: string; name: string; section: string; teacherId: string; block: string; room: string;
+-  letter: string; pct: number; type: "ACADEMIC" | "ARTS" | "ADVISORY"; days: number[]; time: string;
++  letter: string; pct: number; type: CourseType; days: number[]; time: string;
+ };
+ export type Student = {
+   email?: string;
+@@ -82,7 +83,7 @@ export function scheduleFor(date: Date): Period[] {
+   const dow = date.getDay();
+   if (dow === 0 || dow === 6) return [];
+   const slots = ["8:00 am", "9:10 am", "10:15 am", "10:35 am", "11:45 am", "12:50 pm", "1:40 pm", "2:45 pm"];
+-  const rot = COURSES.filter((c) => c.days.includes(dow) && c.type !== "ADVISORY");
++  const rot = COURSES.filter((c) => c.days.includes(dow) && !isOtherClass(c.type));
+   const pick = (i: number) => rot[(i + dow) % rot.length]!;
+   const cls = (i: number): Period => { const c = pick(i); return { time: "", title: courseTitle(c), detail: `${teacher(c.teacherId).last} • ${c.block} • ${c.room}`, kind: "class", courseId: c.id }; };
+   const list: Period[] = [
+diff --git a/src/routeTree.gen.ts b/src/routeTree.gen.ts
+index 53ceaee..db6800c 100644
+--- a/src/routeTree.gen.ts
++++ b/src/routeTree.gen.ts
+@@ -24,6 +24,7 @@ import { Route as StudentRouteImport } from './routes/student'
+ import { Route as UpdatesRouteImport } from './routes/updates'
+ import { Route as AdminIndexRouteImport } from './routes/admin.index'
+ import { Route as AdminAssignmentTypesRouteImport } from './routes/admin.assignment-types'
++import { Route as AdminClassesRouteImport } from './routes/admin.classes'
+ import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
+ import { Route as AdminPurchasesRouteImport } from './routes/admin.purchases'
+ import { Route as AdminQueriesRouteImport } from './routes/admin.queries'
+@@ -37,8 +38,12 @@ import { Route as GradesClassIdRouteImport } from './routes/grades.$classId'
+ import { Route as TeacherIndexRouteImport } from './routes/teacher.index'
+ import { Route as TeacherNewsRouteImport } from './routes/teacher.news'
+ import { Route as TeacherPurchasesRouteImport } from './routes/teacher.purchases'
++import { Route as AdminClassNewRouteImport } from './routes/admin.class.new'
++import { Route as AdminCourseCourseNoRouteImport } from './routes/admin.course.$courseNo'
++import { Route as AdminCourseNewRouteImport } from './routes/admin.course.new'
+ import { Route as AdminCoursesIndexRouteImport } from './routes/admin.courses.index'
+ import { Route as AdminCoursesCourseIdRouteImport } from './routes/admin.courses.$courseId'
++import { Route as AdminHomePageIdRouteImport } from './routes/admin.home.$pageId'
+ import { Route as AdminPortalsIndexRouteImport } from './routes/admin.portals.index'
+ import { Route as AdminPortalsPortalIdRouteImport } from './routes/admin.portals.$portalId'
+ import { Route as TeacherClassClassIdRouteImport } from './routes/teacher.class.$classId'
+@@ -119,6 +124,11 @@ const AdminAssignmentTypesRoute = AdminAssignmentTypesRouteImport.update({
+   path: '/admin/assignment-types',
+   getParentRoute: () => rootRouteImport,
+ } as any)
++const AdminClassesRoute = AdminClassesRouteImport.update({
++  id: '/admin/classes',
++  path: '/admin/classes',
++  getParentRoute: () => rootRouteImport,
++} as any)
+ const AdminMessagesRoute = AdminMessagesRouteImport.update({
+   id: '/admin/messages',
+   path: '/admin/messages',
+@@ -184,6 +194,21 @@ const TeacherPurchasesRoute = TeacherPurchasesRouteImport.update({
+   path: '/teacher/purchases',
+   getParentRoute: () => rootRouteImport,
+ } as any)
++const AdminClassNewRoute = AdminClassNewRouteImport.update({
++  id: '/admin/class/new',
++  path: '/admin/class/new',
++  getParentRoute: () => rootRouteImport,
++} as any)
++const AdminCourseCourseNoRoute = AdminCourseCourseNoRouteImport.update({
++  id: '/admin/course/$courseNo',
++  path: '/admin/course/$courseNo',
++  getParentRoute: () => rootRouteImport,
++} as any)
++const AdminCourseNewRoute = AdminCourseNewRouteImport.update({
++  id: '/admin/course/new',
++  path: '/admin/course/new',
++  getParentRoute: () => rootRouteImport,
++} as any)
+ const AdminCoursesIndexRoute = AdminCoursesIndexRouteImport.update({
+   id: '/admin/courses/',
+   path: '/admin/courses/',
+@@ -194,6 +219,11 @@ const AdminCoursesCourseIdRoute = AdminCoursesCourseIdRouteImport.update({
+   path: '/admin/courses/$courseId',
+   getParentRoute: () => rootRouteImport,
+ } as any)
++const AdminHomePageIdRoute = AdminHomePageIdRouteImport.update({
++  id: '/admin/home/$pageId',
++  path: '/admin/home/$pageId',
++  getParentRoute: () => rootRouteImport,
++} as any)
+ const AdminPortalsIndexRoute = AdminPortalsIndexRouteImport.update({
+   id: '/admin/portals/',
+   path: '/admin/portals/',
+@@ -231,6 +261,7 @@ export interface FileRoutesByFullPath {
+   '/student': typeof StudentRoute
+   '/updates': typeof UpdatesRoute
+   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
++  '/admin/classes': typeof AdminClassesRoute
+   '/admin/messages': typeof AdminMessagesRoute
+   '/admin/purchases': typeof AdminPurchasesRoute
+   '/admin/queries': typeof AdminQueriesRoute
+@@ -245,7 +276,11 @@ export interface FileRoutesByFullPath {
+   '/teacher/purchases': typeof TeacherPurchasesRoute
+   '/admin/': typeof AdminIndexRoute
+   '/teacher/': typeof TeacherIndexRoute
++  '/admin/class/new': typeof AdminClassNewRoute
++  '/admin/course/$courseNo': typeof AdminCourseCourseNoRoute
++  '/admin/course/new': typeof AdminCourseNewRoute
+   '/admin/courses/$courseId': typeof AdminCoursesCourseIdRoute
++  '/admin/home/$pageId': typeof AdminHomePageIdRoute
+   '/admin/portals/$portalId': typeof AdminPortalsPortalIdRoute
+   '/teacher/class/$classId': typeof TeacherClassClassIdRoute
+   '/admin/courses/': typeof AdminCoursesIndexRoute
+@@ -267,6 +302,7 @@ export interface FileRoutesByTo {
+   '/student': typeof StudentRoute
+   '/updates': typeof UpdatesRoute
+   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
++  '/admin/classes': typeof AdminClassesRoute
+   '/admin/messages': typeof AdminMessagesRoute
+   '/admin/purchases': typeof AdminPurchasesRoute
+   '/admin/queries': typeof AdminQueriesRoute
+@@ -281,7 +317,11 @@ export interface FileRoutesByTo {
+   '/teacher/purchases': typeof TeacherPurchasesRoute
+   '/admin': typeof AdminIndexRoute
+   '/teacher': typeof TeacherIndexRoute
++  '/admin/class/new': typeof AdminClassNewRoute
++  '/admin/course/$courseNo': typeof AdminCourseCourseNoRoute
++  '/admin/course/new': typeof AdminCourseNewRoute
+   '/admin/courses/$courseId': typeof AdminCoursesCourseIdRoute
++  '/admin/home/$pageId': typeof AdminHomePageIdRoute
+   '/admin/portals/$portalId': typeof AdminPortalsPortalIdRoute
+   '/teacher/class/$classId': typeof TeacherClassClassIdRoute
+   '/admin/courses': typeof AdminCoursesIndexRoute
+@@ -304,6 +344,7 @@ export interface FileRoutesById {
+   '/student': typeof StudentRoute
+   '/updates': typeof UpdatesRoute
+   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
++  '/admin/classes': typeof AdminClassesRoute
+   '/admin/messages': typeof AdminMessagesRoute
+   '/admin/purchases': typeof AdminPurchasesRoute
+   '/admin/queries': typeof AdminQueriesRoute
+@@ -318,7 +359,11 @@ export interface FileRoutesById {
+   '/teacher/purchases': typeof TeacherPurchasesRoute
+   '/admin/': typeof AdminIndexRoute
+   '/teacher/': typeof TeacherIndexRoute
++  '/admin/class/new': typeof AdminClassNewRoute
++  '/admin/course/$courseNo': typeof AdminCourseCourseNoRoute
++  '/admin/course/new': typeof AdminCourseNewRoute
+   '/admin/courses/$courseId': typeof AdminCoursesCourseIdRoute
++  '/admin/home/$pageId': typeof AdminHomePageIdRoute
+   '/admin/portals/$portalId': typeof AdminPortalsPortalIdRoute
+   '/teacher/class/$classId': typeof TeacherClassClassIdRoute
+   '/admin/courses/': typeof AdminCoursesIndexRoute
+@@ -342,6 +387,7 @@ export interface FileRouteTypes {
+     | '/student'
+     | '/updates'
+     | '/admin/assignment-types'
++    | '/admin/classes'
+     | '/admin/messages'
+     | '/admin/purchases'
+     | '/admin/queries'
+@@ -356,7 +402,11 @@ export interface FileRouteTypes {
+     | '/teacher/purchases'
+     | '/admin/'
+     | '/teacher/'
++    | '/admin/class/new'
++    | '/admin/course/$courseNo'
++    | '/admin/course/new'
+     | '/admin/courses/$courseId'
++    | '/admin/home/$pageId'
+     | '/admin/portals/$portalId'
+     | '/teacher/class/$classId'
+     | '/admin/courses/'
+@@ -378,6 +428,7 @@ export interface FileRouteTypes {
+     | '/student'
+     | '/updates'
+     | '/admin/assignment-types'
++    | '/admin/classes'
+     | '/admin/messages'
+     | '/admin/purchases'
+     | '/admin/queries'
+@@ -392,7 +443,11 @@ export interface FileRouteTypes {
+     | '/teacher/purchases'
+     | '/admin'
+     | '/teacher'
++    | '/admin/class/new'
++    | '/admin/course/$courseNo'
++    | '/admin/course/new'
+     | '/admin/courses/$courseId'
++    | '/admin/home/$pageId'
+     | '/admin/portals/$portalId'
+     | '/teacher/class/$classId'
+     | '/admin/courses'
+@@ -414,6 +469,7 @@ export interface FileRouteTypes {
+     | '/student'
+     | '/updates'
+     | '/admin/assignment-types'
++    | '/admin/classes'
+     | '/admin/messages'
+     | '/admin/purchases'
+     | '/admin/queries'
+@@ -428,7 +484,11 @@ export interface FileRouteTypes {
+     | '/teacher/purchases'
+     | '/admin/'
+     | '/teacher/'
++    | '/admin/class/new'
++    | '/admin/course/$courseNo'
++    | '/admin/course/new'
+     | '/admin/courses/$courseId'
++    | '/admin/home/$pageId'
+     | '/admin/portals/$portalId'
+     | '/teacher/class/$classId'
+     | '/admin/courses/'
+@@ -451,6 +511,7 @@ export interface RootRouteChildren {
+   StudentRoute: typeof StudentRoute
+   UpdatesRoute: typeof UpdatesRoute
+   AdminAssignmentTypesRoute: typeof AdminAssignmentTypesRoute
++  AdminClassesRoute: typeof AdminClassesRoute
+   AdminMessagesRoute: typeof AdminMessagesRoute
+   AdminPurchasesRoute: typeof AdminPurchasesRoute
+   AdminQueriesRoute: typeof AdminQueriesRoute
+@@ -465,7 +526,11 @@ export interface RootRouteChildren {
+   TeacherPurchasesRoute: typeof TeacherPurchasesRoute
+   AdminIndexRoute: typeof AdminIndexRoute
+   TeacherIndexRoute: typeof TeacherIndexRoute
++  AdminClassNewRoute: typeof AdminClassNewRoute
++  AdminCourseCourseNoRoute: typeof AdminCourseCourseNoRoute
++  AdminCourseNewRoute: typeof AdminCourseNewRoute
+   AdminCoursesCourseIdRoute: typeof AdminCoursesCourseIdRoute
++  AdminHomePageIdRoute: typeof AdminHomePageIdRoute
+   AdminPortalsPortalIdRoute: typeof AdminPortalsPortalIdRoute
+   TeacherClassClassIdRoute: typeof TeacherClassClassIdRoute
+   AdminCoursesIndexRoute: typeof AdminCoursesIndexRoute
+@@ -580,6 +645,13 @@ declare module '@tanstack/react-router' {
+       preLoaderRoute: typeof AdminAssignmentTypesRouteImport
+       parentRoute: typeof rootRouteImport
+     }
++    '/admin/classes': {
++      id: '/admin/classes'
++      path: '/admin/classes'
++      fullPath: '/admin/classes'
++      preLoaderRoute: typeof AdminClassesRouteImport
++      parentRoute: typeof rootRouteImport
++    }
+     '/admin/messages': {
+       id: '/admin/messages'
+       path: '/admin/messages'
+@@ -671,6 +743,27 @@ declare module '@tanstack/react-router' {
+       preLoaderRoute: typeof TeacherPurchasesRouteImport
+       parentRoute: typeof rootRouteImport
+     }
++    '/admin/class/new': {
++      id: '/admin/class/new'
++      path: '/admin/class/new'
++      fullPath: '/admin/class/new'
++      preLoaderRoute: typeof AdminClassNewRouteImport
++      parentRoute: typeof rootRouteImport
++    }
++    '/admin/course/$courseNo': {
++      id: '/admin/course/$courseNo'
++      path: '/admin/course/$courseNo'
++      fullPath: '/admin/course/$courseNo'
++      preLoaderRoute: typeof AdminCourseCourseNoRouteImport
++      parentRoute: typeof rootRouteImport
++    }
++    '/admin/course/new': {
++      id: '/admin/course/new'
++      path: '/admin/course/new'
++      fullPath: '/admin/course/new'
++      preLoaderRoute: typeof AdminCourseNewRouteImport
++      parentRoute: typeof rootRouteImport
++    }
+     '/admin/courses/': {
+       id: '/admin/courses/'
+       path: '/admin/courses'
+@@ -685,6 +778,13 @@ declare module '@tanstack/react-router' {
+       preLoaderRoute: typeof AdminCoursesCourseIdRouteImport
+       parentRoute: typeof rootRouteImport
+     }
++    '/admin/home/$pageId': {
++      id: '/admin/home/$pageId'
++      path: '/admin/home/$pageId'
++      fullPath: '/admin/home/$pageId'
++      preLoaderRoute: typeof AdminHomePageIdRouteImport
++      parentRoute: typeof rootRouteImport
++    }
+     '/admin/portals/': {
+       id: '/admin/portals/'
+       path: '/admin/portals'
+@@ -731,6 +831,7 @@ const rootRouteChildren: RootRouteChildren = {
+   StudentRoute: StudentRoute,
+   UpdatesRoute: UpdatesRoute,
+   AdminAssignmentTypesRoute: AdminAssignmentTypesRoute,
++  AdminClassesRoute: AdminClassesRoute,
+   AdminMessagesRoute: AdminMessagesRoute,
+   AdminPurchasesRoute: AdminPurchasesRoute,
+   AdminQueriesRoute: AdminQueriesRoute,
+@@ -745,7 +846,11 @@ const rootRouteChildren: RootRouteChildren = {
+   TeacherPurchasesRoute: TeacherPurchasesRoute,
+   AdminIndexRoute: AdminIndexRoute,
+   TeacherIndexRoute: TeacherIndexRoute,
++  AdminClassNewRoute: AdminClassNewRoute,
++  AdminCourseCourseNoRoute: AdminCourseCourseNoRoute,
++  AdminCourseNewRoute: AdminCourseNewRoute,
+   AdminCoursesCourseIdRoute: AdminCoursesCourseIdRoute,
++  AdminHomePageIdRoute: AdminHomePageIdRoute,
+   AdminPortalsPortalIdRoute: AdminPortalsPortalIdRoute,
+   TeacherClassClassIdRoute: TeacherClassClassIdRoute,
+   AdminCoursesIndexRoute: AdminCoursesIndexRoute,
+diff --git a/src/routes/admin.class.new.tsx b/src/routes/admin.class.new.tsx
+new file mode 100644
+index 0000000..1a0cc55
+--- /dev/null
++++ b/src/routes/admin.class.new.tsx
+@@ -0,0 +1,94 @@
++import { createFileRoute, useNavigate } from "@tanstack/react-router";
++import { useMemo, useState } from "react";
++import { toast } from "sonner";
++import { z } from "zod";
++import { AdvancedSearch, type SearchRow } from "@/components/admin/AdvancedSearch";
++import { AxAction, AxBanner, AxEmpty, AxField, AxFooter, axInput, axTh } from "@/components/admin/AxiomDetail";
++import { PersonField } from "@/components/admin/PersonField";
++import { RecordWindow } from "@/components/admin/RecordWindow";
++import { enrollmentPeople, validateClassRecord } from "@/lib/class-records";
++import { makeSectionId } from "@/lib/course-records";
++import { BLANK_SITE, useSchool, type Section } from "@/lib/school-store";
++import { classStatus, schoolYears } from "@/lib/terms";
++import { pageHead } from "@/lib/head";
++
++export const Route = createFileRoute("/admin/class/new")({
++  validateSearch: z.object({ course: z.string().optional() }),
++  head: () => pageHead("Axiom · New Class", "Create a class: course, teacher, aides, room and terms."),
++  component: NewClass,
++});
++
++const STATUS = { current: "Current", future: "Future", past: "Past" } as const;
++type Pick = "course" | "teacher" | "aide" | null;
++
++function NewClass() {
++  const { courses, sections, users, courseFlags, update } = useSchool();
++  const { course: courseParam } = Route.useSearch();
++  const nav = useNavigate();
++  const years = schoolYears();
++  const [year, setYear] = useState(years[1]?.id ?? years[0]?.id ?? "");
++  const [mode, setMode] = useState<"FY" | "S1" | "S2">("FY");
++  const [courseNo, setCourseNo] = useState(courseParam && courses.some((c) => c.id === courseParam) ? courseParam : "");
++  const [code, setCode] = useState("");
++  const [description, setDescription] = useState("");
++  const [teacherIds, setTeacherIds] = useState<string[]>([]);
++  const [aideIds, setAideIds] = useState<string[]>([]);
++  const [room, setRoom] = useState("");
++  const [picking, setPicking] = useState<Pick>(null);
++  const faculty = useMemo(() => enrollmentPeople(users, "teacher"), [users]);
++  const facultyRows: SearchRow[] = faculty.map((u) => ({ id: u.personId, first: u.first, last: u.last, cells: [`${u.last}, ${u.preferred || u.first}`, "Faculty", u.email] }));
++  const courseRows: SearchRow[] = courses.map((c) => ({ id: c.id, cells: [c.name, c.id, c.dept || "—"] }));
++  const nameOf = (id: string) => { const u = users.find((x) => x.personId === id); return u ? `${u.last}, ${u.preferred || u.first}` : id; };
++  const openPerson = (id: string) => { const u = users.find((x) => x.personId === id); if (u) nav({ to: "/admin/users", search: { q: u.email } }); };
++  const course = courses.find((c) => c.id === courseNo);
++  const terms = mode === "FY" ? [`${year}-S1`, `${year}-S2`] : [`${year}-${mode}`];
++  const pickCourse = (ids: string[]) => { const id = ids[0] ?? ""; setCourseNo(id); const c = courses.find((x) => x.id === id); if (c && !description.trim()) setDescription(c.name); };
++  const add = () => {
++    if (!course) { toast.error("Choose a course."); return; }
++    if (!code.trim()) { toast.error("Class ID is required."); return; }
++    if (!description.trim()) { toast.error("Description is required."); return; }
++    let n = sections.filter((s) => s.courseNo === course.id).length + 1;
++    while (sections.some((s) => s.courseNo === course.id && s.section === String(n))) n += 1;
++    const error = validateClassRecord({ name: description.trim(), section: String(n), terms, teacherIds, aideIds, studentIds: [], published: false }, users);
++    if (error) { toast.error(error); return; }
++    const id = makeSectionId(code, sections.map((s) => s.id));
++    const section: Section = {
++      id, code: code.trim(), name: description.trim(), section: String(n), teacherId: teacherIds[0] ?? "", block: "", room: room.trim(), letter: "", pct: 0, type: course.type, days: [], time: "",
++      courseNo: course.id, teacherIds, aideIds, terms, published: false, studentIds: [], website: { ...BLANK_SITE },
++    };
++    update((s) => ({ ...s, sections: [...s.sections, section], courseFlags: { ...s.courseFlags, [id]: { ...courseFlags[`course:${course.id}`] } } }));
++    toast.success(`Class ${section.code} created`);
++    nav({ to: "/admin/courses/$courseId", params: { courseId: id }, replace: true });
++  };
++  const addPerson = () => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760");
++  return (
++    <RecordWindow title="Class" action={<AxAction onClick={add}>Add Class</AxAction>}>
++      <h2 className="px-5 py-3 text-[22px] font-light uppercase">General</h2>
++      <AxBanner />
++      <div className="grid grid-cols-1 gap-x-8 px-6 py-4 md:grid-cols-2 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
++        <div>
++          <AxField label="Course" required><PersonField label="Course" ids={courseNo ? [courseNo] : []} onChange={(ids) => setCourseNo(ids[0] ?? "")} nameOf={(id) => courses.find((c) => c.id === id)?.name ?? id} onSearch={() => setPicking("course")} /></AxField>
++          <AxField label="Class ID" required><input aria-label="Class ID" className={axInput} value={code} maxLength={30} onChange={(e) => setCode(e.target.value)} /></AxField>
++          <AxField label="Description" required><input aria-label="Description" className={axInput} value={description} maxLength={80} onChange={(e) => setDescription(e.target.value)} /></AxField>
++          <AxField label="Teacher"><PersonField label="Teacher" ids={teacherIds} onChange={setTeacherIds} nameOf={nameOf} onSearch={() => setPicking("teacher")} onOpen={openPerson} /></AxField>
++          <AxField label="Teacher's Aide"><PersonField label="Teacher's Aide" multi ids={aideIds} onChange={setAideIds} nameOf={nameOf} onSearch={() => setPicking("aide")} onOpen={openPerson} /></AxField>
++          <p className="pl-[127px] text-[12px] text-vc-gray">One teacher. Add as many aides as you need. Click a name, then press Delete to remove it.</p>
++        </div>
++        <div>
++          <AxField label="School Year" required><select aria-label="School year" className={axInput} value={year} onChange={(e) => setYear(e.target.value)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></AxField>
++          <AxField label="Terms"><select aria-label="Terms" className={axInput} value={mode} onChange={(e) => setMode(e.target.value as "FY" | "S1" | "S2")}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></AxField>
++          <AxField label="Room"><input aria-label="Room" className={axInput} value={room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setRoom(e.target.value)} /></AxField>
++          <AxField label="Status" required><div className={`${axInput} flex items-center bg-vc-panel`}>{STATUS[classStatus(terms)]}</div></AxField>
++        </div>
++      </div>
++      <div className="border-t border-vc-line">
++        <table className="w-full border-collapse"><thead><tr>{["Student", "Grade Level", "Roles", "Date Withdrawn"].map((h) => <th key={h} className={axTh}>{h}</th>)}</tr></thead></table>
++        <AxEmpty />
++        <AxFooter count={0} />
++      </div>
++      <AdvancedSearch open={picking === "course"} onClose={() => setPicking(null)} noun="Course" kind="course" heads={["Course", "Course ID", "Subject"]} rows={courseRows} onSelect={pickCourse} />
++      <AdvancedSearch open={picking === "teacher"} onClose={() => setPicking(null)} noun="Person" kind="person" heads={["Full Name", "Roles", "Email"]} rows={facultyRows} exclude={aideIds} onSelect={(ids) => setTeacherIds(ids.slice(0, 1))} onAddNew={addPerson} />
++      <AdvancedSearch open={picking === "aide"} onClose={() => setPicking(null)} noun="Person" kind="person" multi heads={["Full Name", "Roles", "Email"]} rows={facultyRows} exclude={[...aideIds, ...teacherIds]} onSelect={(ids) => setAideIds([...new Set([...aideIds, ...ids])])} onAddNew={addPerson} />
++    </RecordWindow>
++  );
++}
+diff --git a/src/routes/admin.classes.tsx b/src/routes/admin.classes.tsx
+new file mode 100644
+index 0000000..4c0dbd8
+--- /dev/null
++++ b/src/routes/admin.classes.tsx
+@@ -0,0 +1,75 @@
++import { createFileRoute, Link } from "@tanstack/react-router";
++import { ChevronDown, ChevronRight } from "lucide-react";
++import { useMemo, useState } from "react";
++import { AxiomShell } from "@/components/admin/AxiomShell";
++import { AxAdd, AxFooter, axTd, axTh } from "@/components/admin/AxiomDetail";
++import { teacherFull } from "@/lib/sis-data";
++import { useSchool, yearLabel } from "@/lib/school-store";
++import { classStatus } from "@/lib/terms";
++import { useRecordWindow } from "@/lib/record-window";
++import { pageHead } from "@/lib/head";
++
++export const Route = createFileRoute("/admin/classes")({
++  head: () => pageHead("Axiom · Classes", "Every class, grouped by school year and course. Add a class in its own window."),
++  component: Classes,
++});
++
++const STATUS = { current: "Current", future: "Future", past: "Past" } as const;
++
++function Classes() {
++  const { sections, courses } = useSchool();
++  const openRecord = useRecordWindow();
++  const [q, setQ] = useState("");
++  const [closed, setClosed] = useState<string[]>([]);
++  const rank = (no: string) => { const i = courses.findIndex((c) => c.id === no); return i < 0 ? 1e6 : i; };
++  const rows = useMemo(() => sections
++    .filter((c) => `${c.code} ${c.name} ${teacherFull(c.teacherIds[0] ?? "")}`.toLowerCase().includes(q.toLowerCase()))
++    .map((c) => ({ c, year: c.terms[0]?.split("-")[0] ?? "" })), [sections, q]);
++  const years = [...new Set(rows.map((r) => r.year))].sort().reverse();
++  const toggle = (k: string) => setClosed((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
++  const Caret = ({ k }: { k: string }) => (closed.includes(k) ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />);
++  return (
++    <AxiomShell title="Classes (Academic Hierarchy)" crumbs={[{ label: "Academic Configuration" }]}>
++      <div className="border border-vc-line bg-background">
++        <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-3 py-2">
++          <AxAdd onClick={() => openRecord("/admin/class/new")}>Add Record...</AxAdd>
++          <input aria-label="Search results" value={q} onChange={(e) => setQ(e.target.value)} placeholder="search results..." className="ml-auto h-8 w-60 border border-vc-line bg-background px-2 text-[13px] outline-none focus:border-vc-link" />
++        </div>
++        <div className="overflow-x-auto">
++          <table className="w-full min-w-[860px] border-collapse">
++            <thead><tr><th className={axTh}>School Year</th><th className={axTh}>Subject</th><th className={axTh}>Class ID</th><th className={axTh}>Description</th><th className={axTh}>Teacher</th><th className={axTh}>Status</th><th className={`${axTh} text-right`}># of Students</th></tr></thead>
++            <tbody>
++              {years.map((y) => {
++                const inYear = rows.filter((r) => r.year === y);
++                const yk = `y:${y}`;
++                const courseNos = [...new Set(inYear.map((r) => r.c.courseNo))].sort((a, b) => rank(a) - rank(b));
++                return [
++                  <tr key={yk} className="bg-vc-panel"><td colSpan={7} className="border-b border-vc-line px-2 py-2"><button type="button" onClick={() => toggle(yk)} aria-expanded={!closed.includes(yk)} className="flex items-center gap-2 text-[16px] font-semibold"><Caret k={yk} />{yearLabel(y)} <span className="text-[13px] font-normal text-vc-gray">({inYear.length} {inYear.length === 1 ? "record" : "records"})</span></button></td></tr>,
++                  ...(closed.includes(yk) ? [] : courseNos.flatMap((no) => {
++                    const list = inYear.filter((r) => r.c.courseNo === no);
++                    const def = courses.find((c) => c.id === no);
++                    const ck = `${yk}:${no}`;
++                    return [
++                      <tr key={ck} className="bg-[#f3f3f3]"><td colSpan={7} className="border-b border-vc-line py-1.5 pl-7 pr-2"><button type="button" onClick={() => toggle(ck)} aria-expanded={!closed.includes(ck)} className="flex items-center gap-2 text-[15px] font-semibold text-vc-link-strong"><Caret k={ck} />{def?.name ?? no} <span className="text-[13px] font-normal text-vc-gray">({list.length} {list.length === 1 ? "record" : "records"})</span></button></td></tr>,
++                      ...(closed.includes(ck) ? [] : list.map(({ c }) => (
++                        <tr key={c.id} className="bg-[#fafafa] hover:bg-vc-panel">
++                          <td className={axTd}>{yearLabel(y)}</td><td className={axTd}>{def?.dept || "—"}</td>
++                          <td className={axTd}><Link to="/admin/courses/$courseId" params={{ courseId: c.id }} className="text-vc-link-strong underline">{c.code}</Link></td>
++                          <td className={axTd}>{c.name}</td>
++                          <td className={axTd}>{c.teacherIds[0] ? teacherFull(c.teacherIds[0]) : <span className="text-vc-gray">None</span>}</td>
++                          <td className={axTd}>{STATUS[classStatus(c.terms)]}</td>
++                          <td className={`${axTd} text-right`}>{c.studentIds.length || ""}</td>
++                        </tr>))),
++                    ];
++                  })),
++                ];
++              })}
++            </tbody>
++          </table>
++          {!rows.length && <p className="py-16 text-center text-[20px] font-light text-vc-gray">No classes yet. Choose Add Record... to create one.</p>}
++        </div>
++        <AxFooter count={rows.length} />
++      </div>
++    </AxiomShell>
++  );
++}
+diff --git a/src/routes/admin.course.$courseNo.tsx b/src/routes/admin.course.$courseNo.tsx
+new file mode 100644
+index 0000000..e555fe8
+--- /dev/null
++++ b/src/routes/admin.course.$courseNo.tsx
+@@ -0,0 +1,134 @@
++import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
++import { useState } from "react";
++import { toast } from "sonner";
++import { AxiomShell } from "@/components/admin/AxiomShell";
++import { RecordActions } from "@/components/admin/AdminTools";
++import { AxAdd, AxBanner, AxDetail, AxEmpty, AxField, AxFooter, AxToggle, axInput, axTd, axTh, type AxGroup } from "@/components/admin/AxiomDetail";
++import { CourseTypeSelect } from "@/components/admin/CourseTypeSelect";
++import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
++import { makeCourseId, validateCourse } from "@/lib/course-records";
++import { teacherFull } from "@/lib/sis-data";
++import { useSchool, yearLabel, type CourseDef, type Section } from "@/lib/school-store";
++import { classStatus, yearStartFor } from "@/lib/terms";
++import { useRecordWindow } from "@/lib/record-window";
++import { pageHead } from "@/lib/head";
++
++export const Route = createFileRoute("/admin/course/$courseNo")({
++  head: ({ params }) => pageHead(`Axiom · Course ${params.courseNo}`, "Course record: type, subject, report card settings and its classes."),
++  component: CourseRecord,
++});
++
++const STATUS = { current: "Current", future: "Future", past: "Past" } as const;
++const GROUPS: AxGroup[] = [{ items: [
++  { id: "general", label: "General" }, { id: "other", label: "Other" }, { id: "prior", label: "Prior Year Classes" }, { id: "next", label: "Next Year's Classes" },
++  { id: "description", label: "Description" }, { id: "classifications", label: "Classifications" },
++] }];
++const TITLES: Record<string, string> = { general: "General", other: "Other", prior: "Prior Year Classes", next: "Next Year's Classes", description: "Description", classifications: "Classifications" };
++
++function CourseRecord() {
++  const { courseNo } = Route.useParams();
++  const { courses } = useSchool();
++  const c = courses.find((x) => x.id === courseNo);
++  if (!c) return <AxiomShell title="Course not found" crumbs={[{ label: "Courses & Enrollment", to: "/admin/courses" }]}><p>No course {courseNo}. <Link to="/admin/courses" className="text-vc-link-strong">Back to courses</Link></p></AxiomShell>;
++  return <Editor key={c.id} c={c} />;
++}
++
++function ClassGrid({ list }: { list: Section[] }) {
++  return (
++    <>
++      <div className="overflow-x-auto"><table className="w-full min-w-[720px] border-collapse">
++        <thead><tr>{["School Year", "Class ID", "Description", "Teacher", "# of Students", "Status"].map((h) => <th key={h} className={axTh}>{h}</th>)}</tr></thead>
++        <tbody>{list.map((s) => <tr key={s.id} className="bg-[#fafafa] hover:bg-vc-panel">
++          <td className={axTd}>{yearLabel(s.terms[0]?.split("-")[0] ?? "")}</td>
++          <td className={axTd}><Link to="/admin/courses/$courseId" params={{ courseId: s.id }} className="text-vc-link-strong underline">{s.code}</Link></td>
++          <td className={axTd}>{s.name}</td><td className={axTd}>{s.teacherIds[0] ? teacherFull(s.teacherIds[0]) : "None"}</td>
++          <td className={axTd}>{s.studentIds.length || ""}</td><td className={axTd}>{STATUS[classStatus(s.terms)]}</td>
++        </tr>)}</tbody>
++      </table>{!list.length && <AxEmpty />}</div>
++      <AxFooter count={list.length} />
++    </>
++  );
++}
++
++function Editor({ c }: { c: CourseDef }) {
++  const { courses, sections, courseFlags, update } = useSchool();
++  const nav = useNavigate();
++  const openRecord = useRecordWindow();
++  const [d, setD] = useState<CourseDef>(c);
++  const [flags, setFlags] = useState<Record<string, boolean>>({ ...(courseFlags[`course:${c.id}`] ?? {}) });
++  const [tab, setTab] = useState("general");
++  const [copy, setCopy] = useState<{ id: string; name: string } | null>(null);
++  const mine = sections.filter((s) => s.courseNo === c.id);
++  const cur = yearStartFor(new Date());
++  const inYear = (y: number) => mine.filter((s) => s.terms.some((t) => t.startsWith(String(y))));
++  const subjects = [...new Set(courses.map((x) => x.dept).filter(Boolean))].sort();
++  const on = (k: string, def = true) => flags[k] ?? def;
++  const flag = (k: string, label: string, def = true) => <AxField key={k} label={label}><AxToggle label={label} on={on(k, def)} onChange={(v) => setFlags({ ...flags, [k]: v })} /></AxField>;
++  const save = () => {
++    const error = validateCourse({ ...d, id: c.id }, [], true);
++    if (error) { toast.error(error); return; }
++    update((s) => ({
++      ...s,
++      courses: s.courses.map((x) => (x.id === c.id ? { ...d, name: d.name.trim(), dept: d.dept.trim() } : x)),
++      sections: s.sections.map((x) => (x.courseNo === c.id ? { ...x, type: d.type } : x)),
++      courseFlags: { ...s.courseFlags, [`course:${c.id}`]: flags },
++    }));
++    toast.success("Course updated");
++  };
++  const remove = () => {
++    if (mine.length) { toast.error(`Course ${c.id} has ${mine.length} ${mine.length === 1 ? "class" : "classes"}. Delete those classes first.`); return; }
++    if (!confirm(`Delete course ${c.id}: ${c.name}?`)) return;
++    update((s) => { const { [`course:${c.id}`]: _gone, ...rest } = s.courseFlags; return { ...s, courses: s.courses.filter((x) => x.id !== c.id), courseFlags: rest }; });
++    toast.success("Course deleted");
++    nav({ to: "/admin/courses" });
++  };
++  const doCopy = () => {
++    if (!copy) return;
++    const taken = courses.map((x) => x.id);
++    const next: CourseDef = { ...d, id: copy.id.trim(), name: copy.name.trim() };
++    const error = validateCourse(next, taken);
++    if (error) { toast.error(error); return; }
++    const final = { ...next, id: next.id || makeCourseId(next.name, taken) };
++    update((s) => ({ ...s, courses: [...s.courses, final], courseFlags: { ...s.courseFlags, [`course:${final.id}`]: { ...flags } } }));
++    setCopy(null);
++    toast.success(`Copied to course ${final.id}`);
++    nav({ to: "/admin/course/$courseNo", params: { courseNo: final.id } });
++  };
++  return (
++    <AxiomShell compactRail title={`Course: ${c.name}`} crumbs={[{ label: "Courses & Enrollment", to: "/admin/courses" }]} onUpdate={save}
++      recordMenu={<RecordActions title={`Course: ${c.name}`} onCopy={() => setCopy({ id: "", name: `${c.name} (copy)` })} onDelete={remove} />}>
++      <AxDetail groups={GROUPS} active={tab} onSelect={setTab} title={TITLES[tab] ?? "General"} meta={`Course ${c.id}`} banner={tab === "general" ? <AxBanner /> : undefined}>
++        {tab === "general" && <>
++          <div className="grid grid-cols-1 gap-x-8 px-6 py-4 xl:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
++            <div>
++              <AxField label="Course Type" required><CourseTypeSelect value={d.type} onChange={(type) => setD({ ...d, type })} /></AxField>
++              <AxField label="Subject" required><><input aria-label="Subject" list="course-record-subjects" className={axInput} value={d.dept} maxLength={40} placeholder="<None Specified>" onChange={(e) => setD({ ...d, dept: e.target.value })} /><datalist id="course-record-subjects">{subjects.map((s) => <option key={s} value={s} />)}</datalist></></AxField>
++              <AxField label="Course ID"><input aria-label="Course ID" className={axInput} value={c.id} disabled /></AxField>
++              <AxField label="Course Name" required><input aria-label="Course name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
++            </div>
++            <div>{flag("report", "Include on Report Card")}{flag("transcript", "Include on Transcript")}{flag("gpa", "Include in GPA")}{flag("archive", "Archive", false)}</div>
++            <div>{flag("request", "Available for Request")}{flag("scheduler", "Include in Scheduler")}{flag("conferences", "Include in Parent/Teacher Conferences")}{flag("reviews", "Allow Reviews")}</div>
++          </div>
++          <div className="flex items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => openRecord("/admin/class/new", { course: c.id })}>Add Record...</AxAdd><span className="text-[13px] text-vc-gray">Adds a class for this course in a new window.</span></div>
++          <ClassGrid list={mine} />
++        </>}
++        {tab === "other" && <div className="px-6 py-4"><AxField label="Credits"><input aria-label="Credits" type="number" min={0} max={5} step={0.25} className={`${axInput} max-w-32 text-right`} value={d.credits} onChange={(e) => setD({ ...d, credits: Math.max(0, Number(e.target.value) || 0) })} /></AxField></div>}
++        {tab === "prior" && <ClassGrid list={inYear(cur - 1)} />}
++        {tab === "next" && <ClassGrid list={inYear(cur + 1)} />}
++        {tab === "description" && <div className="px-6 py-4"><textarea aria-label="Course description" className="h-48 w-full max-w-3xl border border-vc-gray-light/80 bg-background p-2.5 text-[14px] outline-none focus:border-vc-link" maxLength={1000} value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} /></div>}
++        {tab === "classifications" && <div className="px-6 py-4">{flag("cls_ap", "Classification: AP", false)}{flag("cls_honors", "Classification: Honors", false)}</div>}
++      </AxDetail>
++      <Dialog open={!!copy} onOpenChange={(o) => { if (!o) setCopy(null); }}>
++        <DialogContent className="max-w-[440px] rounded-none text-[13px]">
++          <DialogHeader><DialogTitle className="text-[18px] font-normal">Copy Course</DialogTitle></DialogHeader>
++          {copy && <div className="space-y-2">
++            <AxField label="Course ID"><input aria-label="New course ID" className={axInput} value={copy.id} maxLength={20} placeholder="Made from the name if blank" onChange={(e) => setCopy({ ...copy, id: e.target.value })} /></AxField>
++            <AxField label="Course Name" required><input aria-label="New course name" className={axInput} value={copy.name} maxLength={80} onChange={(e) => setCopy({ ...copy, name: e.target.value })} /></AxField>
++            <p className="text-vc-gray">Copies the type, subject, settings and description. Classes are not copied.</p>
++            <div className="flex justify-end gap-3 pt-1"><button type="button" className="text-vc-gray hover:underline" onClick={() => setCopy(null)}>Cancel</button><button type="button" onClick={doCopy} className="h-9 bg-ax-go px-4 font-semibold text-primary-foreground">Copy Course</button></div>
++          </div>}
++        </DialogContent>
++      </Dialog>
++    </AxiomShell>
++  );
++}
+diff --git a/src/routes/admin.course.new.tsx b/src/routes/admin.course.new.tsx
+new file mode 100644
+index 0000000..0e60138
+--- /dev/null
++++ b/src/routes/admin.course.new.tsx
+@@ -0,0 +1,58 @@
++import { createFileRoute, useNavigate } from "@tanstack/react-router";
++import { useState } from "react";
++import { toast } from "sonner";
++import { AxAction, AxBanner, AxEmpty, AxField, AxFooter, AxToggle, axInput, axTh } from "@/components/admin/AxiomDetail";
++import { CourseTypeSelect } from "@/components/admin/CourseTypeSelect";
++import { RecordWindow } from "@/components/admin/RecordWindow";
++import { DEFAULT_COURSE_TYPE, isOtherClass, type CourseType } from "@/lib/course-types";
++import { defaultCourseFlags, makeCourseId, validateCourse } from "@/lib/course-records";
++import { useSchool, type CourseDef } from "@/lib/school-store";
++import { pageHead } from "@/lib/head";
++
++export const Route = createFileRoute("/admin/course/new")({
++  head: () => pageHead("Axiom · New Course", "Create a course: type, subject, name and report card settings."),
++  component: NewCourse,
++});
++
++function NewCourse() {
++  const { courses, update } = useSchool();
++  const nav = useNavigate();
++  const [type, setType] = useState<CourseType>(DEFAULT_COURSE_TYPE);
++  const [dept, setDept] = useState("");
++  const [id, setId] = useState("");
++  const [name, setName] = useState("");
++  const [flags, setFlags] = useState(defaultCourseFlags());
++  const subjects = [...new Set(courses.map((c) => c.dept).filter(Boolean))].sort();
++  const flag = (k: string, label: string) => <AxField label={label}><AxToggle label={label} on={flags[k] ?? false} onChange={(v) => setFlags({ ...flags, [k]: v })} /></AxField>;
++  const add = () => {
++    const taken = courses.map((c) => c.id);
++    const def: CourseDef = { id: id.trim(), name: name.trim(), type, dept: dept.trim(), credits: isOtherClass(type) ? 0 : 1, description: "" };
++    const error = validateCourse(def, taken);
++    if (error) { toast.error(error); return; }
++    const final = { ...def, id: def.id || makeCourseId(def.name, taken) };
++    update((s) => ({ ...s, courses: [...s.courses, final], courseFlags: { ...s.courseFlags, [`course:${final.id}`]: flags } }));
++    toast.success(`Course ${final.id} created`);
++    nav({ to: "/admin/course/$courseNo", params: { courseNo: final.id }, replace: true });
++  };
++  return (
++    <RecordWindow title="Course" action={<AxAction onClick={add}>Add Course</AxAction>}>
++      <h2 className="px-5 py-3 text-[22px] font-light uppercase">General</h2>
++      <AxBanner />
++      <div className="grid grid-cols-1 gap-x-8 px-6 py-4 md:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
++        <div>
++          <AxField label="Course Type" required><CourseTypeSelect value={type} onChange={setType} /></AxField>
++          <AxField label="Subject" required><><input aria-label="Subject" list="course-subjects" className={axInput} value={dept} maxLength={40} placeholder="<None Specified>" onChange={(e) => setDept(e.target.value)} /><datalist id="course-subjects">{subjects.map((s) => <option key={s} value={s} />)}</datalist></></AxField>
++          <AxField label="Course ID"><input aria-label="Course ID" className={axInput} value={id} maxLength={20} placeholder="Made from the name if blank" onChange={(e) => setId(e.target.value)} /></AxField>
++          <AxField label="Course Name" required><input aria-label="Course name" className={axInput} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></AxField>
++        </div>
++        <div>{flag("report", "Include on Report Card")}{flag("transcript", "Include on Transcript")}{flag("gpa", "Include in GPA")}{flag("archive", "Archive")}</div>
++        <div>{flag("request", "Available for Request")}{flag("scheduler", "Include in Scheduler")}{flag("conferences", "Include in Parent/Teacher Conferences")}{flag("reviews", "Allow Reviews")}</div>
++      </div>
++      <div className="border-t border-vc-line">
++        <table className="w-full border-collapse"><thead><tr>{["School Year", "Class ID", "Description", "Teacher", "# of Students", "Status"].map((h) => <th key={h} className={axTh}>{h}</th>)}</tr></thead></table>
++        <AxEmpty />
++        <AxFooter count={0} />
++      </div>
++    </RecordWindow>
++  );
++}
+diff --git a/src/routes/admin.courses.$courseId.tsx b/src/routes/admin.courses.$courseId.tsx
+index 08325c7..9ba0384 100644
+--- a/src/routes/admin.courses.$courseId.tsx
++++ b/src/routes/admin.courses.$courseId.tsx
+@@ -9,8 +9,8 @@ import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
+ import { scoreOf } from "@/lib/gradebook";
+ import { rosterOf, useSchool, useSection, useSectionAssignments, type Section } from "@/lib/school-store";
+ import { classStatus, schoolYears } from "@/lib/terms";
+-import { Button } from "@/components/ui/button";
+-import { PersonPhoto } from "@/components/common/PersonPhoto";
++import { AdvancedSearch, type SearchRow } from "@/components/admin/AdvancedSearch";
++import { PersonField } from "@/components/admin/PersonField";
+ import { enrollmentPeople, validateClassRecord } from "@/lib/class-records";
+ import { pageHead } from "@/lib/head";
+ 
+@@ -40,11 +40,8 @@ function Editor({ c }: { c: Section }) {
+   const { courseFlags, update, scores, weights, schedulingSets, users, courses, sections: allSections } = useSchool();
+   const nav = useNavigate();
+   const [d, setD] = useState(c);
+-  const [search, setSearch] = useState("");
+-  const [selected, setSelected] = useState<string[]>([]);
+-  const [facultySearch, setFacultySearch] = useState("");
+-  const [gradeFilter, setGradeFilter] = useState("");
+-  const [drop, setDrop] = useState<string[]>([]);
++  const [picking, setPicking] = useState<"teacher" | "aide" | "student" | null>(null);
++  const [pending, setPending] = useState(false);
+   const list = useSectionAssignments(c.id);
+   const roster = rosterOf(c);
+   const f = courseFlags[c.id] ?? {};
+@@ -57,10 +54,11 @@ function Editor({ c }: { c: Section }) {
+   const courseRecord = courses.find((x) => x.id === c.courseNo);
+   const schedule = schedulingSets.find((s) => s.id === d.scheduleSetId);
+   const allStudents = enrollmentPeople(users, "student");
+-  const grades = [...new Set(allStudents.map((s) => s.grade ?? 9))].sort((a, b) => a - b);
+-  const pool = allStudents.filter((s) => !c.studentIds.includes(s.personId) && (!gradeFilter || String(s.grade ?? 9) === gradeFilter) && `${s.first} ${s.last} ${s.email}`.toLowerCase().includes(search.toLowerCase()));
+-  const addable = faculty.filter((t) => !d.teacherIds.includes(t.personId) && `${t.first} ${t.last} ${t.email}`.toLowerCase().includes(facultySearch.toLowerCase()));
+-  const makePrimary = (id: string) => setD({ ...d, teacherIds: [id, ...d.teacherIds.filter((x) => x !== id)] });
++  const facultyRows: SearchRow[] = faculty.map((u) => ({ id: u.personId, first: u.first, last: u.last, cells: [`${u.last}, ${u.preferred || u.first}`, "Faculty", u.email] }));
++  const studentRows: SearchRow[] = allStudents.map((u) => ({ id: u.personId, first: u.first, last: u.last, grade: u.grade ?? 9, cells: [`${u.last}, ${u.preferred || u.first}`, `Grade ${u.grade ?? 9}`, `Student (${u.grade ?? 9})`] }));
++  const personName = (id: string) => { const u = users.find((x) => x.personId === id); return u ? `${u.last}, ${u.preferred || u.first}` : teacherFull(id); };
++  const openPerson = (id: string) => { const u = users.find((x) => x.personId === id); if (u) nav({ to: "/admin/users", search: { q: u.email } }); };
++  const aides = d.aideIds ?? [];
+   const save = () => {
+     const error = validateClassRecord({ ...d, studentIds: c.studentIds }, users);
+     if (error) { toast.error(error); return; }
+@@ -75,16 +73,15 @@ function Editor({ c }: { c: Section }) {
+   const status = classStatus(d.terms);
+   const Row = ({ l, children }: { l: string; children: React.ReactNode }) => <div className="grid grid-cols-[130px_1fr] items-center gap-2 border-b border-vc-line py-1.5 last:border-0"><span className="text-muted-foreground">{l}</span><div>{children}</div></div>;
+   const [tab, setTab] = useState("general");
+-  const [adding, setAdding] = useState(false);
+   const flag = (k: string, label: string, def: boolean) => <AxField key={k} label={label}><AxToggle label={label} on={f[k] ?? def} onChange={(on) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [c.id]: { ...s.courseFlags[c.id], [k]: on } } }))} /></AxField>;
+   const groups: AxGroup[] = [
+-    { heading: "General", items: [{ id: "general", label: "General" }, { id: "registrations", label: "Registrations" }, { id: "teachers", label: "Teachers" }] },
++    { heading: "General", items: [{ id: "general", label: "General" }, { id: "registrations", label: "Registrations" }] },
+     { heading: "Communication", items: [{ id: "emails", label: "Student Email Recipients" }] },
+     { heading: "Schedule", items: [{ id: "schedule", label: "Schedule" }, { id: "suggest", label: "Schedule Suggestions" }] },
+     { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] },
+     { heading: "Other", items: [{ id: "others", label: "Other Sections" }] },
+   ];
+-  const TITLES: Record<string, string> = { general: "General", registrations: "Registrations", teachers: "Teachers", emails: "Student Email Recipients", schedule: "Schedule", suggest: "Schedule Suggestions", settings: "Settings", others: "Other Sections" };
++  const TITLES: Record<string, string> = { general: "General", registrations: "Registrations", emails: "Student Email Recipients", schedule: "Schedule", suggest: "Schedule Suggestions", settings: "Settings", others: "Other Sections" };
+   const LETTER = ["M", "T", "W", "R", "F"];
+   const scheduleText = d.days.length && d.time ? `${d.days.map((n) => LETTER[n - 1]).join("")}: ${d.time}` : "<None Specified>";
+   const bandNames = schedule ? schedule.blocks.map((b) => b.name) : BLOCKS;
+@@ -113,7 +110,8 @@ function Editor({ c }: { c: Section }) {
+               <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
+             </div>
+             <div>
+-              <AxField label="Teacher"><div className={`${axInput} flex items-center justify-between bg-vc-panel`}><span className="truncate">{d.teacherIds[0] ? teacherFull(d.teacherIds[0]) : "<None Specified>"}{d.teacherIds.length > 1 ? ` +${d.teacherIds.length - 1}` : ""}</span><button type="button" onClick={() => setTab("teachers")} className="shrink-0 pl-2 text-[12px] text-vc-link-strong hover:underline">Change</button></div></AxField>
++              <AxField label="Teacher"><PersonField label="Teacher" ids={d.teacherIds.slice(0, 1)} onChange={(ids) => setD({ ...d, teacherIds: ids.slice(0, 1) })} nameOf={personName} onSearch={() => setPicking("teacher")} onOpen={openPerson} /></AxField>
++              <AxField label="Teacher's Aide"><PersonField label="Teacher's Aide" multi ids={aides} onChange={(ids) => setD({ ...d, aideIds: ids })} nameOf={personName} onSearch={() => setPicking("aide")} onOpen={openPerson} /></AxField>
+               <AxField label="Room"><input aria-label="Room" className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
+               <AxField label="Schedule"><div className={`${axInput} flex items-center bg-vc-panel`}>{scheduleText}</div></AxField>
+             </div>
+@@ -128,14 +126,10 @@ function Editor({ c }: { c: Section }) {
+               <AxField label="Published"><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
+             </div>
+           </div>}
+-          <div className="flex flex-wrap items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => setAdding((v) => !v)} aria-expanded={adding}>{adding ? "Done Adding" : "Add Record"}</AxAdd><span className="text-[13px] text-vc-gray">{adding ? "Tick the students to enroll, then choose Enroll selected." : "Enrolls a student in this class."}</span></div>
+-          {adding && <div className="border-b border-vc-line px-4 pt-3">
+-        <div className="mb-3 flex flex-wrap items-center gap-2"><input aria-label="Find students to enroll" className={`${inp} max-w-80`} placeholder="Find students by name or email" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter students by grade" className={`${inp} w-32`} value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}><option value="">All grades</option>{grades.map((g) => <option key={g} value={String(g)}>Grade {g}</option>)}</select><Button variant="outline" size="sm" disabled={!pool.length} onClick={() => setSelected([...new Set([...selected, ...pool.map((u) => u.personId)])])}>Select all shown ({pool.length})</Button><Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setSelected([])}>Clear</Button><Button size="sm" disabled={!selected.length} onClick={() => { setRoster([...c.studentIds, ...selected]); toast.success(`${selected.length} ${selected.length === 1 ? "student" : "students"} enrolled`); setSelected([]); }}>Enroll selected ({selected.length})</Button></div>
+-        <div className="mb-3 grid max-h-44 grid-cols-1 gap-1 overflow-y-auto border-b border-vc-line pb-3 md:grid-cols-2">{pool.map((u) => <label key={u.id} className="flex items-center gap-2 px-2 py-1"><input type="checkbox" aria-label={`Enroll ${u.first} ${u.last}`} checked={selected.includes(u.personId)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.personId] : ids.filter((id) => id !== u.personId))} /><PersonPhoto personId={u.personId} className="size-7" /><span>{u.last}, {u.first}<span className="ml-2 text-[11px] text-muted-foreground">Grade {u.grade ?? 9}</span></span></label>)}{!pool.length && <p className="px-2 text-muted-foreground">No matching unenrolled students.</p>}</div>
+-          </div>}
++          <div className="flex flex-wrap items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => setPending(true)}>Add Record...</AxAdd><span className="text-[13px] text-vc-gray">Enrolls a student: use the search icon on the new row.</span></div>
+           <div className="overflow-x-auto"><table className="w-full min-w-[820px] border-collapse">
+             <thead><tr><th className={axTh}>Person</th><th className={axTh}>Grade</th><th className={axTh}>Level</th><th className={axTh}>Roles</th><th className={axTh}>Late Date Enrolled</th><th className={axTh}>Date Withdrawn</th><th className={axTh}>Notes</th><th className={`${axTh} w-10`} /><th className={`${axTh} w-10`} /></tr></thead>
+-            <tbody>{roster.map((s) => (
++            <tbody>{pending && <tr className="bg-vc-tile-warm"><td className={axTd} colSpan={9}><div className="flex max-w-xl items-center gap-3"><div className="min-w-0 flex-1"><PersonField label="Person" ids={[]} onChange={() => {}} nameOf={personName} onSearch={() => setPicking("student")} placeholder="Search for a student" /></div><button type="button" onClick={() => setPending(false)} className="text-[13px] text-vc-gray hover:underline">Cancel</button></div></td></tr>}{roster.map((s) => (
+               <tr key={s.id} className="bg-[#fafafa] hover:bg-vc-panel">
+                 <td className={axTd}><Link to="/admin/enrollment/$courseId/$studentId" params={{ courseId: c.id, studentId: s.id }} className="text-vc-link-strong underline">{s.last}, {s.first}</Link></td>
+                 <td className={axTd}>{s.grade}</td><td className={`${axTd} text-vc-gray`}>N/A</td><td className={axTd}>Student ({s.grade})</td>
+@@ -150,31 +144,6 @@ function Editor({ c }: { c: Section }) {
+           <AxFooter count={roster.length} />
+           <p className="px-4 py-2 text-[12px] text-vc-gray">Notes and late dates are saved with Update.</p>
+         </>}
+-        {tab === "teachers" && <div className="px-6 py-4">
+-          <Row l="Teacher(s)">
+-  <div className="space-y-1">
+-    {d.teacherIds.map((id, i) => (
+-      <div key={id} className="flex items-center gap-2">
+-        <PersonPhoto personId={id} className="size-7" />
+-        <span className="flex-1">{teacherFull(id)}</span>
+-        {i === 0 ? <span className="border border-vc-line px-1.5 text-[10px] uppercase text-muted-foreground">Primary</span> : <button type="button" onClick={() => makePrimary(id)} className="text-[12px] text-vc-link-strong hover:underline">Make primary</button>}
+-        <button type="button" aria-label={`Remove ${teacherFull(id)}`} disabled={d.teacherIds.length < 2} onClick={() => setD({ ...d, teacherIds: d.teacherIds.filter((x) => x !== id) })} className="text-[12px] text-destructive hover:underline disabled:opacity-40 disabled:no-underline">Remove</button>
+-      </div>))}
+-    {!d.teacherIds.length && <p className="text-muted-foreground">No teacher assigned.</p>}
+-  </div>
+-  <input aria-label="Find teachers" className={`${inp} mt-2`} placeholder="Add a teacher: search faculty by name or email" value={facultySearch} onChange={(e) => setFacultySearch(e.target.value)} />
+-  <div className="mt-1 max-h-36 overflow-y-auto">
+-    {addable.slice(0, 6).map((t) => (
+-      <button type="button" key={t.id} aria-label={`Add ${t.first} ${t.last}`} onClick={() => { setD({ ...d, teacherIds: [...d.teacherIds, t.personId] }); setFacultySearch(""); }} className="flex w-full items-center gap-2 px-1 py-1 text-left hover:bg-vc-panel">
+-        <PersonPhoto personId={t.personId} className="size-7" />
+-        <span>{t.prefix} {t.first} {t.last}<span className="ml-2 text-[11px] text-muted-foreground">{t.email}</span></span>
+-        <span className="ml-auto text-[12px] text-vc-link-strong">+ Add</span>
+-      </button>))}
+-    {addable.length > 6 && <div className="px-1 text-[11px] text-muted-foreground">{addable.length - 6} more: keep typing to narrow the list</div>}
+-    {!addable.length && <div className="px-1 text-[11px] text-muted-foreground">No matching faculty to add.</div>}
+-  </div>
+-</Row>
+-        </div>}
+         {tab === "emails" && <div className="px-6 py-4">
+           <p className="mb-2 text-[13px] text-vc-gray">Student email recipients for {c.code}. Copy the list into a message.</p>
+           <textarea readOnly aria-label="Student email recipients" className="h-32 w-full border border-vc-line bg-vc-panel p-2 font-mono text-[13px]" value={roster.map((s) => s.email).filter(Boolean).join("; ")} />
+@@ -227,6 +196,9 @@ function Editor({ c }: { c: Section }) {
+           <div>{FLAGS.slice(2).map(([k, l, def]) => flag(k, l, def))}</div>
+         </div>}
+       </AxDetail>
++      <AdvancedSearch open={picking === "teacher"} onClose={() => setPicking(null)} noun="Person" kind="person" heads={["Full Name", "Roles", "Email"]} rows={facultyRows} exclude={aides} onSelect={(ids) => setD({ ...d, teacherIds: ids.slice(0, 1) })} onAddNew={() => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760")} />
++      <AdvancedSearch open={picking === "aide"} onClose={() => setPicking(null)} noun="Person" kind="person" multi heads={["Full Name", "Roles", "Email"]} rows={facultyRows} exclude={[...aides, ...d.teacherIds]} onSelect={(ids) => setD({ ...d, aideIds: [...new Set([...aides, ...ids])] })} onAddNew={() => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760")} />
++      <AdvancedSearch open={picking === "student"} onClose={() => setPicking(null)} noun="Person" kind="person" multi heads={["Full Name", "Current Grade", "Roles"]} rows={studentRows} exclude={c.studentIds} onSelect={(ids) => { setRoster([...c.studentIds, ...ids]); setPending(false); toast.success(`${ids.length} ${ids.length === 1 ? "student" : "students"} enrolled`); }} onAddNew={() => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760")} />
+     </AxiomShell>
+   );
+ }
+diff --git a/src/routes/admin.courses.index.tsx b/src/routes/admin.courses.index.tsx
+index 265f36e..8b42cfd 100644
+--- a/src/routes/admin.courses.index.tsx
++++ b/src/routes/admin.courses.index.tsx
+@@ -1,20 +1,16 @@
+-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
++import { createFileRoute, Link } from "@tanstack/react-router";
+ import { GripVertical } from "lucide-react";
+-import { useEffect, useState } from "react";
+-import { toast } from "sonner";
+-import { z } from "zod";
++import { useState } from "react";
+ import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
+ import { AxAction, AxAdd, AxField, AxFooter, AxToggle, axInput } from "@/components/admin/AxiomDetail";
+-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+-import { teacherFull, type Course } from "@/lib/sis-data";
+-import { BLANK_SITE, useSchool, yearLabel, type CourseDef } from "@/lib/school-store";
++import { CourseTypeSelect } from "@/components/admin/CourseTypeSelect";
++import { teacherFull } from "@/lib/sis-data";
++import { useRecordWindow } from "@/lib/record-window";
++import { useSchool, yearLabel, type CourseDef } from "@/lib/school-store";
+ import { classStatus, schoolYears, termLabel } from "@/lib/terms";
+-import { Button } from "@/components/ui/button";
+-import { Switch } from "@/components/ui/switch";
+ import { pageHead } from "@/lib/head";
+ 
+ export const Route = createFileRoute("/admin/courses/")({
+-  validateSearch: z.object({ add: z.enum(["course"]).optional() }),
+   head: () => pageHead("Axiom · Courses & Enrollment", "Create courses, schedule class sections by term and publish them to portals."),
+   component: Courses,
+ });
+@@ -24,8 +20,7 @@ const STATUS = { current: "Current", future: "Future", past: "Past" } as const;
+ 
+ function Courses() {
+   const { courses, sections, courseFlags, update } = useSchool();
+-  const nav = useNavigate();
+-  const { add } = Route.useSearch();
++  const openRecord = useRecordWindow();
+   const years = schoolYears();
+   const [year, setYear] = useState(years[1]?.id ?? years[0]?.id ?? "");
+   const [q, setQ] = useState("");
+@@ -33,9 +28,6 @@ function Courses() {
+   const [portalFilter, setPortalFilter] = useState("");
+   const [termFilter, setTermFilter] = useState("");
+   const [sel, setSel] = useState<string | null>(null);
+-  const [editing, setEditing] = useState(false);
+-  const [draft, setDraft] = useState<CourseDef | null>(null);
+-  useEffect(() => { if (add === "course") { setEditing(false); setDraft({ id: "", name: "", type: "ACADEMIC", dept: "", credits: 1, description: "" }); nav({ to: "/admin/courses", search: {}, replace: true }); } }, [add]); // eslint-disable-line react-hooks/exhaustive-deps
+   const [dragId, setDragId] = useState<string | null>(null);
+   const [overId, setOverId] = useState<string | null>(null);
+   // The order of this list is the order classes appear everywhere in the app (student, teacher and admin views).
+@@ -58,25 +50,8 @@ function Courses() {
+     .sort((a, b) => courseRank(a.s.courseNo) - courseRank(b.s.courseNo) || a.position - b.position)
+     .map(({ s }) => s);
+ 
+-  const saveCourse = (e: React.FormEvent) => {
+-    e.preventDefault(); if (!draft) return;
+-    const d = { ...draft, id: draft.id.trim(), name: draft.name.trim() };
+-    if (!/^[A-Za-z0-9_-]{1,20}$/.test(d.id)) { toast.error("Course ID: up to 20 letters, digits, hyphens or underscores."); return; }
+-    if (!d.name) { toast.error("Course name is required."); return; }
+-    if (!Number.isFinite(d.credits) || d.credits < 0) { toast.error("Credits must be a nonnegative number."); return; }
+-    if (!editing && courses.some((c) => c.id === d.id)) { toast.error("That course number already exists."); return; }
+-    update((s) => ({ ...s, courses: editing ? s.courses.map((c) => c.id === d.id ? d : c) : [...s.courses, d] })); setDraft(null); setSel(d.id); toast.success(editing ? "Course updated" : `Course ${d.id} created`);
+-  };
+-  const newClass = (c: CourseDef) => {
+-    const n = sections.filter((s) => s.courseNo === c.id).length + 1;
+-    let id = `${c.id}-${n}`; let k = n; while (sections.some((s) => s.id === id)) id = `${c.id}-${++k}`;
+-    const base: Course = { id, code: id, name: c.name, section: String(k), teacherId: "", block: "", room: "", letter: "", pct: 0, type: c.type, days: [], time: "" };
+-    update((s) => ({ ...s, sections: [...s.sections, { ...base, courseNo: c.id, teacherIds: [], terms: [`${year}-S1`, `${year}-S2`], published: false, studentIds: [], website: { ...BLANK_SITE } }], courseFlags: { ...s.courseFlags, [id]: { ...s.courseFlags[`course:${c.id}`] } } }));
+-    nav({ to: "/admin/courses/$courseId", params: { courseId: id } });
+-  };
+-
+   return (
+-    <AxiomShell title="Courses & Enrollment" actions={<AxAction onClick={() => { setEditing(false); setDraft({ id: "", name: "", type: "ACADEMIC", dept: "", credits: 1, description: "" }); }}>Add Course</AxAction>}>
++    <AxiomShell title="Courses & Enrollment" actions={<AxAction onClick={() => openRecord("/admin/course/new")}>Add Course</AxAction>}>
+       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-3">
+         <Panel title={`Courses (${courses.length})`}>
+           <input aria-label="Filter courses" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter courses" className={`${inp} mb-1`} />
+@@ -92,16 +67,16 @@ function Courses() {
+                 className={`flex cursor-grab items-center justify-between px-2 py-1.5 active:cursor-grabbing ${dragId === c.id ? "opacity-40" : ""} ${overId === c.id && dragId !== c.id ? "border-t-2 border-vc-link" : "border-t-2 border-transparent"} ${sel === c.id ? "bg-vc-select" : "hover:bg-vc-panel"}`}>
+                 <GripVertical aria-hidden className="mr-1 size-4 shrink-0 text-muted-foreground/60" />
+                 <button onClick={() => setSel(c.id)} className="min-w-0 flex-1 truncate text-left"><span className="font-mono text-[12px]">{c.id}</span> · {c.name}</button>
+-                <button onClick={() => newClass(c)} className="ml-2 shrink-0 text-[12px] text-vc-link-strong hover:underline">+ Class</button></li>))}
++                <button onClick={() => openRecord("/admin/class/new", { course: c.id })} className="ml-2 shrink-0 text-[12px] text-vc-link-strong hover:underline">+ Class</button></li>))}
+           </ul>
+         </Panel>
+         <div className="min-w-0 border border-vc-line bg-background">
+           {sel && courses.filter((c) => c.id === sel).map((c) => { const flagOn = (k: string) => courseFlags[`course:${c.id}`]?.[k] ?? true; const setFlag = (k: string, v: boolean) => update((st) => ({ ...st, courseFlags: { ...st.courseFlags, [`course:${c.id}`]: { ...st.courseFlags[`course:${c.id}`], [k]: v } } })); const patch = (p: Partial<CourseDef>) => update((st) => ({ ...st, courses: st.courses.map((x) => (x.id === c.id ? { ...x, ...p } : x)) })); return (
+             <div key={c.id} className="border-b border-vc-line">
+-              <div className="flex items-baseline justify-between border-b border-vc-line px-6 py-2.5"><h1 className="text-[27px] font-light uppercase leading-9">General</h1><span className="text-[13px] text-vc-gray">Course {c.id}</span></div>
++              <div className="flex items-baseline justify-between border-b border-vc-line px-6 py-2.5"><h1 className="text-[27px] font-light uppercase leading-9">General</h1><span className="text-[13px] text-vc-gray">Course {c.id} · <Link to="/admin/course/$courseNo" params={{ courseNo: c.id }} className="text-vc-link-strong hover:underline">Open course record</Link></span></div>
+               <div className="grid grid-cols-1 gap-x-8 px-6 py-5 xl:grid-cols-3 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
+                 <div>
+-                  <AxField label="Course Type" required><select aria-label="Course type" className={axInput} value={c.type} onChange={(e) => patch({ type: e.target.value as CourseDef["type"] })}>{(["ACADEMIC", "ARTS", "ADVISORY"] as const).map((t) => <option key={t}>{t}</option>)}</select></AxField>
++                  <AxField label="Course Type" required><CourseTypeSelect value={c.type} onChange={(type) => patch({ type })} /></AxField>
+                   <AxField label="Subject" required><input aria-label="Subject or department" className={axInput} value={c.dept} maxLength={40} placeholder="<None Specified>" onChange={(e) => patch({ dept: e.target.value })} /></AxField>
+                   <AxField label="Course ID"><input aria-label="Course ID" className={axInput} value={c.id} disabled /></AxField>
+                   <AxField label="Course Name" required><input aria-label="Course name" className={axInput} value={c.name} maxLength={80} onChange={(e) => patch({ name: e.target.value })} /></AxField>
+@@ -114,12 +89,12 @@ function Courses() {
+                   <AxField label="Include in Scheduler"><AxToggle label="Include in scheduler" on={flagOn("scheduler")} onChange={(v) => setFlag("scheduler", v)} /></AxField>
+                   <AxField label="Include in Parent/Teacher Conferences"><AxToggle label="Include in parent/teacher conferences" on={flagOn("conferences")} onChange={(v) => setFlag("conferences", v)} /></AxField>
+                   <AxField label="Available for Request"><AxToggle label="Available for request" on={flagOn("request")} onChange={(v) => setFlag("request", v)} /></AxField>
+-                  <AxField label="Classification: AP"><AxToggle label="Classification AP" on={courseFlags[`course:${c.id}`]?.cls_ap ?? false} onChange={(v) => setFlag("cls_ap", v)} /></AxField>
+-                  <AxField label="Classification: Honors"><AxToggle label="Classification Honors" on={courseFlags[`course:${c.id}`]?.cls_honors ?? false} onChange={(v) => setFlag("cls_honors", v)} /></AxField>
++                  <AxField label="Classification: AP"><AxToggle label="Classification AP" on={courseFlags[`course:${c.id}`]?.["cls_ap"] ?? false} onChange={(v) => setFlag("cls_ap", v)} /></AxField>
++                  <AxField label="Classification: Honors"><AxToggle label="Classification Honors" on={courseFlags[`course:${c.id}`]?.["cls_honors"] ?? false} onChange={(v) => setFlag("cls_honors", v)} /></AxField>
+                 </div>
+                 <div><AxField label="Description"><textarea aria-label="Course description" className="h-[118px] w-full border border-vc-gray-light/80 bg-background p-2.5 text-[15px] outline-none focus:border-vc-link" maxLength={1000} value={c.description} onChange={(e) => patch({ description: e.target.value })} /></AxField></div>
+               </div>
+-              <div className="flex items-center gap-3 border-t border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => newClass(c)}>Add Record</AxAdd><span className="text-[13px] text-vc-gray">Adds a class for this course in the school year shown below.</span></div>
++              <div className="flex items-center gap-3 border-t border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => openRecord("/admin/class/new", { course: c.id })}>Add Record</AxAdd><span className="text-[13px] text-vc-gray">Adds a class for this course in a new window.</span></div>
+             </div>); })}
+           <div className="flex flex-wrap items-center gap-3 border-b border-vc-line bg-vc-panel px-4 py-2">
+             <span className="text-[15px] font-semibold">Classes</span>
+@@ -128,12 +103,12 @@ function Courses() {
+           </div>
+           <div className="flex flex-wrap gap-2 border-b border-vc-line px-3 py-2"><input aria-label="Find classes" placeholder="Class, room or block" value={classQuery} onChange={(e) => setClassQuery(e.target.value)} className={`${inp} max-w-60`} /><select aria-label="Filter class publication" value={portalFilter} onChange={(e) => setPortalFilter(e.target.value)} className="h-8 border border-vc-line bg-background px-2"><option value="">All portal statuses</option><option value="published">Published</option><option value="draft">Draft</option></select><select aria-label="Filter class term" value={termFilter} onChange={(e) => setTermFilter(e.target.value)} className="h-8 border border-vc-line bg-background px-2"><option value="">All terms</option><option value="S1">Semester 1</option><option value="S2">Semester 2</option></select></div>
+           <div className="overflow-x-auto"><table className="w-full [&_td]:border-r [&_td]:border-dotted [&_td]:border-vc-line [&_td]:px-2 [&_th]:border-r [&_th]:border-dotted [&_th]:border-vc-line [&_th]:px-2 [&_tbody_tr]:bg-background [&_tbody_tr]:h-[34px] min-w-[760px]">
+-            <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="px-3 py-1.5">Class ID</th><th>Description</th><th>Teacher(s)</th><th>Block</th><th>Room</th><th>Terms</th><th>Status</th><th>Portals</th><th className="pr-3 text-right">Enrolled</th></tr></thead>
++            <thead><tr className="border-b border-vc-line text-left text-[11px] uppercase text-muted-foreground"><th className="px-3 py-1.5">Class ID</th><th>Description</th><th>Teacher</th><th>Block</th><th>Room</th><th>Terms</th><th>Status</th><th>Portals</th><th className="pr-3 text-right">Enrolled</th></tr></thead>
+             <tbody>{yearSections.map((c) => (
+               <tr key={c.id} className="border-b border-vc-line hover:bg-vc-panel">
+                 <td className="px-3 py-1.5 font-mono text-[12px]">{c.code}</td>
+                 <td><Link to="/admin/courses/$courseId" params={{ courseId: c.id }} className="text-vc-link-strong hover:underline">{c.name}</Link></td>
+-                <td>{c.teacherIds.length ? c.teacherIds.map(teacherFull).join(", ") : <span className="text-destructive">None</span>}</td>
++                <td>{c.teacherIds[0] ? teacherFull(c.teacherIds[0]) : <span className="text-destructive">None</span>}{(c.aideIds?.length ?? 0) > 0 && <span className="ml-1 text-[11px] text-vc-gray">+{c.aideIds?.length} {c.aideIds?.length === 1 ? "aide" : "aides"}</span>}</td>
+                 <td>{c.block || "—"}</td><td>{c.room || "—"}</td>
+                 <td className="text-[12px]">{c.terms.length === 2 ? `${yearLabel(year)} Full Year` : c.terms.map(termLabel).join(", ")}</td>
+                 <td className="text-[12px]">{STATUS[classStatus(c.terms)]}</td>
+@@ -145,22 +120,6 @@ function Courses() {
+           <AxFooter count={yearSections.length} />
+         </div>
+       </div>
+-      <Dialog open={!!draft} onOpenChange={(o) => !o && setDraft(null)}>
+-        <DialogContent className="max-w-[460px] text-[13px]">
+-          <DialogHeader><DialogTitle className="text-[17px]">{editing ? "Edit Course" : "New Course"}</DialogTitle></DialogHeader>
+-          {draft && <form onSubmit={saveCourse} className="space-y-2.5 text-[12px] text-muted-foreground">
+-            <div className="grid grid-cols-[120px_1fr] gap-3">
+-              <label>COURSE #<input className={inp} value={draft.id} disabled={editing} onChange={(e) => setDraft({ ...draft, id: e.target.value })} /></label>
+-              <label>COURSE NAME<input className={inp} value={draft.name} maxLength={80} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label></div>
+-            <div className="grid grid-cols-3 gap-3">
+-              <label>TYPE<select className={inp} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as CourseDef["type"] })}>{(["ACADEMIC", "ARTS", "ADVISORY"] as const).map((t) => <option key={t}>{t}</option>)}</select></label>
+-              <label>DEPARTMENT<input className={inp} value={draft.dept} maxLength={40} onChange={(e) => setDraft({ ...draft, dept: e.target.value })} /></label>
+-              <label>CREDITS<input type="number" min={0} max={5} step={0.25} className={inp} value={draft.credits} onChange={(e) => setDraft({ ...draft, credits: Number(e.target.value) })} /></label></div>
+-            <label className="block">DESCRIPTION<textarea className="h-20 w-full border border-vc-line p-2 text-[13px]" maxLength={1000} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></label>
+-            <div className="flex justify-end gap-2"><button type="button" onClick={() => setDraft(null)} className="h-8 border border-vc-line px-3 text-foreground">Cancel</button><button className="h-8 bg-ax-go px-4 font-semibold text-primary-foreground">{editing ? "Save Course" : "Create Course"}</button></div>
+-          </form>}
+-        </DialogContent>
+-      </Dialog>
+     </AxiomShell>
+   );
+ }
+diff --git a/src/routes/admin.home.$pageId.tsx b/src/routes/admin.home.$pageId.tsx
+new file mode 100644
+index 0000000..109c37f
+--- /dev/null
++++ b/src/routes/admin.home.$pageId.tsx
+@@ -0,0 +1,44 @@
++import { createFileRoute, Link } from "@tanstack/react-router";
++import { Plus } from "lucide-react";
++import { AxiomShell } from "@/components/admin/AxiomShell";
++import { homepageById, type HomeLink } from "@/lib/admin-homepages";
++import { useRecordWindow } from "@/lib/record-window";
++import { useNavigate } from "@tanstack/react-router";
++import { pageHead } from "@/lib/head";
++
++export const Route = createFileRoute("/admin/home/$pageId")({
++  head: ({ params }) => pageHead(`Axiom · ${homepageById(params.pageId)?.title ?? "Homepage"}`, "Administrator homepage: every task for this area of the school, grouped."),
++  component: Homepage,
++});
++
++const linkCls = "block py-[3px] text-[14px] text-vc-link-strong hover:underline";
++const btnCls = "my-1 inline-flex items-center gap-2 border border-vc-line bg-vc-panel px-3 py-1.5 text-[14px] text-foreground hover:bg-ax-head";
++
++function Homepage() {
++  const { pageId } = Route.useParams();
++  const h = homepageById(pageId);
++  const openRecord = useRecordWindow();
++  const nav = useNavigate();
++  if (!h) return <AxiomShell title="Homepage not found"><p>No homepage called {pageId}. <Link to="/admin" className="text-vc-link-strong">Back to the System homepage</Link></p></AxiomShell>;
++  const run = (a: "new-course" | "new-class" | "new-person") => { if (a === "new-course") openRecord("/admin/course/new"); else if (a === "new-class") openRecord("/admin/class/new"); else nav({ to: "/admin/users", search: { add: "user" } }); };
++  const render = (l: HomeLink) => "action" in l
++    ? <button key={l.label} type="button" onClick={() => run(l.action)} className={btnCls}><Plus className="size-4" />{l.label}</button>
++    : <Link key={`${l.to}${JSON.stringify(l.search ?? {})}${l.label}`} to={l.to} search={(l.search ?? {}) as never} className={linkCls}>{l.label}</Link>;
++  return (
++    <AxiomShell title={h.title}>
++      <div className="mx-auto max-w-[1240px] border border-vc-line bg-background">
++        <div role="tablist" className="flex border-b border-vc-line bg-vc-panel"><span role="tab" aria-selected className="border-r border-vc-line bg-background px-6 py-3 text-[15px] font-semibold">Homepage</span></div>
++        <h2 className="px-5 pb-1 pt-5 text-[30px] font-light text-ax-top">{h.heading}</h2>
++        <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2 xl:grid-cols-3">
++          {h.sections.map((s) => (
++            <section key={s.title} aria-label={s.title} className="min-h-[220px] border border-vc-line border-t-2 border-t-ax-panel bg-background">
++              <h3 className="bg-vc-panel px-4 py-2 text-[17px] font-light">{s.title}</h3>
++              <div className="space-y-4 px-4 py-3">
++                {s.groups.map((g) => <div key={g.heading}><h4 className="mb-1 text-[14px] font-bold">{g.heading}</h4>{g.links.map(render)}</div>)}
++              </div>
++            </section>))}
++        </div>
++      </div>
++    </AxiomShell>
++  );
++}
+diff --git a/src/routes/admin.index.tsx b/src/routes/admin.index.tsx
+index 663839b..3ec2a7a 100644
+--- a/src/routes/admin.index.tsx
++++ b/src/routes/admin.index.tsx
+@@ -9,6 +9,7 @@ import { useState } from "react";
+ import { STUDENTS, TEACHERS } from "@/lib/sis-data";
+ import { ROLE_LABEL } from "@/lib/auth-rules";
+ import { useSchool } from "@/lib/school-store";
++import { HOMEPAGES } from "@/lib/admin-homepages";
+ import { pageHead } from "@/lib/head";
+ 
+ export const Route = createFileRoute("/admin/")({
+@@ -19,7 +20,7 @@ export const Route = createFileRoute("/admin/")({
+ const TILES = [
+   { group: "Users & Security", items: [{ to: "/admin/users", label: "Users", icon: Users }, { to: "/admin/queries", label: "Find People", icon: Search }] },
+   { group: "Scheduling", items: [{ to: "/admin/terms", label: "School Years & Terms", icon: Clock }, { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock }, { to: "/admin/queries", label: "Find Classes", icon: Search }] },
+-  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/courses", label: "Class Enrollments", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
++  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/classes", label: "Classes", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
+   { group: "Portals", items: [{ to: "/admin/settings", label: "Portal Settings", icon: Palette }, { to: "/admin/settings", label: "Backgrounds", icon: Image }] },
+   { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
+ ] as const;
+@@ -43,6 +44,9 @@ function AdminHome() {
+             </Panel>))}
+         </div>
+         <div className="space-y-3">
++          <Panel title="Homepages" right={<span />}>
++            {HOMEPAGES.map((h) => <Link key={h.id} to="/admin/home/$pageId" params={{ pageId: h.id }} className="flex min-h-8 items-center border-b border-vc-line px-1 py-1 text-vc-link-strong last:border-0 hover:bg-vc-panel">{h.title}</Link>)}
++          </Panel>
+           <Panel title="Accounts by Role" right={<Link to="/admin/users" className="font-normal text-vc-link-strong">View all</Link>}>
+             {(["admin", "teacher", "student"] as const).map((r) => <div key={r} className="flex justify-between border-b border-vc-line py-1 last:border-0"><span>{ROLE_LABEL[r]}</span><b>{users.filter((u) => u.role === r).length}</b></div>)}
+           </Panel>
+diff --git a/src/routes/classes.tsx b/src/routes/classes.tsx
+index 502db7a..755e808 100644
+--- a/src/routes/classes.tsx
++++ b/src/routes/classes.tsx
+@@ -5,7 +5,8 @@ import { toast } from "sonner";
+ import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
+ import { ClassRow } from "@/components/portal/ClassRow";
+ import { SproutLine } from "@/components/portal/icons";
+-import { today } from "@/lib/sis-data";
++import { teacher, today } from "@/lib/sis-data";
++import { splitClasses } from "@/lib/course-types";
+ import { useMySections } from "@/lib/school-store";
+ import { Button } from "@/components/ui/button";
+ import { termById } from "@/lib/terms";
+@@ -45,6 +46,7 @@ function Overview() {
+   const year = nowTerm?.yearId ?? sem.map(termById).flatMap((t) => (t ? [t.yearId] : [])).sort().pop();
+   const terms = sem.filter((id) => termById(id)?.yearId === year).sort();
+   const mine = allClasses.filter((c) => c.status === ({ Active: "current", Future: "future", Past: "past" } as const)[tab]);
++  const grouped = splitClasses(mine, (id) => teacher(id).last);
+   const started = (id: string) => { const t = termById(id); return !t || +t.start <= +today(); };
+   return (
+     <PortalShell portal="student">
+@@ -78,7 +80,11 @@ function Overview() {
+         <div aria-hidden className="h-[39px] w-[22px] border-b border-vc-line" />
+       </div>
+       <div className="px-6 pb-8 pt-[21px]">
+-        {mine.length ? mine.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)
++        {mine.length ? <>
++          {grouped.academic.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)}
++          {grouped.other.length > 0 && <h3 className="mt-6 border-b border-vc-line pb-1 text-[18px] font-light text-foreground/90">Other Classes</h3>}
++          {grouped.other.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)}
++        </>
+           :<p className="py-12 text-center text-[14px] text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
+       </div>
+     </PortalShell>
+diff --git a/src/routes/student.tsx b/src/routes/student.tsx
+index 270f427..26739e0 100644
+--- a/src/routes/student.tsx
++++ b/src/routes/student.tsx
+@@ -9,7 +9,8 @@ import { Basketball, BookRibbon, ClockSolid, ListSquares } from "@/components/po
+ import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
+ import { MailOutline, PlayDisc } from "@/components/portal/icons";
+ import { Button } from "@/components/ui/button";
+-import { events, fmtDay, today, type Assignment } from "@/lib/sis-data";
++import { events, fmtDay, teacher, today, type Assignment } from "@/lib/sis-data";
++import { splitClasses } from "@/lib/course-types";
+ import { usePortal } from "@/lib/portal-store";
+ import { useInbox, useStudentAssignments , useMySections } from "@/lib/school-store";
+ import { pageHead } from "@/lib/head";
+@@ -34,6 +35,7 @@ const H2 = "text-[20px] leading-[30px]";
+ 
+ function Home() {
+   const COURSES = useMySections().filter((c) => c.status === "current");
++  const grouped = splitClasses(COURSES, (id) => teacher(id).last);
+   const { read, links } = usePortal();
+   const inbox = useInbox();
+   const all = useStudentAssignments();
+@@ -64,7 +66,9 @@ function Home() {
+             })}
+           </div>
+           <h2 className={`mb-[10.5px] mt-3 ${H2}`}>My Classes</h2>
+-          {COURSES.map((c) => <ClassRow key={c.id} c={c} variant="home" />)}
++          {grouped.academic.map((c) => <ClassRow key={c.id} c={c} variant="home" />)}
++          {grouped.other.length > 0 && <h2 className={`mb-[10.5px] mt-3 ${H2}`}>Other Classes</h2>}
++          {grouped.other.map((c) => <ClassRow key={c.id} c={c} variant="home" />)}
+         </section>
+         <aside>
+           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>
+diff --git a/src/routes/teacher.index.tsx b/src/routes/teacher.index.tsx
+index ce768b7..825c36c 100644
+--- a/src/routes/teacher.index.tsx
++++ b/src/routes/teacher.index.tsx
+@@ -1,4 +1,5 @@
+ import { createFileRoute, Link } from "@tanstack/react-router";
++import { isOtherClass } from "@/lib/course-types";
+ import { addDays, format, isSameDay } from "date-fns";
+ import { BookOpen, CalendarDays, ChevronDown, ClipboardCheck, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, NotebookPen, Pencil, Plus, Search, Users } from "lucide-react";
+ import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+@@ -14,7 +15,7 @@ export const Route = createFileRoute("/teacher/")({
+   component: TeacherHome,
+ });
+ 
+-const TABS = ["My Classes", "Groups", "Future", "Completed"] as const;
++const TABS = ["My Classes", "Other Classes", "Future", "Completed"] as const;
+ const h2 = "text-[20px] leading-[30px]";
+ const hov = "hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]";
+ const btn = `flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`;
+@@ -46,7 +47,7 @@ function TeacherHome() {
+   }, [custom, mineIds]);
+   const week = [0, 1, 2, 3, 4].map((n) => addDays(now, n));
+   const todays = all.flatMap((c) => meetingsOn(c, schedulingSets, now).map((m) => ({ c, label: [m.name || c.block, [scheduleTime(m.start), m.end ? scheduleTime(m.end) : ""].filter(Boolean).join(" - ")].filter(Boolean).join(": ") }))).sort((a, b) => a.label.localeCompare(b.label));
+-  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && c.type !== "ADVISORY" : tab === "Groups" ? c.status === "current" && c.type === "ADVISORY" : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
++  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && !isOtherClass(c.type) : tab === "Other Classes" ? c.status === "current" && isOtherClass(c.type) : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
+   const toolLink = (label: string, icon: ReactNode, tabId: "assignments" | "grades" | "attendance", cls: string) => first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: tabId }} className={cls}>{icon}{label}</Link> : null;
+   return (
+     <PortalShell portal="teacher" area="teacher">
+diff --git a/src/test/admin-components.test.tsx b/src/test/admin-components.test.tsx
+new file mode 100644
+index 0000000..8473862
+--- /dev/null
++++ b/src/test/admin-components.test.tsx
+@@ -0,0 +1,76 @@
++import { QueryClient } from "@tanstack/react-query";
++import { createRouter, rootRouteId } from "@tanstack/react-router";
++import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { AdvancedSearch, type SearchRow } from "@/components/admin/AdvancedSearch";
++import { PersonField } from "@/components/admin/PersonField";
++import { routeTree } from "@/routeTree.gen";
++
++afterEach(cleanup);
++const names: Record<string, string> = { a: "Pace, Sheila", b: "Green, Sarah", c: "Hopper, Grace" };
++
++describe("PersonField", () => {
++  it("removes a highlighted name when Delete is pressed", () => {
++    const onChange = vi.fn();
++    render(<PersonField label="Teacher's Aide" multi ids={["a", "b"]} onChange={onChange} nameOf={(id) => names[id] ?? id} onSearch={() => {}} />);
++    fireEvent.click(screen.getByRole("button", { name: "Pace, Sheila" }));
++    fireEvent.keyDown(screen.getByRole("group"), { key: "Delete" });
++    expect(onChange).toHaveBeenCalledWith(["b"]);
++  });
++  it("highlights the last name first on Backspace, then deletes it", () => {
++    const onChange = vi.fn();
++    const { rerender } = render(<PersonField label="Teacher" ids={["a"]} onChange={onChange} nameOf={(id) => names[id] ?? id} onSearch={() => {}} />);
++    fireEvent.keyDown(screen.getByRole("group"), { key: "Backspace" });
++    expect(onChange).not.toHaveBeenCalled();
++    fireEvent.keyDown(screen.getByRole("group"), { key: "Backspace" });
++    expect(onChange).toHaveBeenCalledWith([]);
++    rerender(<PersonField label="Teacher" ids={[]} onChange={onChange} nameOf={(id) => names[id] ?? id} onSearch={() => {}} />);
++  });
++  it("opens the advanced search from the magnifier", () => {
++    const onSearch = vi.fn();
++    render(<PersonField label="Teacher" ids={[]} onChange={() => {}} nameOf={(id) => id} onSearch={onSearch} />);
++    fireEvent.click(screen.getByRole("button", { name: "Search Teacher" }));
++    expect(onSearch).toHaveBeenCalled();
++  });
++});
++
++describe("AdvancedSearch", () => {
++  const rows: SearchRow[] = [
++    { id: "s1", first: "Cassandra", last: "Abbott", grade: 6, cells: ["Abbott, Cassandra", "Grade 6", "Student (6)"] },
++    { id: "s2", first: "Chris", last: "Abbott", grade: 2, cells: ["Abbott, Chris", "Grade 2", "Student (2)"] },
++    { id: "s3", first: "Joshua", last: "Accime", grade: 7, cells: ["Accime, Joshua", "Grade 7", "Student (7)"] },
++  ];
++  it("filters by current grade on Run Query and selects the ticked people", () => {
++    const onSelect = vi.fn();
++    render(<AdvancedSearch open onClose={() => {}} noun="Person" kind="person" multi heads={["Full Name", "Current Grade", "Roles"]} rows={rows} onSelect={onSelect} />);
++    const dialog = screen.getByRole("dialog");
++    fireEvent.click(within(dialog).getByLabelText("Grade 2"));
++    fireEvent.click(within(dialog).getAllByRole("button", { name: "Run Query" })[0]!);
++    expect(within(dialog).queryByText("Abbott, Cassandra")).toBeNull();
++    fireEvent.click(within(dialog).getByLabelText("Select Abbott, Chris"));
++    fireEvent.click(within(dialog).getByRole("button", { name: /Select Person/ }));
++    expect(onSelect).toHaveBeenCalledWith(["s2"]);
++  });
++  it("lets a single-select search pick only one person", () => {
++    const onSelect = vi.fn();
++    render(<AdvancedSearch open onClose={() => {}} noun="Person" kind="person" heads={["Full Name"]} rows={rows} onSelect={onSelect} />);
++    const dialog = screen.getByRole("dialog");
++    fireEvent.click(within(dialog).getByLabelText("Select Abbott, Cassandra"));
++    fireEvent.click(within(dialog).getByLabelText("Select Accime, Joshua"));
++    fireEvent.click(within(dialog).getByRole("button", { name: /Select Person/ }));
++    expect(onSelect).toHaveBeenCalledWith(["s3"]);
++  });
++  it("hides people who are already chosen", () => {
++    render(<AdvancedSearch open onClose={() => {}} noun="Person" kind="person" heads={["Full Name"]} rows={rows} exclude={["s1"]} onSelect={() => {}} />);
++    expect(screen.queryByText("Abbott, Cassandra")).toBeNull();
++    expect(screen.getByText("Abbott, Chris")).toBeTruthy();
++  });
++});
++
++describe("administrator routes", () => {
++  it.each(["/admin/home/academic-configuration", "/admin/classes", "/admin/course/new", "/admin/course/KHOME", "/admin/class/new?course=KHOME"])("matches %s", (path) => {
++    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
++    const pathname = path.split("?")[0]!;
++    expect(router.matchRoutes(pathname).at(-1)?.routeId).not.toBe(rootRouteId);
++  });
++});
