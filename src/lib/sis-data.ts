@@ -1,12 +1,13 @@
 // Fictional Cedar Ridge Academy dataset. Single source of truth: every page reads from here.
 import { addDays, format, isWeekend, startOfDay } from "date-fns";
+import { isOtherClass, type CourseType } from "./course-types";
 
 export const SCHOOL = { name: "Cedar Ridge Academy", short: "CRA", domain: "cedarridge.edu" };
 
 export type Teacher = { id: string; prefix: string; first: string; last: string; email: string; dept: string; title: string };
 export type Course = {
   id: string; code: string; name: string; section: string; teacherId: string; block: string; room: string;
-  letter: string; pct: number; type: "ACADEMIC" | "ARTS" | "ADVISORY"; days: number[]; time: string;
+  letter: string; pct: number; type: CourseType; days: number[]; time: string;
 };
 export type Student = {
   email?: string;
@@ -82,7 +83,7 @@ export function scheduleFor(date: Date): Period[] {
   const dow = date.getDay();
   if (dow === 0 || dow === 6) return [];
   const slots = ["8:00 am", "9:10 am", "10:15 am", "10:35 am", "11:45 am", "12:50 pm", "1:40 pm", "2:45 pm"];
-  const rot = COURSES.filter((c) => c.days.includes(dow) && c.type !== "ADVISORY");
+  const rot = COURSES.filter((c) => c.days.includes(dow) && !isOtherClass(c.type));
   const pick = (i: number) => rot[(i + dow) % rot.length]!;
   const cls = (i: number): Period => { const c = pick(i); return { time: "", title: courseTitle(c), detail: `${teacher(c.teacherId).last} • ${c.block} • ${c.room}`, kind: "class", courseId: c.id }; };
   const list: Period[] = [

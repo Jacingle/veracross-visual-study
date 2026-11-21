@@ -12,6 +12,7 @@ import blossoms from "@/assets/faculty-bg.jpg";
 import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
 import { setTypeColors } from "./type-colors";
+import { isOtherClass, normalizeCourseType } from "./course-types";
 import { readSchool, saveSchool, savesSettled } from "./browser-save";
 import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -33,11 +34,11 @@ export type Website = { bg: "none" | "color" | "photo"; color: string; photo: st
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
-export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
+export type Section = Course & { courseNo: string; teacherIds: string[]; /** Teacher's aides: any number, in addition to the one teacher. */ aideIds?: string[] | undefined; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
 
 const Y = String(yearStartFor(new Date()));
 const FY = [`${Y}-S1`, `${Y}-S2`];
-const SEED_COURSES: CourseDef[] = [...new Map(ALL_SECTIONS.map((c) => [c.id.split("-")[0]!, { id: c.id.split("-")[0]!, name: c.name, type: c.type, dept: "", credits: c.type === "ADVISORY" ? 0 : 1, description: "" }])).values()];
+const SEED_COURSES: CourseDef[] = [...new Map(ALL_SECTIONS.map((c) => [c.id.split("-")[0]!, { id: c.id.split("-")[0]!, name: c.name, type: c.type, dept: "", credits: isOtherClass(c.type) ? 0 : 1, description: "" }])).values()];
 const SEED_SECTIONS: Section[] = ALL_SECTIONS.map((c) => ({
   ...c, courseNo: c.id.split("-")[0]!, teacherIds: [c.teacherId], published: true,
   terms: c.id === "210-1" ? [`${Y}-S2`] : FY, // Honors Biology starts next semester (shows under Future)
@@ -141,6 +142,9 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
         v.users = (v.users ?? INITIAL.users).map((u) => u.id === "u-teacher" && u.personId === "t3" ? { ...u, personId: "p-teacher", first: "Faculty", last: "Account" } : u.id === "u-student" && u.personId === "me" ? { ...u, personId: "p-student", first: "Student", last: "Account" } : u);
         v.sampleCleared = true;
       }
+      if (v.courses) v.courses = v.courses.map((c) => ({ ...c, type: normalizeCourseType(c.type) }));
+      // A class has one teacher; extra teachers saved by older versions become teacher's aides.
+      if (v.sections) v.sections = v.sections.map((c) => ({ ...c, type: normalizeCourseType(c.type), ...(c.teacherIds.length > 1 ? { teacherIds: c.teacherIds.slice(0, 1), aideIds: [...new Set([...(c.aideIds ?? []), ...c.teacherIds.slice(1)])] } : {}) }));
       const users = v.users?.length ? v.users : INITIAL.users;
       const st = { ...DEFAULT_SETTINGS, ...v.settings };
       const first = !readyRef.current;

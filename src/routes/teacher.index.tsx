@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { isOtherClass } from "@/lib/course-types";
 import { addDays, format, isSameDay } from "date-fns";
 import { BookOpen, CalendarDays, ChevronDown, ClipboardCheck, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, NotebookPen, Pencil, Plus, Search, Users } from "lucide-react";
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/teacher/")({
   component: TeacherHome,
 });
 
-const TABS = ["My Classes", "Groups", "Future", "Completed"] as const;
+const TABS = ["My Classes", "Other Classes", "Future", "Completed"] as const;
 const h2 = "text-[20px] leading-[30px]";
 const hov = "hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]";
 const btn = `flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`;
@@ -46,7 +47,7 @@ function TeacherHome() {
   }, [custom, mineIds]);
   const week = [0, 1, 2, 3, 4].map((n) => addDays(now, n));
   const todays = all.flatMap((c) => meetingsOn(c, schedulingSets, now).map((m) => ({ c, label: [m.name || c.block, [scheduleTime(m.start), m.end ? scheduleTime(m.end) : ""].filter(Boolean).join(" - ")].filter(Boolean).join(": ") }))).sort((a, b) => a.label.localeCompare(b.label));
-  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && c.type !== "ADVISORY" : tab === "Groups" ? c.status === "current" && c.type === "ADVISORY" : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
+  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && !isOtherClass(c.type) : tab === "Other Classes" ? c.status === "current" && isOtherClass(c.type) : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
   const toolLink = (label: string, icon: ReactNode, tabId: "assignments" | "grades" | "attendance", cls: string) => first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: tabId }} className={cls}>{icon}{label}</Link> : null;
   return (
     <PortalShell portal="teacher" area="teacher">

@@ -1,29 +1,50 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Plus, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Role } from "@/lib/auth-rules";
 import { buildAccounts, parseBatch } from "@/lib/batch-accounts";
 import { useSchool } from "@/lib/school-store";
 import { SCHOOL } from "@/lib/sis-data";
+import { useRecordWindow } from "@/lib/record-window";
+import { useAdminWorkspace } from "@/lib/admin-workspace";
 
 const iconBtn = "grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20";
 const act = "block w-full px-0 py-1 text-left text-[16px] text-vc-link-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline";
 
-/** The + button in the Axiom toolbar: add a record from anywhere. */
+/** The + button in the Axiom toolbar: add a record from anywhere. Courses and classes open in their own window. */
 export function AddMenu() {
+  const openRecord = useRecordWindow();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild><button type="button" aria-label="Add" title="Add" className={iconBtn}><Plus className="size-5" strokeWidth={3} /></button></DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[200px] text-[14px]">
-        <DropdownMenuItem asChild><Link to="/admin/courses" search={{ add: "course" }}>Course</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/admin/courses">Class (pick a course, then + Class)</Link></DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openRecord("/admin/course/new")}>Course</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openRecord("/admin/class/new")}>Class</DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/admin/users" search={{ add: "user" }}>Person / User Account</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/admin/scheduling">Scheduling Set</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** The lightning-bolt menu on a saved record: Save to Workspace, Copy Record, Delete. */
+export function RecordActions({ title, onCopy, onDelete }: { title: string; onCopy: () => void; onDelete: () => void }) {
+  const { user } = useSchool();
+  const workspace = useAdminWorkspace(user?.id);
+  const path = useRouterState({ select: (r) => r.location.href });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild><button type="button" aria-label="Record actions" title="Actions" className={iconBtn}><Zap className="size-5" fill="currentColor" /></button></DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[190px] text-[14px]">
+        <DropdownMenuItem onSelect={() => { if (!workspace.favorites.some((f) => f.path === path)) workspace.toggleFavorite({ title, path }); toast.success("Saved to your Favorites"); }}>Save to Workspace...</DropdownMenuItem>
+        <DropdownMenuItem onSelect={onCopy}>Copy Record...</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

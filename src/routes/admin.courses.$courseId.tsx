@@ -9,8 +9,8 @@ import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
 import { rosterOf, useSchool, useSection, useSectionAssignments, type Section } from "@/lib/school-store";
 import { classStatus, schoolYears } from "@/lib/terms";
-import { Button } from "@/components/ui/button";
-import { PersonPhoto } from "@/components/common/PersonPhoto";
+import { AdvancedSearch, type SearchRow } from "@/components/admin/AdvancedSearch";
+import { PersonField } from "@/components/admin/PersonField";
 import { enrollmentPeople, validateClassRecord } from "@/lib/class-records";
 import { pageHead } from "@/lib/head";
 
@@ -40,11 +40,8 @@ function Editor({ c }: { c: Section }) {
   const { courseFlags, update, scores, weights, schedulingSets, users, courses, sections: allSections } = useSchool();
   const nav = useNavigate();
   const [d, setD] = useState(c);
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [facultySearch, setFacultySearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
-  const [drop, setDrop] = useState<string[]>([]);
+  const [picking, setPicking] = useState<"teacher" | "aide" | "student" | null>(null);
+  const [pending, setPending] = useState(false);
   const list = useSectionAssignments(c.id);
   const roster = rosterOf(c);
   const f = courseFlags[c.id] ?? {};
@@ -57,10 +54,11 @@ function Editor({ c }: { c: Section }) {
   const courseRecord = courses.find((x) => x.id === c.courseNo);
   const schedule = schedulingSets.find((s) => s.id === d.scheduleSetId);
   const allStudents = enrollmentPeople(users, "student");
-  const grades = [...new Set(allStudents.map((s) => s.grade ?? 9))].sort((a, b) => a - b);
-  const pool = allStudents.filter((s) => !c.studentIds.includes(s.personId) && (!gradeFilter || String(s.grade ?? 9) === gradeFilter) && `${s.first} ${s.last} ${s.email}`.toLowerCase().includes(search.toLowerCase()));
-  const addable = faculty.filter((t) => !d.teacherIds.includes(t.personId) && `${t.first} ${t.last} ${t.email}`.toLowerCase().includes(facultySearch.toLowerCase()));
-  const makePrimary = (id: string) => setD({ ...d, teacherIds: [id, ...d.teacherIds.filter((x) => x !== id)] });
+  const facultyRows: SearchRow[] = faculty.map((u) => ({ id: u.personId, first: u.first, last: u.last, cells: [`${u.last}, ${u.preferred || u.first}`, "Faculty", u.email] }));
+  const studentRows: SearchRow[] = allStudents.map((u) => ({ id: u.personId, first: u.first, last: u.last, grade: u.grade ?? 9, cells: [`${u.last}, ${u.preferred || u.first}`, `Grade ${u.grade ?? 9}`, `Student (${u.grade ?? 9})`] }));
+  const personName = (id: string) => { const u = users.find((x) => x.personId === id); return u ? `${u.last}, ${u.preferred || u.first}` : teacherFull(id); };
+  const openPerson = (id: string) => { const u = users.find((x) => x.personId === id); if (u) nav({ to: "/admin/users", search: { q: u.email } }); };
+  const aides = d.aideIds ?? [];
   const save = () => {
     const error = validateClassRecord({ ...d, studentIds: c.studentIds }, users);
     if (error) { toast.error(error); return; }
@@ -75,16 +73,15 @@ function Editor({ c }: { c: Section }) {
   const status = classStatus(d.terms);
   const Row = ({ l, children }: { l: string; children: React.ReactNode }) => <div className="grid grid-cols-[130px_1fr] items-center gap-2 border-b border-vc-line py-1.5 last:border-0"><span className="text-muted-foreground">{l}</span><div>{children}</div></div>;
   const [tab, setTab] = useState("general");
-  const [adding, setAdding] = useState(false);
   const flag = (k: string, label: string, def: boolean) => <AxField key={k} label={label}><AxToggle label={label} on={f[k] ?? def} onChange={(on) => update((s) => ({ ...s, courseFlags: { ...s.courseFlags, [c.id]: { ...s.courseFlags[c.id], [k]: on } } }))} /></AxField>;
   const groups: AxGroup[] = [
-    { heading: "General", items: [{ id: "general", label: "General" }, { id: "registrations", label: "Registrations" }, { id: "teachers", label: "Teachers" }] },
+    { heading: "General", items: [{ id: "general", label: "General" }, { id: "registrations", label: "Registrations" }] },
     { heading: "Communication", items: [{ id: "emails", label: "Student Email Recipients" }] },
     { heading: "Schedule", items: [{ id: "schedule", label: "Schedule" }, { id: "suggest", label: "Schedule Suggestions" }] },
     { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] },
     { heading: "Other", items: [{ id: "others", label: "Other Sections" }] },
   ];
-  const TITLES: Record<string, string> = { general: "General", registrations: "Registrations", teachers: "Teachers", emails: "Student Email Recipients", schedule: "Schedule", suggest: "Schedule Suggestions", settings: "Settings", others: "Other Sections" };
+  const TITLES: Record<string, string> = { general: "General", registrations: "Registrations", emails: "Student Email Recipients", schedule: "Schedule", suggest: "Schedule Suggestions", settings: "Settings", others: "Other Sections" };
   const LETTER = ["M", "T", "W", "R", "F"];
   const scheduleText = d.days.length && d.time ? `${d.days.map((n) => LETTER[n - 1]).join("")}: ${d.time}` : "<None Specified>";
   const bandNames = schedule ? schedule.blocks.map((b) => b.name) : BLOCKS;
@@ -113,7 +110,8 @@ function Editor({ c }: { c: Section }) {
               <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
             </div>
             <div>
-              <AxField label="Teacher"><div className={`${axInput} flex items-center justify-between bg-vc-panel`}><span className="truncate">{d.teacherIds[0] ? teacherFull(d.teacherIds[0]) : "<None Specified>"}{d.teacherIds.length > 1 ? ` +${d.teacherIds.length - 1}` : ""}</span><button type="button" onClick={() => setTab("teachers")} className="shrink-0 pl-2 text-[12px] text-vc-link-strong hover:underline">Change</button></div></AxField>
+              <AxField label="Teacher"><PersonField label="Teacher" ids={d.teacherIds.slice(0, 1)} onChange={(ids) => setD({ ...d, teacherIds: ids.slice(0, 1) })} nameOf={personName} onSearch={() => setPicking("teacher")} onOpen={openPerson} /></AxField>
+              <AxField label="Teacher's Aide"><PersonField label="Teacher's Aide" multi ids={aides} onChange={(ids) => setD({ ...d, aideIds: ids })} nameOf={personName} onSearch={() => setPicking("aide")} onOpen={openPerson} /></AxField>
               <AxField label="Room"><input aria-label="Room" className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
               <AxField label="Schedule"><div className={`${axInput} flex items-center bg-vc-panel`}>{scheduleText}</div></AxField>
             </div>
@@ -128,14 +126,10 @@ function Editor({ c }: { c: Section }) {
               <AxField label="Published"><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
             </div>
           </div>}
-          <div className="flex flex-wrap items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => setAdding((v) => !v)} aria-expanded={adding}>{adding ? "Done Adding" : "Add Record"}</AxAdd><span className="text-[13px] text-vc-gray">{adding ? "Tick the students to enroll, then choose Enroll selected." : "Enrolls a student in this class."}</span></div>
-          {adding && <div className="border-b border-vc-line px-4 pt-3">
-        <div className="mb-3 flex flex-wrap items-center gap-2"><input aria-label="Find students to enroll" className={`${inp} max-w-80`} placeholder="Find students by name or email" value={search} onChange={(e) => setSearch(e.target.value)} /><select aria-label="Filter students by grade" className={`${inp} w-32`} value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}><option value="">All grades</option>{grades.map((g) => <option key={g} value={String(g)}>Grade {g}</option>)}</select><Button variant="outline" size="sm" disabled={!pool.length} onClick={() => setSelected([...new Set([...selected, ...pool.map((u) => u.personId)])])}>Select all shown ({pool.length})</Button><Button variant="outline" size="sm" disabled={!selected.length} onClick={() => setSelected([])}>Clear</Button><Button size="sm" disabled={!selected.length} onClick={() => { setRoster([...c.studentIds, ...selected]); toast.success(`${selected.length} ${selected.length === 1 ? "student" : "students"} enrolled`); setSelected([]); }}>Enroll selected ({selected.length})</Button></div>
-        <div className="mb-3 grid max-h-44 grid-cols-1 gap-1 overflow-y-auto border-b border-vc-line pb-3 md:grid-cols-2">{pool.map((u) => <label key={u.id} className="flex items-center gap-2 px-2 py-1"><input type="checkbox" aria-label={`Enroll ${u.first} ${u.last}`} checked={selected.includes(u.personId)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.personId] : ids.filter((id) => id !== u.personId))} /><PersonPhoto personId={u.personId} className="size-7" /><span>{u.last}, {u.first}<span className="ml-2 text-[11px] text-muted-foreground">Grade {u.grade ?? 9}</span></span></label>)}{!pool.length && <p className="px-2 text-muted-foreground">No matching unenrolled students.</p>}</div>
-          </div>}
+          <div className="flex flex-wrap items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => setPending(true)}>Add Record...</AxAdd><span className="text-[13px] text-vc-gray">Enrolls a student: use the search icon on the new row.</span></div>
           <div className="overflow-x-auto"><table className="w-full min-w-[820px] border-collapse">
             <thead><tr><th className={axTh}>Person</th><th className={axTh}>Grade</th><th className={axTh}>Level</th><th className={axTh}>Roles</th><th className={axTh}>Late Date Enrolled</th><th className={axTh}>Date Withdrawn</th><th className={axTh}>Notes</th><th className={`${axTh} w-10`} /><th className={`${axTh} w-10`} /></tr></thead>
-            <tbody>{roster.map((s) => (
+            <tbody>{pending && <tr className="bg-vc-tile-warm"><td className={axTd} colSpan={9}><div className="flex max-w-xl items-center gap-3"><div className="min-w-0 flex-1"><PersonField label="Person" ids={[]} onChange={() => {}} nameOf={personName} onSearch={() => setPicking("student")} placeholder="Search for a student" /></div><button type="button" onClick={() => setPending(false)} className="text-[13px] text-vc-gray hover:underline">Cancel</button></div></td></tr>}{roster.map((s) => (
               <tr key={s.id} className="bg-[#fafafa] hover:bg-vc-panel">
                 <td className={axTd}><Link to="/admin/enrollment/$courseId/$studentId" params={{ courseId: c.id, studentId: s.id }} className="text-vc-link-strong underline">{s.last}, {s.first}</Link></td>
                 <td className={axTd}>{s.grade}</td><td className={`${axTd} text-vc-gray`}>N/A</td><td className={axTd}>Student ({s.grade})</td>
@@ -150,31 +144,6 @@ function Editor({ c }: { c: Section }) {
           <AxFooter count={roster.length} />
           <p className="px-4 py-2 text-[12px] text-vc-gray">Notes and late dates are saved with Update.</p>
         </>}
-        {tab === "teachers" && <div className="px-6 py-4">
-          <Row l="Teacher(s)">
-  <div className="space-y-1">
-    {d.teacherIds.map((id, i) => (
-      <div key={id} className="flex items-center gap-2">
-        <PersonPhoto personId={id} className="size-7" />
-        <span className="flex-1">{teacherFull(id)}</span>
-        {i === 0 ? <span className="border border-vc-line px-1.5 text-[10px] uppercase text-muted-foreground">Primary</span> : <button type="button" onClick={() => makePrimary(id)} className="text-[12px] text-vc-link-strong hover:underline">Make primary</button>}
-        <button type="button" aria-label={`Remove ${teacherFull(id)}`} disabled={d.teacherIds.length < 2} onClick={() => setD({ ...d, teacherIds: d.teacherIds.filter((x) => x !== id) })} className="text-[12px] text-destructive hover:underline disabled:opacity-40 disabled:no-underline">Remove</button>
-      </div>))}
-    {!d.teacherIds.length && <p className="text-muted-foreground">No teacher assigned.</p>}
-  </div>
-  <input aria-label="Find teachers" className={`${inp} mt-2`} placeholder="Add a teacher: search faculty by name or email" value={facultySearch} onChange={(e) => setFacultySearch(e.target.value)} />
-  <div className="mt-1 max-h-36 overflow-y-auto">
-    {addable.slice(0, 6).map((t) => (
-      <button type="button" key={t.id} aria-label={`Add ${t.first} ${t.last}`} onClick={() => { setD({ ...d, teacherIds: [...d.teacherIds, t.personId] }); setFacultySearch(""); }} className="flex w-full items-center gap-2 px-1 py-1 text-left hover:bg-vc-panel">
-        <PersonPhoto personId={t.personId} className="size-7" />
-        <span>{t.prefix} {t.first} {t.last}<span className="ml-2 text-[11px] text-muted-foreground">{t.email}</span></span>
-        <span className="ml-auto text-[12px] text-vc-link-strong">+ Add</span>
-      </button>))}
-    {addable.length > 6 && <div className="px-1 text-[11px] text-muted-foreground">{addable.length - 6} more: keep typing to narrow the list</div>}
-    {!addable.length && <div className="px-1 text-[11px] text-muted-foreground">No matching faculty to add.</div>}
-  </div>
-</Row>
-        </div>}
         {tab === "emails" && <div className="px-6 py-4">
           <p className="mb-2 text-[13px] text-vc-gray">Student email recipients for {c.code}. Copy the list into a message.</p>
           <textarea readOnly aria-label="Student email recipients" className="h-32 w-full border border-vc-line bg-vc-panel p-2 font-mono text-[13px]" value={roster.map((s) => s.email).filter(Boolean).join("; ")} />
@@ -227,6 +196,9 @@ function Editor({ c }: { c: Section }) {
           <div>{FLAGS.slice(2).map(([k, l, def]) => flag(k, l, def))}</div>
         </div>}
       </AxDetail>
+      <AdvancedSearch open={picking === "teacher"} onClose={() => setPicking(null)} noun="Person" kind="person" heads={["Full Name", "Roles", "Email"]} rows={facultyRows} exclude={aides} onSelect={(ids) => setD({ ...d, teacherIds: ids.slice(0, 1) })} onAddNew={() => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760")} />
+      <AdvancedSearch open={picking === "aide"} onClose={() => setPicking(null)} noun="Person" kind="person" multi heads={["Full Name", "Roles", "Email"]} rows={facultyRows} exclude={[...aides, ...d.teacherIds]} onSelect={(ids) => setD({ ...d, aideIds: [...new Set([...aides, ...ids])] })} onAddNew={() => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760")} />
+      <AdvancedSearch open={picking === "student"} onClose={() => setPicking(null)} noun="Person" kind="person" multi heads={["Full Name", "Current Grade", "Roles"]} rows={studentRows} exclude={c.studentIds} onSelect={(ids) => { setRoster([...c.studentIds, ...ids]); setPending(false); toast.success(`${ids.length} ${ids.length === 1 ? "student" : "students"} enrolled`); }} onAddNew={() => window.open("/admin/users?add=user", "_blank", "popup=yes,width=1100,height=760")} />
     </AxiomShell>
   );
 }
