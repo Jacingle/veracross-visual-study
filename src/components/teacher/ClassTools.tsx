@@ -141,30 +141,34 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
 }
 
 export function Weights({ c, list }: { c: Course; list: Assignment[] }) {
-  const { weights, update } = useSchool();
-  const cats = [...new Set(list.map((a) => a.category))];
-  const initial: Weight[] = weights[c.id] ?? defaultWeights(cats);
+  const { weights, update, assignmentTypes } = useSchool();
+  const used = [...new Set(list.map((a) => a.category))];
+  const cats = [...new Set([...used, ...assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => t.description)])];
+  const initial: Weight[] = weights[c.id] ?? defaultWeights(used);
   const [w, setW] = useState<Weight[]>([...initial, ...cats.filter((x) => !initial.some((y) => y.cat === x)).map((cat) => ({ cat, weight: 0, drop: false }))]);
   const total = weightsTotal(w);
+  const head = "rounded-[6px] bg-vc-sky px-3 text-center text-[15px] font-semibold h-[50px]";
+  const cellCls = "rounded-[6px] bg-[#f4f4f4] px-3 text-center text-[15px] text-foreground/80 h-[54px]";
   return (
-    <div className="max-w-[720px]"><h2 className="mb-3 text-[22px] font-light">Assignment Weights</h2><div className="mb-3 flex gap-2 text-[13px]"><Button size="sm" variant={!weights[c.id]?.length ? "default" : "outline"} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: [] } })); toast.success("Weighting by assignment points"); }}>Assignment Points</Button><Button size="sm" variant={weights[c.id]?.length ? "default" : "outline"} onClick={() => setW(defaultWeights(cats))}>Assignment Type</Button></div>
-      <table className="w-full border-separate border-spacing-1 text-[13px]">
-        <thead><tr className="[&>th]:rounded-sm [&>th]:bg-vc-sky [&>th]:px-3 [&>th]:py-2 [&>th]:font-semibold"><th className="text-left">Assignment Types</th><th>Weight</th><th>Drop Lowest</th><th>Show in Gradebook</th><th>Count</th><th>Total Points</th></tr></thead>
+    <div className="px-6 pb-8">
+      <h2 className="mb-5 mt-4 w-[720px] max-w-full text-center text-[20px] font-medium">{termLabel(c.terms[0] ?? "")}</h2>
+      <div className="mb-3 flex gap-2 text-[13px]"><Button size="sm" variant={!weights[c.id]?.length ? "default" : "outline"} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: [] } })); toast.success("Weighting by assignment points"); }}>Weight by Assignment Points</Button><Button size="sm" variant={weights[c.id]?.length ? "default" : "outline"} onClick={() => setW(defaultWeights(used))}>Weight by Assignment Type</Button></div>
+      <table className="w-[720px] max-w-full border-separate border-spacing-[5px] text-[15px]">
+        <thead><tr><th className={`${head} text-left`}>Assignment Types</th><th className={head}>Weight</th><th className={head}>Drop Lowest</th><th className={head}>Count</th><th className={head}>Total Points</th></tr></thead>
         <tbody>
-          <tr className="[&>td]:rounded-sm [&>td]:bg-vc-tile-warm [&>td]:px-3 [&>td]:py-2 [&>td]:text-center [&>td]:font-semibold"><td className="!text-right">Totals</td><td className={total === 100 ? "text-vc-success" : "text-destructive"}>{total}%</td><td /><td /><td>{list.length}</td><td>{list.reduce((s2, a) => s2 + a.points, 0)}</td></tr>
+          <tr className="[&>td]:h-[54px] [&>td]:rounded-[6px] [&>td]:bg-vc-tile-warm [&>td]:px-3 [&>td]:text-center [&>td]:text-foreground/80"><td className="!text-right">Totals</td><td className={total === 100 ? "!bg-[#e4f4e2] text-vc-success" : "!bg-[#fbe9e9] text-destructive"}>{total}%</td><td /><td>{list.length}</td><td>{list.reduce((s2, a) => s2 + a.points, 0)}</td></tr>
           {w.map((x, i) => { const items = list.filter((a) => a.category === x.cat); const st = categoryStats(items); const col = categoryColor(w, x.cat); const patch = (p2: Partial<Weight>) => setW(w.map((y, j) => (j === i ? { ...y, ...p2 } : y))); return (
-          <tr key={x.cat} className="[&>td]:rounded-sm [&>td]:bg-vc-panel [&>td]:px-3 [&>td]:py-1.5 [&>td]:text-center">
-            <td style={{ background: col }} className="min-w-[220px] !text-left font-semibold uppercase text-primary-foreground">{x.cat}</td>
-            <td><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-7 w-14 rounded-sm border border-vc-line bg-background pr-1 text-right" value={String(x.weight)} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && patch({ weight: Number(e.target.value) })} /> %</td>
-            <td><input type="checkbox" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
-            <td><input type="checkbox" aria-label={`Show ${x.cat} in gradebook`} checked={x.show !== false} onChange={(e) => patch({ show: e.target.checked })} /></td>
-            <td>{st.count || ""}</td><td>{items.reduce((s2, a) => s2 + a.points, 0) || ""}</td>
+          <tr key={x.cat}>
+            <td style={{ background: col }} className="h-[54px] min-w-[220px] rounded-[6px] px-3 text-left text-[15px] font-semibold uppercase text-primary-foreground">{x.cat}</td>
+            <td className={cellCls}><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-[34px] w-[64px] rounded-[3px] border border-vc-line bg-background pr-1.5 text-right outline-none focus:border-vc-link" value={x.weight ? String(x.weight) : ""} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && patch({ weight: Number(e.target.value) })} /> %</td>
+            <td className={cellCls}><input type="checkbox" className="size-[30px] rounded-[3px] border border-vc-line align-middle accent-vc-link" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
+            <td className={cellCls}>{st.count || ""}</td><td className={cellCls}>{items.reduce((s2, a) => s2 + a.points, 0) || ""}</td>
           </tr>); })}</tbody>
       </table>
       {total !== 100 && <p className="mt-1 text-[12px] text-destructive">Weights must add up to 100% before you can save.</p>}
-      <div className="mt-3 flex gap-2">
-        <button disabled={!weightsValid(w)} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: w } })); toast.success("Assignment weights saved"); }} className="h-8 bg-vc-success px-4 text-[13px] font-semibold text-primary-foreground disabled:opacity-40">Save Weights</button>
-        <button onClick={() => setW(defaultWeights(cats))} className="h-8 border border-vc-line px-3 text-[13px]">Reset to Equal</button>
+      <div className="mt-4 flex gap-2">
+        <button disabled={!weightsValid(w)} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: w } })); toast.success("Assignment weights saved"); }} className="h-9 rounded-[6px] bg-vc-success px-5 text-[14px] font-semibold text-primary-foreground disabled:opacity-40">Save Weights</button>
+        <button onClick={() => setW(defaultWeights(used))} className="h-9 rounded-[6px] border border-vc-line px-4 text-[14px]">Reset to Equal</button>
       </div>
     </div>
   );

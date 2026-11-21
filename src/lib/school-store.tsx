@@ -57,6 +57,8 @@ export const DEFAULT_SETTINGS: Settings = {
 export type CustomAssignment = {
   id: string; courseId: string; title: string; category: Category; assigned: string; due: string; points: number;
   details: string; notes: string; published: boolean; inCalc: boolean; extraCredit: boolean; allSections: boolean; method: string;
+  /** Relative weight inside its category, and the original assignment this copy was made from ("Applies to All Sections"). */
+  weight?: number; linkId?: string;
 };
 export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" };
 export type Purchase = { id: string; item: string; vendor: string; amount: number; reason: string; status: "Pending" | "Approved" | "Denied"; date: string; by: string };
@@ -183,7 +185,7 @@ export function useSchool() { const c = useContext(C); if (!c) throw new Error("
 
 const short: Record<string, string> = { HOMEWORK: "HW", QUIZ: "QZ", TEST: "Test", COLLABORATION: "Col", "CLASSWORK/HOMEWORK": "CwHw", VOCABULARY: "Vocab", WRITING: "Wr", READING: "Rd" };
 export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment {
-  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: c.notes || c.details, custom: true };
+  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: c.details.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(), custom: true };
 }
 /** Classes the signed-in person sees: published ones they teach or are enrolled in (admins see all). */
 export function useMySections(): (Section & { status: ClassStatus })[] {

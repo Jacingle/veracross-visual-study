@@ -1,16 +1,17 @@
-import { Button } from "@/components/ui/button";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, Lock, Mail, MessageSquare, Paperclip, Plus, Unlock, X } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Switch } from "@/components/ui/switch";
 import { useCategoryStyle } from "@/lib/category-colors";
+import { parseISO } from "date-fns";
 import { today, type Assignment, type Category, type Student } from "@/lib/sis-data";
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
-import { isoDay, useSchool, type CustomAssignment } from "@/lib/school-store";
+import { isoDay, useSchool, useMySections, type CustomAssignment } from "@/lib/school-store";
 
 const STATUSES = ["", "Turned In", "Late", "Missing", "Excused", "Incomplete"];
 const inp = "h-8 w-full border border-vc-line px-2 text-[13px] outline-none focus:border-vc-link";
@@ -27,14 +28,24 @@ export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
   if (aid) {
     const a = list.find((x) => x.id === aid);
     if (aid !== "new" && !a) return <p className="py-10 text-center text-[13px] text-muted-foreground">Assignment not found. <button className="text-vc-link-strong" onClick={() => go({})}>Back to list</button></p>;
+    const i = a ? list.findIndex((x) => x.id === a.id) : -1;
+    const step = (d: number) => { const n = list[i + d]; if (n) go({ aid: n.id, sub }); };
+    const cur = sub ?? "details";
+    const arrow = "grid size-[34px] place-items-center rounded-[6px] bg-[#e8ecf0] text-foreground/70 disabled:opacity-40";
     return (
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <div><button onClick={() => go({})} className="text-[12px] text-vc-link-strong hover:underline">← All assignments</button><h3 className="text-[18px]">{a ? a.title : "New Assignment"}</h3></div>
-          {a && <div className="flex text-[13px]">{(["details", "students"] as const).map((k) => (
-            <button key={k} onClick={() => go({ aid, sub: k })} className={`border border-vc-line px-3 py-1 ${(sub ?? "details") === k ? "bg-vc-link text-primary-foreground" : ""}`}>{k === "details" ? "Assignment Detail" : "Students"}</button>))}</div>}
+      <div className="-mx-4 -my-4 -ml-[48px]">
+        <div className="flex flex-wrap items-center gap-3 border-b border-vc-line pb-0 pl-[48px] pr-5 pt-4">
+          <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradebook" }} className="mb-3 flex h-[42px] items-center gap-2.5 rounded-[8px] bg-[#4a4a4a] px-4 text-[15px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-5 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3.5" strokeWidth={3} /></span>Back to Scores</Link>
+          {([["details", "Assignment Info"], ["students", "Students"]] as const).map(([k, label]) => (
+            <button key={k} type="button" disabled={!a && k === "students"} onClick={() => go({ aid, sub: k })} className={`border-b-[3px] px-4 pb-[13px] pt-[10px] text-[15px] disabled:opacity-40 ${cur === k ? "border-[#4a9be0] text-[#4a9be0]" : "border-transparent text-foreground/70"}`}>{label}</button>))}
         </div>
-        {(sub ?? "details") === "details" || !a ? <Editor key={aid} courseId={courseId} a={a} onSaved={(id) => go({ aid: id })} onDeleted={() => go({})} /> : <StudentList a={a} roster={roster} />}
+        {a && <div className="flex flex-wrap items-center gap-3 px-6 pb-1 pt-5">
+          <button type="button" aria-label="Previous assignment" disabled={i <= 0} onClick={() => step(-1)} className={arrow}><ChevronLeft className="size-5" /></button>
+          <button type="button" aria-label="Next assignment" disabled={i < 0 || i >= list.length - 1} onClick={() => step(1)} className={arrow}><ChevronRight className="size-5" /></button>
+          <span style={chip(a.category)} className="rounded-[4px] px-2 py-0.5 text-[12px] font-semibold uppercase text-primary-foreground">{a.category}</span>
+          <h3 className="text-[22px] font-medium">{a.title}</h3>
+        </div>}
+        {cur === "details" || !a ? <Editor key={aid} courseId={courseId} a={a} onSaved={(id) => go({ aid: id })} onDeleted={() => go({})} /> : <StudentList a={a} roster={roster} />}
       </div>
     );
   }
@@ -62,91 +73,169 @@ function PortalFlag({ id }: { id: string }) {
   return c && !c.published ? <span className="text-muted-foreground">Hidden</span> : <span className="text-vc-success">Shown</span>;
 }
 
-function L({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span>{children}</label>;
+const box = "h-[42px] w-full rounded-[6px] border border-[#d5d9de] bg-background px-3 text-[15px] outline-none focus:border-[#4a9be0]";
+function F({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return <div className={`mb-5 ${className}`}><div className="mb-1.5 text-[14px] font-semibold text-foreground/80">{label}</div>{children}</div>;
+}
+
+/** Small rich-text box: bold / italic / underline, lists, indent and alignment. */
+function RichText({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value; }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const cmd = (c: string) => (e: React.MouseEvent) => { e.preventDefault(); document.execCommand(c); onChange(ref.current?.innerHTML ?? ""); };
+  const tools: [string, string, string][] = [["bold", "B", "font-bold"], ["italic", "I", "italic"], ["underline", "U", "underline"], ["insertUnorderedList", "•≡", ""], ["insertOrderedList", "1≡", ""], ["outdent", "⇤", ""], ["indent", "⇥", ""], ["justifyLeft", "⯇", ""], ["justifyCenter", "≡", ""], ["justifyRight", "⯈", ""]];
+  return (
+    <div className="rounded-[6px] border border-[#d5d9de] focus-within:border-[#4a9be0]">
+      <div className="flex flex-wrap gap-0.5 border-b border-[#d5d9de] bg-[#f6f7f9] p-1">{tools.map(([c, l, s]) => <button key={c} type="button" title={c} onMouseDown={cmd(c)} className={`h-7 min-w-7 rounded px-1.5 text-[13px] hover:bg-[#e4e8ec] ${s}`}>{l}</button>)}</div>
+      <div ref={ref} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={(e) => onChange(e.currentTarget.innerHTML)} className="min-h-[120px] px-3 py-2 text-[15px] outline-none [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" />
+    </div>
+  );
+}
+
+function DatePick({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const d = value ? parseISO(value) : undefined;
+  return (
+    <Popover><PopoverTrigger asChild><button type="button" aria-label={label} className={`${box} flex items-center justify-between text-left`}>{d ? format(d, "MMMM d, yyyy") : "Select date"}<CalendarDays className="size-4 text-foreground/50" /></button></PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-2 [&_[data-selected-single=true]]:!bg-[#4a9be0]"><Calendar mode="single" selected={d} defaultMonth={d} onSelect={(x) => x && onChange(isoDay(x))} /></PopoverContent></Popover>
+  );
+}
+
+function Toggle({ label, on, set }: { label: string; on: boolean; set: (v: boolean) => void }) {
+  return (
+    <div className="mb-3 flex items-center gap-3 text-[15px]">
+      <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => set(!on)} className={`relative h-[26px] w-[48px] rounded-full transition-colors ${on ? "bg-[#4a9be0]" : "bg-[#c9ced4]"}`}><span className={`absolute top-[3px] size-5 rounded-full bg-background shadow transition-all ${on ? "left-[25px]" : "left-[3px]"}`} /></button>
+      <span className="text-foreground/80">{label}</span>
+    </div>
+  );
 }
 
 function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assignment | undefined; onSaved: (id: string) => void; onDeleted: () => void }) {
   const { custom, update, assignmentTypes } = useSchool();
+  const mine = useMySections();
   const existing = a ? custom.find((x) => x.id === a.id) : undefined;
   const [f, setF] = useState<CustomAssignment>(existing ?? {
     id: a?.id ?? `c-${crypto.randomUUID().slice(0, 8)}`, courseId, title: a?.title ?? "", category: a?.category ?? "HOMEWORK",
     assigned: isoDay(a?.assigned ?? today()), due: isoDay(a?.due ?? today()), points: a?.points ?? 10, details: "", notes: a?.notes ?? "",
-    published: true, inCalc: true, extraCredit: false, allSections: false, method: "Points",
+    // Scores stay hidden until the teacher turns "Display on Portals" on (or uses the eye in the gradebook).
+    published: a ? true : false, inCalc: true, extraCredit: false, allSections: false, method: "Points", weight: 10,
   });
+  const types = [...new Set([...assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => t.description.toUpperCase()), f.category])];
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     const r = schema.safeParse(f);
     if (!r.success) { toast.error(r.error.issues[0]?.message ?? "Check the form"); return; }
-    update((s) => ({ ...s, custom: [...s.custom.filter((x) => x.id !== f.id), { ...f, title: f.title.trim() }] }));
-    toast.success("Assignment saved"); onSaved(f.id);
+    // "Applies to All Sections": same course, same term and year, and also taught by this teacher.
+    const here = mine.find((s) => s.id === courseId);
+    const sibs = f.allSections && here ? mine.filter((s) => s.id !== here.id && s.courseNo === here.courseNo && s.terms.some((t) => here.terms.includes(t)) && s.teacherIds.some((t) => here.teacherIds.includes(t))) : [];
+    update((s) => ({ ...s, custom: [...s.custom.filter((x) => x.id !== f.id && x.linkId !== f.id), { ...f, title: f.title.trim() },
+      ...sibs.map((sec) => ({ ...f, id: `${f.id}~${sec.id}`, courseId: sec.id, linkId: f.id, title: f.title.trim() }))] }));
+    toast.success(sibs.length ? `Assignment saved to this and ${sibs.length} other section${sibs.length === 1 ? "" : "s"}` : "Assignment saved"); onSaved(f.id);
   };
-  const sw = (label: string, k: "published" | "inCalc" | "extraCredit" | "allSections") => (
-    <div className="grid grid-cols-[170px_minmax(0,1fr)] items-center gap-3 py-1.5 text-[13px]"><span className="text-right text-muted-foreground">{label}</span><Switch checked={f[k]} onCheckedChange={(v) => setF({ ...f, [k]: v })} aria-label={label} /></div>);
+  const del = () => {
+    update((s) => ({ ...s, custom: s.custom.filter((x) => x.id !== f.id && x.linkId !== f.id) }));
+    toast(a && !a.id.startsWith("c-") ? "Edits reverted" : "Assignment deleted"); onDeleted();
+  };
+  const sum = (k: string, v: string) => <div><div className="text-[12px] text-vc-gray">{k}</div><div className="text-[18px] font-medium">{v}</div></div>;
   return (
-    <form onSubmit={save} className="grid grid-cols-2 gap-x-8 border border-vc-line p-4">
-      <div>
-        <L label="Description"><input className={inp} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></L>
-        <L label="Assignment Type"><select className={inp} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{[...new Set([...assignmentTypes.filter((t) => !t.obsolete).sort((a, b) => a.sortKey - b.sortKey).map((t) => t.description), f.category])].map((c) => <option key={c}>{c}</option>)}</select></L>
-        <L label="Assignment Date"><input type="date" className={inp} value={f.assigned} onChange={(e) => setF({ ...f, assigned: e.target.value })} /></L>
-        <L label="Due Date"><input type="date" className={inp} value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} /></L>
-        <L label="Grading Method"><select className={inp} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter Grade", "Pass/Fail", "Completion"].map((m) => <option key={m}>{m}</option>)}</select></L>
-        <L label="Max Score"><input className={inp} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></L>
+    <form onSubmit={save} className="px-6 pb-8 pt-5">
+      {existing && <div className="mb-6 flex flex-wrap items-center gap-10">
+        {sum("Max Score", String(f.points))}{sum("Weight", String(f.weight ?? 10))}{sum("Display", f.published ? "ON" : "OFF")}
+        <div className="ml-auto flex gap-2">
+          <button type="button" onClick={() => toast("Attachments aren't available in this version yet.")} className="flex h-[40px] items-center gap-2 rounded-[6px] bg-[#e8ecf0] px-4 text-[14px] font-medium"><Paperclip className="size-4" />Attach Files</button>
+          <button type="button" onClick={del} className="h-[40px] rounded-[6px] border border-[#e0645c] px-4 text-[14px] font-medium text-[#d9453d] hover:bg-[#fbe9e9]">Delete Assignment</button></div></div>}
+      <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div>
+          <F label="Description"><input aria-label="Description" className={box} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></F>
+          <F label="Assignment Details"><RichText label="Assignment Details" value={f.details} onChange={(v) => setF({ ...f, details: v })} /></F>
+          <F label="Teacher Notes (Internal)"><RichText label="Teacher Notes" value={f.notes} onChange={(v) => setF({ ...f, notes: v })} /></F>
+        </div>
+        <div>
+          <F label="Assignment Type"><select aria-label="Assignment Type" className={box} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{types.map((t) => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}</select></F>
+          <div className="grid grid-cols-2 gap-4">
+            <F label="Date Assigned"><DatePick label="Date Assigned" value={f.assigned} onChange={(v) => setF({ ...f, assigned: v, due: v > f.due ? v : f.due })} /></F>
+            <F label="Due Date"><DatePick label="Due Date" value={f.due} onChange={(v) => setF({ ...f, due: v })} /></F></div>
+          <F label="Grading Method"><select aria-label="Grading Method" className={box} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter Grade", "Pass/Fail", "Completion"].map((m) => <option key={m}>{m}</option>)}</select></F>
+          <div className="grid grid-cols-2 gap-4">
+            <F label="Max Score"><input aria-label="Max Score" className={box} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></F>
+            <F label="Weight"><input aria-label="Weight" className={box} inputMode="decimal" value={String(f.weight ?? 10)} onChange={(e) => /^\d{0,3}(\.\d?)?$/.test(e.target.value) && setF({ ...f, weight: Number(e.target.value) })} /></F></div>
+          <Toggle label="Include in Calc. Grade?" on={f.inCalc} set={(v) => setF({ ...f, inCalc: v })} />
+          <Toggle label="Extra Credit" on={f.extraCredit} set={(v) => setF({ ...f, extraCredit: v })} />
+          <Toggle label="Applies to All Sections?" on={f.allSections} set={(v) => setF({ ...f, allSections: v })} />
+          <Toggle label="Display on Portals?" on={f.published} set={(v) => setF({ ...f, published: v })} />
+        </div>
       </div>
-      <div>
-        {sw("Display on Portals", "published")}
-        {sw("Include in Calculations", "inCalc")}
-        {sw("Extra Credit", "extraCredit")}
-        {sw("Apply to All My Sections", "allSections")}
-        <L label="Notes (portal)"><textarea className="h-16 w-full border border-vc-line p-2 text-[13px]" maxLength={1000} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></L>
-        <L label="Homework Details"><textarea className="h-16 w-full border border-vc-line p-2 text-[13px]" maxLength={2000} value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} /></L>
-      </div>
-      <div className="col-span-2 mt-3 flex justify-end gap-2 border-t border-vc-line pt-3">
-        {existing && <button type="button" onClick={() => { update((s) => ({ ...s, custom: s.custom.filter((x) => x.id !== f.id) })); toast(a && !a.id.startsWith("c-") ? "Edits reverted" : "Assignment deleted"); onDeleted(); }} className="h-8 border border-vc-line px-3 text-[13px] text-destructive">{f.id.startsWith("c-") ? "Delete" : "Revert edits"}</button>}
-        <button className="h-8 bg-vc-success px-5 text-[13px] font-semibold text-primary-foreground">Save</button>
-      </div>
+      <div className="mt-2"><button className="h-[44px] rounded-[6px] bg-[#4caf50] px-6 text-[15px] font-semibold text-primary-foreground hover:brightness-105">Save Assignment</button></div>
     </form>
   );
 }
 
+const sel = "h-[40px] w-full rounded-[6px] border border-[#d5d9de] bg-background px-2.5 text-[14px] outline-none focus:border-[#4a9be0]";
+const iconBtn = "grid size-[34px] place-items-center rounded-full text-foreground/55 hover:bg-[#eef1f4]";
+
 function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
-  const { scores, aStatus, pub, comments, update } = useSchool();
+  const { scores, aStatus, pub, comments, users, update } = useSchool();
   const set = (field: "scores" | "aStatus" | "comments", k: string, v: string) => update((s) => ({ ...s, [field]: { ...s[field], [k]: v } }));
   const [picked, setPicked] = useState<string[]>([]);
-  const [desc, setDesc] = useState(false);
-  const [bulk, setBulk] = useState<{ open: boolean; grade?: string | undefined; status?: string | undefined; published?: boolean | undefined }>({ open: false });
-  const rows = [...roster].sort((x, y) => (desc ? -1 : 1) * `${x.last}${x.first}`.localeCompare(`${y.last}${y.first}`));
+  const [fb, setFb] = useState<{ sid: string; text: string } | null>(null);
+  const [bulk, setBulk] = useState<{ open: boolean; grade?: string | undefined; status?: string | undefined; dropbox?: boolean | undefined }>({ open: false });
+  const rows = [...roster].sort((x, y) => `${x.last}${x.first}`.localeCompare(`${y.last}${y.first}`));
   const applyBulk = () => {
     if (!picked.length) { toast.error("Select one or more students first."); return; }
     if (bulk.grade !== undefined && !isScoreInput(bulk.grade)) { toast.error("Grade must be a number"); return; }
     update((x) => {
-      const n = { ...x, scores: { ...x.scores }, aStatus: { ...x.aStatus }, pub: { ...x.pub } };
-      for (const sid of picked) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined) n.scores[k] = bulk.grade; if (bulk.status !== undefined) n.aStatus[k] = bulk.status; if (bulk.published !== undefined) n.pub[k] = bulk.published; }
+      const n = { ...x, scores: { ...x.scores }, aStatus: { ...x.aStatus } };
+      for (const sid of picked) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined) n.scores[k] = bulk.grade; if (bulk.status !== undefined) n.aStatus[k] = bulk.status; }
       return n;
     });
     toast.success(`Updated ${picked.length} student${picked.length === 1 ? "" : "s"}`); setBulk({ open: false });
   };
+  const fbStudent = fb ? roster.find((s) => s.id === fb.sid) : undefined;
+  const fbKey = fb ? scoreKey(a.id, fb.sid) : "";
+  const cb = (on: boolean, f: (v: boolean) => void, label: string) => <label className="mb-3 block text-[13px] font-semibold uppercase tracking-wide text-foreground/70"><input type="checkbox" className="mr-2 size-4 align-[-3px]" checked={on} onChange={(e) => f(e.target.checked)} />{label}</label>;
   return (
-    <div className="relative">
-      <div className="mb-2 flex justify-end"><Button variant="outline" size="sm" onClick={() => setBulk({ open: !bulk.open })}>Bulk Edit</Button></div>
-      {bulk.open && <div className="absolute right-0 top-10 z-20 w-[240px] space-y-3 rounded-sm border border-vc-line bg-background p-3 text-[12px] shadow-lg">
-        <label className="block"><input type="checkbox" checked={bulk.grade !== undefined} onChange={(e) => setBulk({ ...bulk, grade: e.target.checked ? "" : undefined })} /> GRADE<input aria-label="Bulk grade" disabled={bulk.grade === undefined} className="mt-1 h-7 w-full border border-vc-line px-1" value={bulk.grade ?? ""} onChange={(e) => setBulk({ ...bulk, grade: e.target.value })} /></label>
-        <label className="block"><input type="checkbox" checked={bulk.status !== undefined} onChange={(e) => setBulk({ ...bulk, status: e.target.checked ? (STATUSES[0] ?? "") : undefined })} /> COMPLETION STATUS<select aria-label="Bulk completion status" disabled={bulk.status === undefined} className="mt-1 h-7 w-full border border-vc-line" value={bulk.status ?? ""} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></label>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={bulk.published !== undefined} onChange={(e) => setBulk({ ...bulk, published: e.target.checked ? true : undefined })} /> PUBLISHED?<Switch aria-label="Bulk published" disabled={bulk.published === undefined} checked={bulk.published ?? false} onCheckedChange={(v) => setBulk({ ...bulk, published: v })} /></label>
-        <Button size="sm" className="w-full bg-vc-success" onClick={applyBulk}>Update</Button>
+    <div className="relative px-6 pb-8 pt-4">
+      <div className="mb-3 flex items-center justify-end gap-2">
+        <button type="button" onClick={() => setBulk({ ...bulk, open: !bulk.open })} className="h-[40px] rounded-[6px] border border-[#d5d9de] px-4 text-[14px] font-medium hover:bg-[#f4f6f8]">Bulk Edit</button></div>
+      {bulk.open && <div className="absolute right-6 top-[58px] z-20 w-[280px] rounded-[8px] border border-vc-line bg-background p-4 shadow-xl">
+        {cb(bulk.grade !== undefined, (v) => setBulk({ ...bulk, grade: v ? "" : undefined }), "Grade")}
+        {bulk.grade !== undefined && <input aria-label="Bulk grade" className={`${sel} -mt-1 mb-3`} value={bulk.grade} onChange={(e) => setBulk({ ...bulk, grade: e.target.value })} />}
+        {cb(bulk.status !== undefined, (v) => setBulk({ ...bulk, status: v ? "" : undefined }), "Completion Status")}
+        {bulk.status !== undefined && <select aria-label="Bulk completion status" className={`${sel} -mt-1 mb-3`} value={bulk.status} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{STATUSES.map((x) => <option key={x} value={x}>{x || "Pending"}</option>)}</select>}
+        {/* Dropbox status is not wired up yet; the option is kept so the layout matches. */}
+        {cb(!!bulk.dropbox, (v) => setBulk({ ...bulk, dropbox: v }), "Dropbox Status")}
+        <button type="button" onClick={applyBulk} className="mt-1 h-[40px] w-full rounded-[6px] bg-[#4caf50] text-[14px] font-semibold text-primary-foreground">Update {picked.length || ""} Student{picked.length === 1 ? "" : "s"}</button>
       </div>}
-    <table className="w-full text-[13px]">
-      <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th><input type="checkbox" aria-label="Select all students" checked={picked.length === roster.length && roster.length > 0} onChange={(e) => setPicked(e.target.checked ? roster.map((x) => x.id) : [])} /></th><th className="py-1.5"><button type="button" onClick={() => setDesc(!desc)} className="uppercase">Student {desc ? "Z→A" : "A→Z"}</button></th><th>Grade</th><th>Assignment Status</th><th>Comment</th><th className="text-right">Published?</th></tr></thead>
-      <tbody>{rows.map((s) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? ""); return (
-        <tr key={s.id} className="border-b border-vc-line">
-          <td className="w-6"><input type="checkbox" aria-label={`Select ${s.first}`} checked={picked.includes(s.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, s.id] : picked.filter((x) => x !== s.id))} /></td>
-          <td className="py-2"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-10 rounded-full" /><div className="leading-tight"><div className="text-[15px] font-semibold">{s.first}</div><div className="text-[14px]">{s.last}</div></div></div></td>
-          <td><input aria-label={`Score for ${s.first}`} className="h-8 w-14 rounded-sm border border-vc-line text-center" value={v} onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /> <span className="text-muted-foreground">/{a.points}</span></td>
-          <td><select aria-label={`Completion for ${s.first}`} className="h-8 w-[170px] rounded-sm border border-vc-line px-1 font-semibold" value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></td>
-          <td><input aria-label={`Comment for ${s.first}`} className="h-8 w-full rounded-sm border border-vc-line px-1.5" maxLength={300} value={comments[`a|${k}`] ?? ""} onChange={(e) => set("comments", `a|${k}`, e.target.value)} /></td>
-          <td className="text-right"><Switch aria-label={`Publish for ${s.first}`} checked={pub[k] !== false} onCheckedChange={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></td>
-        </tr>); })}</tbody>
-    </table>
+      <div className="grid grid-cols-[28px_minmax(150px,1.3fr)_minmax(120px,0.8fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto_90px] items-center gap-x-3 border-b border-vc-line pb-2 text-[12px] font-semibold uppercase text-vc-gray">
+        <input type="checkbox" aria-label="Select all students" checked={picked.length === roster.length && roster.length > 0} onChange={(e) => setPicked(e.target.checked ? roster.map((x) => x.id) : [])} />
+        <span>Student</span><span>Grade</span><span>Assignment Status</span><span>Dropbox Status</span><span className="w-[110px]" /><span className="text-right">Published?</span></div>
+      {rows.map((s) => {
+        const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? "");
+        const locked = comments[`l|${k}`] === "1"; const email = users.find((u) => u.personId === s.id)?.email; const has = !!comments[`a|${k}`];
+        return (
+          <div key={s.id} className="grid grid-cols-[28px_minmax(150px,1.3fr)_minmax(120px,0.8fr)_minmax(150px,1fr)_minmax(150px,1fr)_auto_90px] items-center gap-x-3 border-b border-vc-line py-3">
+            <input type="checkbox" aria-label={`Select ${s.first}`} checked={picked.includes(s.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, s.id] : picked.filter((x) => x !== s.id))} />
+            <div className="flex items-center gap-3"><PersonPhoto personId={s.id} className="size-11 rounded-full" /><div className="leading-tight"><div className="text-[15px] font-semibold">{s.first}</div><div className="text-[14px] text-vc-gray">{s.last}</div></div></div>
+            <div className="flex items-center gap-2"><input aria-label={`Score for ${s.first}`} disabled={locked} className={`${sel} w-[76px] text-center disabled:bg-[#f1f3f5]`} value={v} placeholder="-" onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /><span className="text-[14px] text-vc-gray">/{a.points}</span></div>
+            <select aria-label={`Assignment status for ${s.first}`} className={sel} value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "Pending"}</option>)}</select>
+            <select aria-label={`Dropbox status for ${s.first}`} disabled className={`${sel} bg-[#f1f3f5] text-vc-gray`}><option>Pending</option></select>
+            <div className="flex">
+              <button type="button" title="Feedback" aria-label={`Feedback for ${s.first}`} onClick={() => setFb({ sid: s.id, text: "" })} className={`${iconBtn} ${has ? "text-[#4a9be0]" : ""}`}><MessageSquare className="size-[19px]" fill={has ? "currentColor" : "none"} /></button>
+              <button type="button" title={locked ? "Unlock grade" : "Lock grade"} aria-pressed={locked} onClick={() => set("comments", `l|${k}`, locked ? "" : "1")} className={`${iconBtn} ${locked ? "text-foreground" : ""}`}>{locked ? <Lock className="size-[19px]" /> : <Unlock className="size-[19px]" />}</button>
+              {email ? <a href={`mailto:${email}`} title={`Email ${s.first}`} aria-label={`Email ${s.first}`} className={iconBtn}><Mail className="size-[19px]" /></a> : <span className={`${iconBtn} opacity-40`}><Mail className="size-[19px]" /></span>}</div>
+            <div className="flex justify-end"><Toggle label={`Published for ${s.first}`} on={pub[k] !== false} set={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></div>
+          </div>); })}
+      {fb && fbStudent && <aside className="fixed inset-y-0 right-0 z-50 flex w-[380px] max-w-full flex-col border-l border-vc-line bg-background shadow-2xl">
+        <div className="flex items-center justify-between border-b border-vc-line px-5 py-4"><div className="flex items-center gap-3"><PersonPhoto personId={fbStudent.id} className="size-10 rounded-full" /><div className="leading-tight"><div className="text-[16px] font-semibold">{fbStudent.first} {fbStudent.last}</div><div className="text-[13px] text-vc-gray">{a.title}</div></div></div>
+          <button type="button" aria-label="Close feedback" onClick={() => setFb(null)} className={iconBtn}><X className="size-5" /></button></div>
+        <div className="border-b border-vc-line px-5 py-2 text-[14px] font-semibold text-[#4a9be0]">Feedback</div>
+        <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+          <div className="rounded-[8px] bg-[#f4f6f8] p-3 text-[13px] text-vc-gray">{comments[`s|${fbKey}`] ? <><div className="mb-1 font-semibold text-foreground">{fbStudent.first}'s comment</div>{comments[`s|${fbKey}`]}</> : "No comment or attachment has been submitted by this student."}</div>
+          {comments[`a|${fbKey}`] && <div className="ml-auto max-w-[88%] rounded-[12px] rounded-br-[2px] bg-[#cfe5fb] p-3 text-[14px]">{comments[`a|${fbKey}`]}</div>}
+        </div>
+        <form className="border-t border-vc-line p-4" onSubmit={(e) => { e.preventDefault(); if (!fb.text.trim()) return; set("comments", `a|${fbKey}`, fb.text.trim()); setFb({ ...fb, text: "" }); toast.success("Feedback posted"); }}>
+          <textarea aria-label="Give Feedback" placeholder="Give Feedback…" maxLength={300} className="h-[90px] w-full resize-none rounded-[6px] border border-[#d5d9de] p-3 text-[14px] outline-none focus:border-[#4a9be0]" value={fb.text} onChange={(e) => setFb({ ...fb, text: e.target.value })} />
+          <div className="mt-2 flex justify-end"><button className="h-[38px] rounded-[6px] bg-[#4a9be0] px-5 text-[14px] font-semibold text-primary-foreground">Post</button></div></form>
+      </aside>}
     </div>
   );
 }
