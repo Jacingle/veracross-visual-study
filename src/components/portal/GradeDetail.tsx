@@ -19,7 +19,7 @@ import { pageHead } from '@/lib/head';
 
 export type DetailStudent = { personId: string; first: string; last: string; grade?: number | undefined };
 /** The Grade Detail paper. Students see their own; a teacher opens it for any student in the class. */
-export function Detail({ list, c, student }: { list: Assignment[]; c: Section; student?: DetailStudent }) {
+export function Detail({ list, c, student, standalone = false }: { list: Assignment[]; c: Section; student?: DetailStudent; standalone?: boolean }) {
   const { weights, user: me, termGrades, custom, users, aStatus } = useSchool();
   const user = student ?? me;
   const terms = c.terms.map(termById).filter((t) => t !== undefined);
@@ -35,9 +35,9 @@ export function Detail({ list, c, student }: { list: Assignment[]; c: Section; s
   const categories = [...new Set(items.map((a) => a.category))].sort();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   return <>
-    <div className="grade-toolbar flex flex-wrap items-center gap-2 bg-vc-bar px-[26px] py-[7px] text-[12.5px]"><span className="text-vc-gray">view:</span>{terms.map((t) => <Button key={t.id} variant="ghost" size="sm" className={`h-[19px] rounded-none px-1.5 text-[12.5px] font-normal ${selected === t.id ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : ''}`} onClick={() => setSelected(t.id)}>{t.label}</Button>)}</div>
-    <div className="bg-vc-paper px-4 pb-[30px] pt-2.5 md:px-[65px]">
-      <article className="grade-print border border-vc-line bg-background shadow-lg">
+    {!standalone && <div className="grade-toolbar flex flex-wrap items-center gap-2 bg-vc-bar px-[26px] py-[7px] text-[12.5px]"><span className="text-vc-gray">view:</span>{terms.map((t) => <Button key={t.id} variant="ghost" size="sm" className={`h-[19px] rounded-none px-1.5 text-[12.5px] font-normal ${selected === t.id ? 'bg-foreground text-background hover:bg-foreground hover:text-background' : ''}`} onClick={() => setSelected(t.id)}>{t.label}</Button>)}</div>}
+    <div className={`bg-vc-paper px-4 pb-[30px] md:px-[65px] ${standalone ? "min-h-screen pt-[10px]" : "pt-2.5"}`}>
+      <article className={`grade-print border border-vc-line bg-background shadow-lg ${standalone ? "mx-auto max-w-[780px]" : ""}`}>
         <div className="grade-print-action flex h-10 items-center justify-end bg-foreground px-5 text-background"><Button variant="ghost" size="sm" className="h-10 text-[17px] font-normal hover:bg-transparent hover:text-background" onClick={() => window.print()}><Printer className="size-4" />Print to <span className="text-destructive">PDF</span></Button></div>
         <div className="px-5 pb-5 pt-6">
           <h2 className="text-[32px] font-bold leading-10">Grade Detail - {term?.label ?? 'Grades'}</h2>

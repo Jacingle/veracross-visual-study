@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Bell, BookOpen, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Globe, Image, Library, MessageSquareText, Settings, UsersRound } from "lucide-react";
+import { Bell, BookOpen, ChevronDown, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Globe, Image, Library, MessageSquareText, Settings, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { PortalShell } from "@/components/portal/PortalShell";
@@ -48,8 +48,8 @@ function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
   const all = useSectionAssignments(c.id);
   const s = rosterOf(c).find((x) => x.id === sid);
   const list = all.map((a) => ({ ...a, score: scoreOf(scores, a, sid ?? "") }));
-  if (!s) return <PortalShell portal="teacher" area="teacher"><p className="p-8 text-[14px]">That student isn't in this class. <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong">Back to the gradebook</Link></p></PortalShell>;
-  return <PortalShell portal="teacher" area="teacher"><Detail list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PortalShell>;
+  if (!s) return <div className="min-h-screen bg-vc-paper"><p className="p-8 text-[14px]">That student isn't in this class. <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong">Back to the gradebook</Link></p></div>;
+  return <div className="min-h-screen bg-vc-paper"><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></div>;
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
@@ -59,26 +59,28 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const roster = rosterOf(c);
   const w = weights[c.id] ?? [];
   const [open, setOpen] = useState(true);
+  const [wterm, setWterm] = useState(c.terms[0] ?? "");
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
   return (
     <PortalShell portal="teacher" area="teacher" bare>
-      <div className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[176px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[18px] z-20 grid size-[22px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[165px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
-      <aside className={`${open ? "" : "hidden"} bg-[#f3f5f8] pt-[14px]`}>
-        <div className="mb-[22px] flex items-start gap-2.5 px-[14px]"><Library className="mt-0.5 size-[18px] shrink-0 text-foreground/55" strokeWidth={1.5} />
-          <div className="min-w-0"><div className="truncate text-[12.5px] font-medium leading-[15px]">{c.id}: {c.name}</div>
-            <select aria-label="Change class" className="w-full cursor-pointer appearance-none bg-transparent text-[10px] leading-[14px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
+      <div className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[17px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[190px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
+      <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[17px]`}>
+        <div className="mb-[29px] flex items-start gap-[9px] pl-[17px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />
+          <div className="min-w-0"><div className="truncate text-[12px] font-medium leading-[15px]">{c.id}: {c.name}</div>
+            <select aria-label="Change class" className="w-full cursor-pointer appearance-none bg-transparent text-[9.5px] leading-[13px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</select></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-[8px] mb-[2px] flex h-[36px] items-center gap-3 rounded-[6px] px-[10px] text-[12px] ${active === id ? "bg-[#d4e6f9] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[16px] text-foreground/60" strokeWidth={1.5} />{label}</Link>))}
+            className={`mx-[10px] mb-[9px] flex h-[34px] items-center gap-[9px] rounded-[6px] pl-[8px] text-[11.5px] ${active === id ? "bg-[#d6e8fa] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[16px] text-foreground/55" strokeWidth={1.5} />{label}</Link>))}
       </aside>
       <div className="min-w-0">
-      {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[40px] pt-[7px]">
-        <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-2 flex h-[28px] items-center gap-2 rounded-[5px] bg-[#4a4a4a] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
-        <span className="border-b-2 border-[#4a9be0] px-3 pb-[9px] pt-[8px] text-[11px] text-[#4a9be0]">Weights</span>
+      {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
+        <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[25px] w-[112px] items-center gap-2 rounded-[4px] bg-[#4d4d4d] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
+        <span className="ml-[8px] border-b-2 border-[#4fb3e6] px-[17px] pb-[9px] pt-[8px] text-[11.5px] text-[#4fb3e6]">Weights</span>
+        <span className="relative mb-2 ml-[8px]"><select aria-label="Term" value={wterm} onChange={(e) => setWterm(e.target.value)} className="h-[23px] w-[99px] appearance-none rounded-[3px] border border-[#e1e4e8] bg-background pl-2 pr-5 text-[10.5px] text-foreground/70 outline-none">{c.terms.map((x) => <option key={x} value={x}>{termLabel(x).replace(/^\d{4}-\d{2} /, "")}</option>)}</select><ChevronDown className="pointer-events-none absolute right-1.5 top-[6px] size-2.5 text-foreground/50" /></span>
       </div>}
-      <div className={tab === "attendance" ? "px-6 py-6" : tab === "gradebook" || tab === "weights" ? "" : "px-4 py-4 pl-[40px]"}>
+      <div className={tab === "attendance" ? "px-6 py-6" : tab === "gradebook" || tab === "weights" || tab === "assignments" ? "" : "px-4 py-4 pl-[15px]"}>
         {tab === "overview" && (
           <table className="w-full text-[13px]">
             <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Grade</th><th>Current Average</th><th>Missing</th><th /></tr></thead>
@@ -97,7 +99,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
         {tab === "assignments" && <AssignmentsTab courseId={c.id} list={list} roster={roster} aid={aid} sub={sub} />}
         {tab === "gradebook" && <Gradebook courseId={c.id} terms={c.terms} list={list} roster={roster} />}
         {tab === "grades" && <GradesComments c={c} roster={roster} list={list} sid={sid} />}
-        {tab === "weights" && <Weights key={c.id} c={c} list={list} />}
+        {tab === "weights" && <Weights key={c.id} c={c} list={list} termId={wterm} />}
         {tab === "reports" && <Reports list={list} roster={roster} />}
         {tab === "website" && <WebsiteSettings c={c} />}
         {tab === "notifications" && <ClassNotifications c={c} list={list} roster={roster} />}
