@@ -61,24 +61,24 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const [open, setOpen] = useState(true);
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
   return (
-    <PortalShell portal="teacher" area="teacher" wide>
-      <div className={`relative grid min-h-[640px] overflow-hidden rounded-[18px] bg-background ${open ? "grid-cols-[190px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[18px] z-20 grid size-[30px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[176px] lg:left-[236px]" : "left-2"}`}>{open ? <ChevronLeft className="size-4" strokeWidth={3} /> : <ChevronRight className="size-4" strokeWidth={3} />}</button>
-      <aside className={`${open ? "" : "hidden"} bg-[#f3f5f8] py-5`}>
-        <div className="mb-7 flex gap-3 px-5"><Library className="mt-0.5 size-6 shrink-0 text-foreground/60" strokeWidth={1.5} />
-          <div className="min-w-0"><div className="text-[15px] font-semibold leading-tight">{c.id}: {c.name}</div>
-            <select aria-label="Change class" className="mt-0.5 w-full cursor-pointer bg-transparent text-[13px] text-muted-foreground" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
+    <PortalShell portal="teacher" area="teacher" bare>
+      <div className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[176px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[18px] z-20 grid size-[22px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[165px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
+      <aside className={`${open ? "" : "hidden"} bg-[#f3f5f8] pt-[14px]`}>
+        <div className="mb-[22px] flex items-start gap-2.5 px-[14px]"><Library className="mt-0.5 size-[18px] shrink-0 text-foreground/55" strokeWidth={1.5} />
+          <div className="min-w-0"><div className="truncate text-[12.5px] font-medium leading-[15px]">{c.id}: {c.name}</div>
+            <select aria-label="Change class" className="w-full cursor-pointer appearance-none bg-transparent text-[10px] leading-[14px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</select></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-3 mb-1 flex items-center gap-3.5 rounded-[8px] px-3.5 py-[14px] text-[15px] ${active === id ? "bg-[#cfe5fb] text-foreground" : "text-foreground/75 hover:bg-background"}`}><Icon className="size-[22px] text-foreground/70" strokeWidth={1.5} />{label}</Link>))}
+            className={`mx-[8px] mb-[2px] flex h-[36px] items-center gap-3 rounded-[6px] px-[10px] text-[12px] ${active === id ? "bg-[#d4e6f9] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[16px] text-foreground/60" strokeWidth={1.5} />{label}</Link>))}
       </aside>
       <div className="min-w-0">
-      {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[48px] pt-4">
-        <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-3 flex h-[42px] items-center gap-2.5 rounded-[8px] bg-[#4a4a4a] px-4 text-[15px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-5 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3.5" strokeWidth={3} /></span>Back to Scores</Link>
-        <span className="mb-0 border-b-[3px] border-[#4a9be0] px-4 pb-[13px] pt-[10px] text-[15px] text-[#4a9be0]">Weights</span>
+      {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[40px] pt-[7px]">
+        <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-2 flex h-[28px] items-center gap-2 rounded-[5px] bg-[#4a4a4a] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
+        <span className="border-b-2 border-[#4a9be0] px-3 pb-[9px] pt-[8px] text-[11px] text-[#4a9be0]">Weights</span>
       </div>}
-      <div className={tab === "attendance" ? "px-6 py-6" : tab === "gradebook" || tab === "weights" ? "" : "px-4 py-4 pl-[48px]"}>
+      <div className={tab === "attendance" ? "px-6 py-6" : tab === "gradebook" || tab === "weights" ? "" : "px-4 py-4 pl-[40px]"}>
         {tab === "overview" && (
           <table className="w-full text-[13px]">
             <thead><tr className="border-b-2 border-foreground/70 text-left text-[11px] uppercase text-muted-foreground"><th className="py-1.5">Student</th><th>Grade</th><th>Current Average</th><th>Missing</th><th /></tr></thead>

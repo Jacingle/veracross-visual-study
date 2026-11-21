@@ -11,7 +11,7 @@ import { isoDay, useSchool } from "@/lib/school-store";
 import { today, type Assignment, type Student } from "@/lib/sis-data";
 import { termById, termOn } from "@/lib/terms";
 
-const sel = "h-[38px] min-w-[150px] appearance-none rounded-[6px] border border-vc-line bg-background pl-3 pr-8 text-[14px] text-foreground/80 outline-none focus:border-vc-link";
+const sel = "h-[26px] min-w-[104px] appearance-none rounded-[4px] border border-vc-line bg-background pl-2.5 pr-7 text-[11px] text-foreground/80 outline-none focus:border-vc-link";
 
 /** Faculty gradebook: one card per assignment, one row per student. Unpublished columns are yellow. */
 export function Gradebook({ courseId, terms, list: all, roster }: { courseId: string; terms: string[]; list: Assignment[]; roster: Student[] }) {
@@ -42,30 +42,30 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
   const median = (v: number[]) => { if (!v.length) return null; const t = [...v].sort((x, y) => x - y); const m = Math.floor(t.length / 2); return t.length % 2 ? t[m] ?? null : ((t[m - 1] ?? 0) + (t[m] ?? 0)) / 2; };
   const sd = (v: number[]) => { if (v.length < 2) return null; const m = v.reduce((x, y) => x + y, 0) / v.length; return Math.sqrt(v.reduce((x, y) => x + (y - m) ** 2, 0) / v.length); };
   const stats: [string, (v: number[]) => number | null][] = [["Class Average", (v) => (v.length ? v.reduce((x, y) => x + y, 0) / v.length : null)], ["Class Median", median], ["Standard Dev", sd]];
-  const cell = "h-[36px] w-full rounded-[4px] bg-[#f4f4f4] text-center text-[14px] text-foreground/80";
+  const cell = "h-[30px] w-full rounded-[4px] bg-[#f4f4f4] text-center text-[12px] text-foreground/80";
   const warm = "bg-vc-tile-warm shadow-[inset_3px_0_0_var(--vc-sky)]";
   const link = (a: Assignment) => ({ to: "/teacher/class/$classId" as const, params: { classId: courseId }, search: { tab: "assignments" as const, aid: a.id } });
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-3 pl-[42px] pt-4">
-        <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "assignments", aid: "new" }} className="flex h-[42px] items-center gap-2.5 rounded-[8px] bg-vc-success px-4 text-[15px] font-medium text-primary-foreground hover:brightness-95"><span className="grid size-5 place-items-center rounded-full border-2 border-primary-foreground"><Plus className="size-3.5" strokeWidth={3} /></span>Add Assignment</Link>
-        <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "weights" }} className="flex h-[42px] items-center gap-2.5 rounded-[8px] bg-[#4a9be0] px-4 text-[15px] font-medium text-primary-foreground hover:brightness-95"><Scale className="size-5" />Weighting</Link>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => setDesc((v) => !v)} className="flex items-center gap-1.5 text-[15px] text-foreground/60" aria-label="Date order" title="Switch date order">Date Order {desc ? <ArrowDownWideNarrow className="size-5" /> : <ArrowUpWideNarrow className="size-5" />}</button>
-          <div className="relative"><select aria-label="Term" className={sel} value={termId} onChange={(e) => setTermId(e.target.value)}>{terms.map((t) => <option key={t} value={t}>{termById(t)?.label ?? t}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2.5 top-3 size-4 text-foreground/60" /></div>
-          <div className="relative"><select aria-label="Assignment type filter" value={type} onChange={(e) => setType(e.target.value)} className={sel}><option value="all">All Assignment Types</option>{types.map((t) => <option key={t} value={t}>{t}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2.5 top-3 size-4 text-foreground/60" /></div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-vc-line px-4 pb-[7px] pl-[40px] pt-[7px]">
+        <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "assignments", aid: "new" }} className="flex h-[26px] items-center gap-2 rounded-[4px] bg-vc-success px-3 text-[11px] font-medium text-primary-foreground hover:brightness-95"><span className="grid size-3.5 place-items-center rounded-full border-[1.5px] border-primary-foreground"><Plus className="size-2.5" strokeWidth={3} /></span>Add Assignment</Link>
+        <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "weights" }} className="flex h-[26px] items-center gap-2 rounded-[4px] bg-[#4a9be0] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-95"><Scale className="size-3.5" />Weighting</Link>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setDesc((v) => !v)} className="flex items-center gap-1.5 text-[11px] text-foreground/60" aria-label="Date order" title="Switch date order">Date Order {desc ? <ArrowDownWideNarrow className="size-3.5" /> : <ArrowUpWideNarrow className="size-3.5" />}</button>
+          <div className="relative"><select aria-label="Term" className={sel} value={termId} onChange={(e) => setTermId(e.target.value)}>{terms.map((t) => <option key={t} value={t}>{termById(t)?.label ?? t}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-[7px] size-3 text-foreground/60" /></div>
+          <div className="relative"><select aria-label="Assignment type filter" value={type} onChange={(e) => setType(e.target.value)} className={sel}><option value="all">All Assignment Types</option>{types.map((t) => <option key={t} value={t}>{t}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-[7px] size-3 text-foreground/60" /></div>
         </div>
       </div>
       <div className="overflow-x-auto px-5 pb-6 pt-3">
         <table className="border-separate border-spacing-[3px]">
           <thead><tr>
-            <th className="sticky left-0 z-10 min-w-[150px] bg-background" />
-            <th className="h-[86px] min-w-[74px] rounded-[6px] bg-vc-sky px-1 text-center align-middle text-[14px] font-semibold leading-[20px]">Calculated Grade</th>
+            <th className="sticky left-0 z-10 min-w-[130px] bg-background" />
+            <th className="h-[80px] min-w-[74px] rounded-[4px] bg-vc-sky px-1 text-center align-middle text-[12px] font-semibold leading-[20px]">Calculated Grade</th>
             {list.map((a) => { const hidden = isHidden(a); return (
-              <th key={a.id} className={`group relative h-[86px] min-w-[116px] max-w-[116px] rounded-[6px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
+              <th key={a.id} className={`group relative h-[80px] min-w-[116px] max-w-[116px] rounded-[4px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
                 <Link {...link(a)} className="block h-full px-2.5 pb-2 pt-2" aria-label={`Open assignment ${a.title}`}>
                   <span style={chip(a.category)} className="inline-block rounded-[2px] px-1 text-[9px] font-bold uppercase leading-[13px] text-primary-foreground">{a.category}</span>
-                  <span className="mt-1 block max-h-[34px] overflow-hidden text-[13px] font-semibold leading-[17px] text-foreground" title={a.title}>{a.title}</span>
+                  <span className="mt-1 block overflow-hidden whitespace-nowrap text-[12px] font-semibold leading-[17px] text-foreground" title={a.title}>{a.title}</span>
                   <span className="absolute bottom-2 left-2.5 text-[12px] text-vc-gray group-hover:hidden">{format(a.due, "MMM dd")}</span>
                   <span className="absolute bottom-2 left-2.5 hidden items-center gap-3 text-[12px] font-bold uppercase text-foreground group-hover:flex"><span className="font-normal normal-case text-foreground/80">{format(a.due, "MMM dd")}</span><span className="flex items-center gap-1"><Pencil className="size-3.5" fill="currentColor" />Edit</span></span>
                 </Link>
@@ -75,8 +75,8 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
           <tbody>
             {roster.map((s) => { const av = avgFor(s.id); return (
               <tr key={s.id}>
-                <td className="sticky left-0 z-10 bg-background pr-3"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-[34px] rounded-full" /><div className="leading-[17px]"><div className="text-[14px] font-semibold">{s.first}</div><div className="text-[14px] text-vc-gray">{s.last}</div></div></div></td>
-                <td className="group/g h-[40px] rounded-[6px] bg-vc-sky p-0 text-center text-[14px] text-foreground/80">
+                <td className="sticky left-0 z-10 bg-background pr-3"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-[28px] rounded-full" /><div className="leading-[14px]"><div className="text-[12px] font-semibold">{s.first}</div><div className="text-[12px] text-vc-gray">{s.last}</div></div></div></td>
+                <td className="group/g h-[30px] rounded-[4px] bg-vc-sky p-0 text-center text-[12px] text-foreground/80">
                   <span className="relative inline-flex items-center justify-center px-5">{av !== null ? Number(av.toFixed(2)) : "—"}
                     <a href={`/teacher/class/${encodeURIComponent(courseId)}?tab=gradedetail&sid=${encodeURIComponent(s.id)}`} target="_blank" rel="noopener" aria-label={`Open ${s.first} ${s.last}'s grade detail in a new tab`} title="Open grade detail in a new tab" className="absolute -right-0.5 hidden text-foreground group-hover/g:block"><FileText className="size-[18px]" fill="currentColor" strokeWidth={1} /></a></span>
                 </td>
@@ -90,9 +90,9 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
             <tr><td colSpan={list.length + 2}><div className="h-1.5 bg-vc-line/50" /></td></tr>
             {stats.map(([label, fn]) => { const g = fn(avgList); return (
               <tr key={label}>
-                <td className="sticky left-0 z-10 bg-background pr-3 text-right text-[14px]">{label}</td>
-                <td className="h-9 rounded-[4px] bg-vc-sky text-center text-[14px]">{g !== null ? g.toFixed(2) : "—"}</td>
-                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={`h-9 rounded-[4px] text-center text-[14px] ${isHidden(a) ? "bg-vc-tile-warm" : "bg-[#f4f4f4]"}`}>{r !== null ? r.toFixed(2) : ""}</td>; })}
+                <td className="sticky left-0 z-10 bg-background pr-3 text-right text-[12px]">{label}</td>
+                <td className="h-[30px] rounded-[4px] bg-vc-sky text-center text-[12px]">{g !== null ? g.toFixed(2) : "—"}</td>
+                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={`h-[30px] rounded-[4px] text-center text-[12px] ${isHidden(a) ? "bg-vc-tile-warm" : "bg-[#f4f4f4]"}`}>{r !== null ? r.toFixed(2) : ""}</td>; })}
               </tr>); })}
           </tbody>
         </table>

@@ -1,7 +1,7 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { CalendarDays, ChevronLeft, ChevronRight, Lock, Mail, MessageSquare, Paperclip, Plus, Unlock, X } from "lucide-react";
+import { AlignLeft, Bold, CalendarDays, ChevronLeft, IndentDecrease, IndentIncrease, Italic, List, ListOrdered, Underline, ChevronRight, Lock, Mail, MessageSquare, Paperclip, Plus, Unlock, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEffect, useRef, useState } from "react";
@@ -31,19 +31,19 @@ export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
     const i = a ? list.findIndex((x) => x.id === a.id) : -1;
     const step = (d: number) => { const n = list[i + d]; if (n) go({ aid: n.id, sub }); };
     const cur = sub ?? "details";
-    const arrow = "grid size-[34px] place-items-center rounded-[6px] bg-[#e8ecf0] text-foreground/70 disabled:opacity-40";
+    const arrow = "grid size-[26px] place-items-center rounded-[5px] bg-[#e8ecf0] text-foreground/70 disabled:opacity-40";
     return (
-      <div className="-mx-4 -my-4 -ml-[48px]">
-        <div className="flex flex-wrap items-center gap-3 border-b border-vc-line pb-0 pl-[48px] pr-5 pt-4">
-          <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradebook" }} className="mb-3 flex h-[42px] items-center gap-2.5 rounded-[8px] bg-[#4a4a4a] px-4 text-[15px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-5 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3.5" strokeWidth={3} /></span>Back to Scores</Link>
+      <div className="-mx-4 -my-4 -ml-[40px]">
+        <div className="flex flex-wrap items-center gap-3 border-b border-vc-line pb-0 pl-[40px] pr-5 pt-[7px]">
+          <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradebook" }} className="mb-2 flex h-[28px] items-center gap-2 rounded-[5px] bg-[#4a4a4a] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
           {([["details", "Assignment Info"], ["students", "Students"]] as const).map(([k, label]) => (
-            <button key={k} type="button" disabled={!a && k === "students"} onClick={() => go({ aid, sub: k })} className={`border-b-[3px] px-4 pb-[13px] pt-[10px] text-[15px] disabled:opacity-40 ${cur === k ? "border-[#4a9be0] text-[#4a9be0]" : "border-transparent text-foreground/70"}`}>{label}</button>))}
+            <button key={k} type="button" disabled={!a && k === "students"} onClick={() => go({ aid, sub: k })} className={`border-b-2 px-3 pb-[9px] pt-[8px] text-[11px] disabled:opacity-40 ${cur === k ? "border-[#4a9be0] text-[#4a9be0]" : "border-transparent text-foreground/70"}`}>{label}</button>))}
         </div>
-        {a && <div className="flex flex-wrap items-center gap-3 px-6 pb-1 pt-5">
-          <button type="button" aria-label="Previous assignment" disabled={i <= 0} onClick={() => step(-1)} className={arrow}><ChevronLeft className="size-5" /></button>
-          <button type="button" aria-label="Next assignment" disabled={i < 0 || i >= list.length - 1} onClick={() => step(1)} className={arrow}><ChevronRight className="size-5" /></button>
-          <span style={chip(a.category)} className="rounded-[4px] px-2 py-0.5 text-[12px] font-semibold uppercase text-primary-foreground">{a.category}</span>
-          <h3 className="text-[22px] font-medium">{a.title}</h3>
+        {a && <div className="flex flex-wrap items-center gap-2 px-5 pb-0 pt-4">
+          <button type="button" aria-label="Previous assignment" disabled={i <= 0} onClick={() => step(-1)} className={arrow}><ChevronLeft className="size-4" /></button>
+          <button type="button" aria-label="Next assignment" disabled={i < 0 || i >= list.length - 1} onClick={() => step(1)} className={arrow}><ChevronRight className="size-4" /></button>
+          <span style={chip(a.category)} className="rounded-[3px] px-1.5 py-px text-[10px] font-semibold uppercase text-primary-foreground">{a.category}</span>
+          <h3 className="text-[16px] font-medium">{a.title}</h3>
         </div>}
         {cur === "details" || !a ? <Editor key={aid} courseId={courseId} a={a} onSaved={(id) => go({ aid: id })} onDeleted={() => go({})} /> : <StudentList a={a} roster={roster} />}
       </div>
@@ -73,21 +73,21 @@ function PortalFlag({ id }: { id: string }) {
   return c && !c.published ? <span className="text-muted-foreground">Hidden</span> : <span className="text-vc-success">Shown</span>;
 }
 
-const box = "h-[42px] w-full rounded-[6px] border border-[#d5d9de] bg-background px-3 text-[15px] outline-none focus:border-[#4a9be0]";
+const box = "h-[30px] w-full rounded-[4px] border border-[#d9dde2] bg-background px-2.5 text-[12px] text-foreground/85 outline-none focus:border-[#4a9be0]";
 function F({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
-  return <div className={`mb-5 ${className}`}><div className="mb-1.5 text-[14px] font-semibold text-foreground/80">{label}</div>{children}</div>;
+  return <div className={`mb-3 ${className}`}><div className="mb-1 text-[10.5px] font-normal uppercase text-vc-gray">{label}</div>{children}</div>;
 }
 
 /** Small rich-text box: bold / italic / underline, lists, indent and alignment. */
-function RichText({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+function RichText({ value, onChange, label, tall }: { value: string; onChange: (v: string) => void; label: string; tall?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const cmd = (c: string) => (e: React.MouseEvent) => { e.preventDefault(); document.execCommand(c); onChange(ref.current?.innerHTML ?? ""); };
-  const tools: [string, string, string][] = [["bold", "B", "font-bold"], ["italic", "I", "italic"], ["underline", "U", "underline"], ["insertUnorderedList", "•≡", ""], ["insertOrderedList", "1≡", ""], ["outdent", "⇤", ""], ["indent", "⇥", ""], ["justifyLeft", "⯇", ""], ["justifyCenter", "≡", ""], ["justifyRight", "⯈", ""]];
+  const tools = [["bold", Bold], ["italic", Italic], ["underline", Underline], ["insertUnorderedList", List], ["insertOrderedList", ListOrdered], ["outdent", IndentDecrease], ["indent", IndentIncrease], ["justifyLeft", AlignLeft]] as const;
   return (
-    <div className="rounded-[6px] border border-[#d5d9de] focus-within:border-[#4a9be0]">
-      <div className="flex flex-wrap gap-0.5 border-b border-[#d5d9de] bg-[#f6f7f9] p-1">{tools.map(([c, l, s]) => <button key={c} type="button" title={c} onMouseDown={cmd(c)} className={`h-7 min-w-7 rounded px-1.5 text-[13px] hover:bg-[#e4e8ec] ${s}`}>{l}</button>)}</div>
-      <div ref={ref} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={(e) => onChange(e.currentTarget.innerHTML)} className="min-h-[120px] px-3 py-2 text-[15px] outline-none [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" />
+    <div className="rounded-[4px] border border-[#d9dde2] focus-within:border-[#4a9be0]">
+      <div className="flex gap-0.5 border-b border-[#d9dde2] bg-background px-1 py-1">{tools.map(([c, I]) => <button key={c} type="button" title={c} aria-label={c} onMouseDown={cmd(c)} className="grid h-[24px] w-[30px] place-items-center rounded-[3px] text-foreground/70 hover:bg-[#e4e8ec]"><I className="size-3.5" /></button>)}</div>
+      <div ref={ref} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={(e) => onChange(e.currentTarget.innerHTML)} className={`${tall ? "min-h-[200px]" : "min-h-[130px]"} px-2.5 py-2 text-[12px] outline-none [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc`} />
     </div>
   );
 }
@@ -95,16 +95,17 @@ function RichText({ value, onChange, label }: { value: string; onChange: (v: str
 function DatePick({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   const d = value ? parseISO(value) : undefined;
   return (
-    <Popover><PopoverTrigger asChild><button type="button" aria-label={label} className={`${box} flex items-center justify-between text-left`}>{d ? format(d, "MMMM d, yyyy") : "Select date"}<CalendarDays className="size-4 text-foreground/50" /></button></PopoverTrigger>
+    <Popover><PopoverTrigger asChild><button type="button" aria-label={label} className={`${box} flex items-center justify-between text-left`}>{d ? format(d, "MMMM d, yyyy") : "Select date"}<CalendarDays className="size-3.5 text-foreground/50" /></button></PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-2 [&_[data-selected-single=true]]:!bg-[#4a9be0]"><Calendar mode="single" selected={d} defaultMonth={d} onSelect={(x) => x && onChange(isoDay(x))} /></PopoverContent></Popover>
   );
 }
 
+/** Square-cornered switch: blue with the knob on the right when on, gray when off. */
 function Toggle({ label, on, set, bare }: { label: string; on: boolean; set: (v: boolean) => void; bare?: boolean }) {
   return (
-    <div className={`flex items-center gap-3 text-[15px] ${bare ? "" : "mb-3"}`}>
-      <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => set(!on)} className={`relative h-[26px] w-[48px] rounded-full transition-colors ${on ? "bg-[#4a9be0]" : "bg-[#c9ced4]"}`}><span className={`absolute top-[3px] size-5 rounded-full bg-background shadow transition-all ${on ? "left-[25px]" : "left-[3px]"}`} /></button>
-      {!bare && <span className="text-foreground/80">{label}</span>}
+    <div className={bare ? "" : "mb-3"}>
+      {!bare && <div className="mb-1 text-[10.5px] uppercase text-vc-gray">{label}</div>}
+      <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => set(!on)} className={`relative h-[22px] w-[40px] rounded-[2px] border transition-colors ${on ? "border-[#5aa9ec] bg-[#5aa9ec]" : "border-[#c9ced4] bg-[#c9ced4]"}`}><span className={`absolute inset-y-0 w-1/2 bg-background ${on ? "right-0" : "left-0"}`} /></button>
     </div>
   );
 }
@@ -136,36 +137,37 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
     update((s) => ({ ...s, custom: s.custom.filter((x) => x.id !== f.id && x.linkId !== f.id) }));
     toast(a && !a.id.startsWith("c-") ? "Edits reverted" : "Assignment deleted"); onDeleted();
   };
-  const sum = (k: string, v: string) => <div><div className="text-[12px] text-vc-gray">{k}</div><div className="text-[18px] font-medium">{v}</div></div>;
+  const sum = (k: string, v: string) => <div><div className="text-[10px] text-vc-gray">{k}</div><div className="text-[14px] font-medium">{v}</div></div>;
   return (
-    <form onSubmit={save} className="px-6 pb-8 pt-5">
-      {existing && <div className="mb-6 flex flex-wrap items-center gap-10">
+    <form onSubmit={save} className="px-5 pb-8 pt-3">
+      {existing && <div className="mb-4 flex flex-wrap items-center gap-8">
         {sum("Max Score", String(f.points))}{sum("Weight", String(f.weight ?? 10))}{sum("Display", f.published ? "ON" : "OFF")}
         <div className="ml-auto flex gap-2">
-          <button type="button" onClick={() => toast("Attachments aren't available in this version yet.")} className="flex h-[40px] items-center gap-2 rounded-[6px] bg-[#e8ecf0] px-4 text-[14px] font-medium"><Paperclip className="size-4" />Attach Files</button>
-          <button type="button" onClick={del} className="h-[40px] rounded-[6px] border border-[#e0645c] px-4 text-[14px] font-medium text-[#d9453d] hover:bg-[#fbe9e9]">Delete Assignment</button></div></div>}
-      <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <button type="button" onClick={() => toast("Attachments aren't available in this version yet.")} className="flex h-[28px] items-center gap-1.5 rounded-[4px] bg-[#e8ecf0] px-3 text-[11px] font-medium"><Paperclip className="size-3.5" />Attach Files</button>
+          <button type="button" onClick={del} className="h-[28px] rounded-[4px] border border-[#e0645c] px-3 text-[11px] font-medium text-[#d9453d] hover:bg-[#fbe9e9]">Delete Assignment</button></div></div>}
+      <div className="grid gap-x-6 lg:grid-cols-2">
         <div>
-          <F label="Description"><input aria-label="Description" className={box} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></F>
+          <F label="Description"><input aria-label="Description" className={`${box} h-[32px]`} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></F>
           <F label="Assignment Details"><RichText label="Assignment Details" value={f.details} onChange={(v) => setF({ ...f, details: v })} /></F>
-          <F label="Teacher Notes (Internal)"><RichText label="Teacher Notes" value={f.notes} onChange={(v) => setF({ ...f, notes: v })} /></F>
+          <F label="Teacher Notes (Internal)"><RichText tall label="Teacher Notes" value={f.notes} onChange={(v) => setF({ ...f, notes: v })} /></F>
         </div>
-        <div>
-          <F label="Assignment Type"><select aria-label="Assignment Type" className={box} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{types.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</select></F>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="max-w-[420px]">
+          <F label="Assignment Type"><select aria-label="Assignment Type" className={`${box} h-[32px]`} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{types.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</select></F>
+          <div className="grid grid-cols-2 gap-3">
             <F label="Date Assigned"><DatePick label="Date Assigned" value={f.assigned} onChange={(v) => setF({ ...f, assigned: v, due: v > f.due ? v : f.due })} /></F>
             <F label="Due Date"><DatePick label="Due Date" value={f.due} onChange={(v) => setF({ ...f, due: v })} /></F></div>
           <F label="Grading Method"><select aria-label="Grading Method" className={box} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter Grade", "Pass/Fail", "Completion"].map((m) => <option key={m}>{m}</option>)}</select></F>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <F label="Max Score"><input aria-label="Max Score" className={box} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></F>
             <F label="Weight"><input aria-label="Weight" className={box} inputMode="decimal" value={String(f.weight ?? 10)} onChange={(e) => /^\d{0,3}(\.\d?)?$/.test(e.target.value) && setF({ ...f, weight: Number(e.target.value) })} /></F></div>
-          <Toggle label="Include in Calc. Grade?" on={f.inCalc} set={(v) => setF({ ...f, inCalc: v })} />
-          <Toggle label="Extra Credit" on={f.extraCredit} set={(v) => setF({ ...f, extraCredit: v })} />
-          <Toggle label="Applies to All Sections?" on={f.allSections} set={(v) => setF({ ...f, allSections: v })} />
-          <Toggle label="Display on Portals?" on={f.published} set={(v) => setF({ ...f, published: v })} />
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <Toggle label="Include in Calc. Grade?" on={f.inCalc} set={(v) => setF({ ...f, inCalc: v })} />
+            <Toggle label="Extra Credit" on={f.extraCredit} set={(v) => setF({ ...f, extraCredit: v })} />
+            <Toggle label="Applies to All Sections?" on={f.allSections} set={(v) => setF({ ...f, allSections: v })} />
+            <Toggle label="Display on Portals?" on={f.published} set={(v) => setF({ ...f, published: v })} /></div>
+          <button className="mt-2 h-[32px] rounded-[4px] bg-[#4caf50] px-6 text-[12px] font-medium text-primary-foreground hover:brightness-105">Save Assignment</button>
         </div>
       </div>
-      <div className="mt-2"><button className="h-[44px] rounded-[6px] bg-[#4caf50] px-6 text-[15px] font-semibold text-primary-foreground hover:brightness-105">Save Assignment</button></div>
     </form>
   );
 }
