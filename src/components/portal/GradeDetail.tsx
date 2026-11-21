@@ -13,7 +13,7 @@ import { teacherFullNames, teacherNames } from "@/lib/student-presentation";
 import { categoryColor } from '@/lib/category-colors';
 import { courseTitle, today, type Assignment } from '@/lib/sis-data';
 import { categoryStats, defaultWeights, letterFor, weightedAverage } from '@/lib/grading';
-import { useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
+import { staffIds, useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
 import { termById, termOn } from '@/lib/terms';
 import { pageHead } from '@/lib/head';
 
@@ -31,7 +31,7 @@ export function Detail({ list, c, student, standalone = false }: { list: Assignm
   const avg = weightedAverage(calc, w);
   const summaryWeights = (w.length ? [...w, ...defaultWeights(calc.map((a) => a.category)).filter((x) => !w.some((v) => v.cat === x.cat))] : defaultWeights(calc.map((a) => a.category))).sort((a, b) => a.cat.localeCompare(b.cat));
   const posted = termGrades[`${c.id}|${user?.personId}|${selected}`];
-  const faculty = teacherNames(c.teacherIds, users.map((u) => ({ ...u, id: u.personId })));
+  const faculty = teacherNames(staffIds(c), users.map((u) => ({ ...u, id: u.personId })));
   const categories = [...new Set(items.map((a) => a.category))].sort();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   return <>

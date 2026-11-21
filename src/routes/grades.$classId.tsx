@@ -13,7 +13,7 @@ import { teacherFullNames, teacherNames } from "@/lib/student-presentation";
 import { categoryColor } from '@/lib/category-colors';
 import { courseTitle, today, type Assignment } from '@/lib/sis-data';
 import { categoryStats, defaultWeights, letterFor, weightedAverage } from '@/lib/grading';
-import { useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
+import { staffIds, useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
 import { termById, termOn } from '@/lib/terms';
 import { pageHead } from '@/lib/head';
 import { Detail } from '@/components/portal/GradeDetail';
@@ -31,9 +31,9 @@ function Grades() {
   const list = useStudentAssignments().filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due);
   const { read } = usePortal();
   const { users } = useSchool();
-  const faculty = teacherNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
+  const faculty = teacherNames(c ? staffIds(c) : [], users.map((u) => ({ ...u, id: u.personId })));
   const [fresh] = useState(() => new Set(list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => a.id)));
-  const fullNames = teacherFullNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
+  const fullNames = teacherFullNames(c ? staffIds(c) : [], users.map((u) => ({ ...u, id: u.personId })));
   return <PortalShell portal="student" maxWidth={930}>{c ? <>
     <div className="relative px-9 pb-[19px] pt-2.5">
       <h1 className="flex flex-wrap items-baseline gap-x-3 text-[25px] font-light leading-9"><span><strong className="font-semibold">{c.id}:</strong> {courseTitle(c)}</span><span className="text-[14px] italic text-vc-gray">{fullNames}</span></h1>

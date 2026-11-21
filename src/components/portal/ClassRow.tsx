@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Clock } from "lucide-react";
 import { type Course, courseTitle, teacherShort, today } from "@/lib/sis-data";
 import { letterFor } from "@/lib/grading";
-import { useClassAverage, useStudentAssignments, useSchool } from "@/lib/school-store";
+import { staffIds, useClassAverage, useStudentAssignments, useSchool } from "@/lib/school-store";
 import { teacherNames } from "@/lib/student-presentation";
 import { usePortal } from "@/lib/portal-store";
 
@@ -14,7 +14,7 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
   const av = useClassAverage(c.id);
   const { users, sections } = useSchool();
   const section = sections.find((s) => s.id === c.id);
-  const faculty = teacherNames(section?.teacherIds ?? [c.teacherId], users.map((u) => ({ ...u, id: u.personId })));
+  const faculty = teacherNames(section ? staffIds(section) : [c.teacherId], users.map((u) => ({ ...u, id: u.personId })));
   
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;

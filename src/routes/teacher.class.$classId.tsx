@@ -68,8 +68,8 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const [wterm, setWterm] = useState(c.terms[0] ?? "");
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
   return (
-    <PortalShell portal="teacher" area="teacher" bare>
-      <div style={{ zoom: 1.12 }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
+    <PortalShell portal="teacher" area="teacher" bare maxWidth={1900}>
+      <div style={{ zoom: 1.18 }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[17px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[190px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
       <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[17px]`}>
         <div className="mb-[29px] flex items-start gap-[9px] pl-[17px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />

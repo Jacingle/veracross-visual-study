@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { isOtherClass } from "@/lib/course-types";
 import { addDays, format, isSameDay } from "date-fns";
-import { BookOpen, CalendarDays, ChevronDown, ClipboardCheck, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, NotebookPen, Pencil, Plus, Search, Users } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronDown, ClipboardCheck, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, NotebookPen, Pencil, Plus, Search, UserRound, Users, Link2 } from "lucide-react";
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ALL_ASSIGNMENTS, today } from "@/lib/sis-data";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/teacher/")({
   component: TeacherHome,
 });
 
-const TABS = ["My Classes", "Other Classes", "Future", "Completed"] as const;
+const TABS = ["My Classes", "Teams", "Programs", "Other Classes", "Future", "Completed"] as const;
 const h2 = "text-[20px] leading-[30px]";
 const hov = "hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]";
 const btn = `flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`;
@@ -28,7 +28,7 @@ function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Rec
 }
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
-  return <Link to="/teacher/class/$classId" params={{ classId }} search={{ tab: "attendance" }} className={`mt-0.5 flex items-center gap-1.5 text-[13px] ${taken ? "text-vc-gray" : "text-destructive"}`}><span className={`size-[9px] rounded-full border ${taken ? "border-vc-gray-light" : "border-destructive bg-destructive"}`} />Attendance →</Link>;
+  return <Link to="/teacher/class/$classId" params={{ classId }} search={{ tab: "attendance" }} className={`mt-0.5 flex items-center gap-1.5 text-[13px] ${taken ? "text-vc-success" : "text-destructive"}`}><span className={`size-[9px] rounded-full ${taken ? "bg-vc-success" : "bg-destructive"}`} />Attendance →</Link>;
 }
 
 function TeacherHome() {
@@ -47,7 +47,7 @@ function TeacherHome() {
   }, [custom, mineIds]);
   const week = [0, 1, 2, 3, 4].map((n) => addDays(now, n));
   const todays = all.flatMap((c) => meetingsOn(c, schedulingSets, now).map((m) => ({ c, label: [m.name || c.block, [scheduleTime(m.start), m.end ? scheduleTime(m.end) : ""].filter(Boolean).join(" - ")].filter(Boolean).join(": ") }))).sort((a, b) => a.label.localeCompare(b.label));
-  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && !isOtherClass(c.type) : tab === "Other Classes" ? c.status === "current" && isOtherClass(c.type) : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
+  const shown = all.filter((c) => (tab === "My Classes" ? c.status === "current" && !isOtherClass(c.type) && c.type !== "ATHLETIC" : tab === "Teams" ? c.status === "current" && c.type === "ATHLETIC" : tab === "Programs" ? false : tab === "Other Classes" ? c.status === "current" && isOtherClass(c.type) : tab === "Future" ? c.status === "future" : tab === "Completed" ? c.status === "past" : false));
   const toolLink = (label: string, icon: ReactNode, tabId: "assignments" | "grades" | "attendance", cls: string) => first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: tabId }} className={cls}>{icon}{label}</Link> : null;
   return (
     <PortalShell portal="teacher" area="teacher">
@@ -58,7 +58,7 @@ function TeacherHome() {
           <div className="grid grid-cols-5 border border-vc-line">
             {week.map((d, i) => { const items = assignments.filter((a) => isSameDay(a.due, d)); return (
               <div key={+d} className={i ? "border-l border-vc-line" : ""}>
-                <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase text-foreground/70 ${i === 0 ? "bg-vc-tile-warm" : "bg-vc-bar"}`}>{format(d, "EEE - MMM d")}</div>
+                <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase text-foreground/70 ${i === 0 ? "bg-vc-select text-vc-navbar" : "bg-vc-bar"}`}>{format(d, "EEE - MMM d")}</div>
                 <div className="min-h-[150px] space-y-2 px-2 py-2 text-[12px] leading-4">
                   {items.slice(0, 5).map((a) => <Link key={a.id} to="/teacher/class/$classId" params={{ classId: a.courseId }} search={{ tab: "assignments" }} className="block text-vc-submit hover:underline">{a.courseId}: {a.title}</Link>)}
                   {items.length > 5 && <div className="text-vc-gray">+{items.length - 5} more</div>}
@@ -79,7 +79,7 @@ function TeacherHome() {
 
           <h2 className={`${h2} mt-6`}>All Classes</h2>
           <div role="tablist" className="mt-3 flex overflow-x-auto whitespace-nowrap border-b border-vc-line">
-            {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px h-[44px] px-6 text-[14.5px] ${tab === t ? "border-x border-t border-vc-line bg-background text-vc-tile-warm-fg" : "text-foreground"}`}>{t}</button>)}
+            {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px h-[44px] px-6 text-[14.5px] ${tab === t ? "border-x border-t border-vc-line bg-background text-vc-navbar" : "text-foreground"}`}>{t}</button>)}
           </div>
           <div className="mt-1">
             {shown.map((c) => (
@@ -106,8 +106,8 @@ function TeacherHome() {
             <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {toolLink("Take Attendance", <ClipboardCheck className="size-[18px]" />, "attendance", btn)}
-            {toolLink("Assignments", <BookOpen className="size-[18px]" />, "assignments", btn)}
+            <Link to="/calendar" className={btn}><CalendarDays className="size-[16px]" />Class Schedule</Link>
+            <Link to="/directories" search={{ type: "faculty" }} className={btn}><UserRound className="size-[16px]" />Update Profile</Link>
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Reserve Resources</h2>
           <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><LayoutGrid className="size-[18px]" />My Resources</Link><Link to="/resources" className={btn}><Search className="size-[18px]" />Find Resources</Link></div>
@@ -118,18 +118,19 @@ function TeacherHome() {
           </form>
           {q.trim() && <Link to="/directories" search={{ type: "students", last: q.trim() }} className="mt-1 block text-[13px] text-vc-link-strong">Search the student directory for “{q.trim()}” →</Link>}
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {toolLink("Add Comment", <MessageSquarePlus className="size-[18px]" />, "grades", addBtn)}
-            {toolLink("Add Assignment", <Plus className="size-[18px]" />, "assignments", addBtn)}
+            {toolLink("Add Behavior", <Plus className="size-[18px]" />, "grades", addBtn)}
+            {toolLink("Add Comment", <Plus className="size-[18px]" />, "grades", addBtn)}
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>School Links</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/calendar" label="School Calendar" icon={CalendarDays} solid />
-            <Tile to="/teacher/news" label="School News" icon={Globe} />
+            <Tile to="/calendar" label="Athletic Calendar" icon={Globe} />
             <Tile to="/directories" search={{ type: "students" }} label="Student Directory" icon={Users} solid />
             <Tile to="/directories" search={{ type: "faculty" }} label="Faculty/Staff Directory" icon={Users} solid />
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Faculty Links</h2>
-          <Link to="/teacher/purchases" className={btn}>Purchase Requests</Link>
+          <div className="grid grid-cols-2 gap-2"><Link to="/calendar" className={btn}><CalendarDays className="size-[16px]" />Exam Calendar</Link>{first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "settings" }} className={btn}><Menu className="size-[16px]" />Setup Classes</Link> : <span className={btn}>Setup Classes</span>}</div>
+          <div className="mt-3 text-center text-[12px] text-vc-link-strong"><Link2 className="mx-auto mb-1 size-4" />No links to display</div>
         </aside>
       </div>
     </PortalShell>

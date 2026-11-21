@@ -62,7 +62,7 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
             <th className="sticky left-0 z-10 min-w-[101px] bg-background" />
             <th className="h-[86px] min-w-[74px] rounded-[4px] bg-vc-sky px-1 pb-3 text-center align-bottom text-[11.5px] font-semibold leading-[15px]">Calculated Grade</th>
             {list.map((a) => { const hidden = isHidden(a); return (
-              <th key={a.id} className={`group relative h-[86px] min-w-[111px] max-w-[111px] rounded-[4px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
+              <th key={a.id} className={`group relative h-[86px] min-w-[92px] max-w-[92px] rounded-[4px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
                 <Link {...link(a)} className="block h-full px-2.5 pb-2 pt-2" aria-label={`Open assignment ${a.title}`}>
                   <span style={chip(a.category)} className="inline-block rounded-[2px] px-1 text-[9px] font-bold uppercase leading-[13px] text-primary-foreground">{a.category}</span>
                   <span className="mt-1 block overflow-hidden whitespace-nowrap text-[11.5px] font-semibold leading-[15px] text-foreground" title={a.title}>{a.title}</span>

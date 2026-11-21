@@ -160,9 +160,10 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   useMemo(() => { setTypeColors(s.assignmentTypes); }, [s.assignmentTypes]);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
-    EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
+    const aideSet = new Set(s.sections.flatMap((c) => c.aideIds ?? []));
+    EXTRA.teachers = s.users.filter((u) => (u.role === "teacher" || aideSet.has(u.personId)) && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
     EXTRA.students = s.users.filter((u) => u.role === "student" && u.personId).map((u) => ({ id: u.personId, first: u.preferred || u.first, last: u.last, email: u.email, grade: u.grade ?? 9, address: [u.address, u.city, u.state, u.postal].filter(Boolean).join(", "), homePhone: u.phone ?? "", parents: [] }));
-  }, [s.users]);
+  }, [s.users, s.sections]);
   const value = useMemo<Ctx>(() => ({
     ...s, ready, update,
     user: s.users.find((u) => u.id === s.sessionId && u.active) ?? null,
@@ -242,6 +243,8 @@ export function useSectionAssignments(courseId: string): Assignment[] {
     return [...base.filter((a) => !byId.has(a.id)), ...own].sort((a, b) => +a.due - +b.due);
   }, [custom, courseId]);
 }
+/** The class teacher followed by any teacher's aides, all shown the same way on portals. */
+export const staffIds = (c: { teacherIds: string[]; aideIds?: string[] | undefined }): string[] => [...new Set([...c.teacherIds, ...(c.aideIds ?? [])])];
 export const isoDay = (d: Date) => format(d, "yyyy-MM-dd");
 
 /** Inbox for the signed-in person: school messages plus admin announcements sent to their audience. */

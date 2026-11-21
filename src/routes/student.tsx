@@ -10,7 +10,6 @@ import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
 import { MailOutline, PlayDisc } from "@/components/portal/icons";
 import { Button } from "@/components/ui/button";
 import { events, fmtDay, teacher, today, type Assignment } from "@/lib/sis-data";
-import { splitClasses } from "@/lib/course-types";
 import { usePortal } from "@/lib/portal-store";
 import { useInbox, useStudentAssignments , useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -35,7 +34,6 @@ const H2 = "text-[20px] leading-[30px]";
 
 function Home() {
   const COURSES = useMySections().filter((c) => c.status === "current");
-  const grouped = splitClasses(COURSES, (id) => teacher(id).last);
   const { read, links } = usePortal();
   const inbox = useInbox();
   const all = useStudentAssignments();
@@ -66,9 +64,7 @@ function Home() {
             })}
           </div>
           <h2 className={`mb-[10.5px] mt-3 ${H2}`}>My Classes</h2>
-          {grouped.academic.map((c) => <ClassRow key={c.id} c={c} variant="home" />)}
-          {grouped.other.length > 0 && <h2 className={`mb-[10.5px] mt-3 ${H2}`}>Other Classes</h2>}
-          {grouped.other.map((c) => <ClassRow key={c.id} c={c} variant="home" />)}
+          {COURSES.map((c) => <ClassRow key={c.id} c={c} variant="home" />)}
         </section>
         <aside>
           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>

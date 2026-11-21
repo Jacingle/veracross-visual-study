@@ -104,7 +104,7 @@ function Frame({ children, portal, wide, bare, maxWidth, fullWidth }: { children
       {impersonatorId && <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-b border-vc-line bg-vc-note px-4 py-1 text-[12px]"><span>Impersonating: <strong>{user?.first} {user?.last}</strong> · {user ? ROLE_LABEL[user.role] : ""}</span><Button variant="ghost" size="sm" className="h-6 text-vc-link-strong" onClick={() => { stopImpersonating(); nav({ to: '/admin/users' }); }}>Return to Administration</Button></div>}
       <main className="relative min-h-[calc(100vh-79px)] pb-12 pt-[30px]">
         {src && theme.fullscreen !== false && <img src={src} alt="" width={1920} height={1088} className={`pointer-events-none fixed inset-0 h-full w-full object-cover ${theme.blur ? "blur-[3px]" : ""}`} />}
-        {bare ? <div className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
+        {bare ? <div style={maxWidth ? { maxWidth } : undefined} className="relative mx-auto w-[calc(100%-2rem)] max-w-[1400px]">{children}</div>
           : <div style={maxWidth ? { maxWidth } : undefined} className={`relative mx-auto overflow-hidden bg-background shadow-xl ${fullWidth ? "w-full" : wide ? "mx-4" : "w-[calc(100%-2rem)] max-w-[1000px]"}`}>{children}</div>}
       </main>
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={1} outWidth={300} title="Profile Photo" onSave={(photo, fullPhoto) => { if (!user?.personId) return; update((s) => ({ ...s, photos: { ...s.photos, [user.personId]: photo }, fullPhotos: { ...s.fullPhotos, [user.personId]: fullPhoto } })); }} />
