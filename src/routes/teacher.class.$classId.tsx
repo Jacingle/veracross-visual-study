@@ -3,6 +3,7 @@ import { Bell, BookOpen, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight,
 import { useState } from "react";
 import { z } from "zod";
 import { PortalShell } from "@/components/portal/PortalShell";
+import { Detail } from "@/components/portal/GradeDetail";
 import { Gradebook } from "@/components/teacher/Gradebook";
 import { AssignmentsTab } from "@/components/teacher/AssignmentsTab";
 import { Attendance, GradesComments, Reports, Weights } from "@/components/teacher/ClassTools";
@@ -26,7 +27,7 @@ const UNDER_GRADEBOOK = ["assignments", "weights", "reports"];
 
 export const Route = createFileRoute("/teacher/class/$classId")({
   validateSearch: z.object({
-    tab: z.enum(["overview", "attendance", "assignments", "gradebook", "grades", "weights", "reports", "website", "notifications", "calendar", "photos", "settings"]).optional(),
+    tab: z.enum(["overview", "attendance", "assignments", "gradebook", "grades", "weights", "reports", "website", "notifications", "calendar", "photos", "settings", "gradedetail"]).optional(),
     aid: z.string().optional(), sub: z.enum(["details", "students"]).optional(), sid: z.string().optional(), date: z.string().optional(),
   }),
   head: ({ params }) => pageHead(`${params.classId} · Class Management`, "Attendance, assignments, gradebook, comments and website for this class."),
@@ -35,10 +36,20 @@ export const Route = createFileRoute("/teacher/class/$classId")({
 
 function ClassManager() {
   const { classId } = Route.useParams();
+  const search = Route.useSearch();
   const mineAll = useMySections();
   const c = mineAll.find((x) => x.id === classId);
   if (!c) return <PortalShell portal="teacher" area="teacher"><p className="p-8 text-[14px]">This class isn't available — it may be unpublished or not assigned to you. <Link to="/teacher" className="text-vc-link-strong">Back to faculty home</Link></p></PortalShell>;
-  return <Manager key={c.id} c={c} mine={mineAll} />;
+  return search.tab === "gradedetail" ? <StudentPaper c={c} sid={search.sid} /> : <Manager key={c.id} c={c} mine={mineAll} />;
+}
+/** A student's Grade Detail, same paper the student sees; opened in a new tab from the gradebook. */
+function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
+  const { scores } = useSchool();
+  const all = useSectionAssignments(c.id);
+  const s = rosterOf(c).find((x) => x.id === sid);
+  const list = all.map((a) => ({ ...a, score: scoreOf(scores, a, sid ?? "") }));
+  if (!s) return <PortalShell portal="teacher" area="teacher"><p className="p-8 text-[14px]">That student isn't in this class. <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong">Back to the gradebook</Link></p></PortalShell>;
+  return <PortalShell portal="teacher" area="teacher"><Detail list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PortalShell>;
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();

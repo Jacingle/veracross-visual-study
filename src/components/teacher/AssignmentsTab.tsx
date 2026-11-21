@@ -100,11 +100,11 @@ function DatePick({ value, onChange, label }: { value: string; onChange: (v: str
   );
 }
 
-function Toggle({ label, on, set }: { label: string; on: boolean; set: (v: boolean) => void }) {
+function Toggle({ label, on, set, bare }: { label: string; on: boolean; set: (v: boolean) => void; bare?: boolean }) {
   return (
-    <div className="mb-3 flex items-center gap-3 text-[15px]">
+    <div className={`flex items-center gap-3 text-[15px] ${bare ? "" : "mb-3"}`}>
       <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => set(!on)} className={`relative h-[26px] w-[48px] rounded-full transition-colors ${on ? "bg-[#4a9be0]" : "bg-[#c9ced4]"}`}><span className={`absolute top-[3px] size-5 rounded-full bg-background shadow transition-all ${on ? "left-[25px]" : "left-[3px]"}`} /></button>
-      <span className="text-foreground/80">{label}</span>
+      {!bare && <span className="text-foreground/80">{label}</span>}
     </div>
   );
 }
@@ -119,7 +119,8 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
     // Scores stay hidden until the teacher turns "Display on Portals" on (or uses the eye in the gradebook).
     published: a ? true : false, inCalc: true, extraCredit: false, allSections: false, method: "Points", weight: 10,
   });
-  const types = [...new Set([...assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => t.description.toUpperCase()), f.category])];
+  const typeRows = assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => ({ key: t.description.toUpperCase(), label: t.description }));
+  const types = typeRows.some((t) => t.key === f.category) ? typeRows : [...typeRows, { key: f.category as string, label: f.category.charAt(0) + f.category.slice(1).toLowerCase() }];
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     const r = schema.safeParse(f);
@@ -150,7 +151,7 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
           <F label="Teacher Notes (Internal)"><RichText label="Teacher Notes" value={f.notes} onChange={(v) => setF({ ...f, notes: v })} /></F>
         </div>
         <div>
-          <F label="Assignment Type"><select aria-label="Assignment Type" className={box} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{types.map((t) => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}</select></F>
+          <F label="Assignment Type"><select aria-label="Assignment Type" className={box} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })}>{types.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</select></F>
           <div className="grid grid-cols-2 gap-4">
             <F label="Date Assigned"><DatePick label="Date Assigned" value={f.assigned} onChange={(v) => setF({ ...f, assigned: v, due: v > f.due ? v : f.due })} /></F>
             <F label="Due Date"><DatePick label="Due Date" value={f.due} onChange={(v) => setF({ ...f, due: v })} /></F></div>
@@ -222,7 +223,7 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
               <button type="button" title="Feedback" aria-label={`Feedback for ${s.first}`} onClick={() => setFb({ sid: s.id, text: "" })} className={`${iconBtn} ${has ? "text-[#4a9be0]" : ""}`}><MessageSquare className="size-[19px]" fill={has ? "currentColor" : "none"} /></button>
               <button type="button" title={locked ? "Unlock grade" : "Lock grade"} aria-pressed={locked} onClick={() => set("comments", `l|${k}`, locked ? "" : "1")} className={`${iconBtn} ${locked ? "text-foreground" : ""}`}>{locked ? <Lock className="size-[19px]" /> : <Unlock className="size-[19px]" />}</button>
               {email ? <a href={`mailto:${email}`} title={`Email ${s.first}`} aria-label={`Email ${s.first}`} className={iconBtn}><Mail className="size-[19px]" /></a> : <span className={`${iconBtn} opacity-40`}><Mail className="size-[19px]" /></span>}</div>
-            <div className="flex justify-end"><Toggle label={`Published for ${s.first}`} on={pub[k] !== false} set={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></div>
+            <div className="flex justify-end"><Toggle bare label={`Published for ${s.first}`} on={pub[k] !== false} set={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} /></div>
           </div>); })}
       {fb && fbStudent && <aside className="fixed inset-y-0 right-0 z-50 flex w-[380px] max-w-full flex-col border-l border-vc-line bg-background shadow-2xl">
         <div className="flex items-center justify-between border-b border-vc-line px-5 py-4"><div className="flex items-center gap-3"><PersonPhoto personId={fbStudent.id} className="size-10 rounded-full" /><div className="leading-tight"><div className="text-[16px] font-semibold">{fbStudent.first} {fbStudent.last}</div><div className="text-[13px] text-vc-gray">{a.title}</div></div></div>
