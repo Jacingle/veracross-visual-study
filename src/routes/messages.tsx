@@ -67,7 +67,7 @@ function Rows({ items, open }: { items: Item[]; open: (m: Item) => void }) {
         <div key={g.label}>
           <div className="mx-[21px] mt-[10px] border-b border-[#dcdcdc] pb-[13px] pt-[4px] text-center text-[18px] font-semibold text-[#444]">{g.label}</div>
           {g.items.map((x) => (
-            <button key={x.id} type="button" onClick={() => open(x)} className="relative mx-[21px] grid h-[59px] w-[calc(100%-42px)] grid-cols-[190px_minmax(0,1fr)_110px] items-start gap-x-3 border-b border-[#dcdcdc] pl-[17px] pt-[9px] text-left hover:bg-[#fafafa]">
+            <button key={x.id} type="button" onClick={() => open(x)} className="relative mx-[21px] grid h-[59px] w-[calc(100%-42px)] grid-cols-[178px_minmax(0,1fr)_110px] items-start gap-x-3 border-b border-[#d9d9d9] pl-[17px] pr-[36px] pt-[9px] text-left hover:bg-[#f7f7f7]">
               {!read.includes(x.id) && <span aria-label="Unread" className="absolute left-[5px] top-[26px] size-[9px] rounded-full bg-[#4f87e0]" />}
               <span className="min-w-0"><span className="block text-[9.5px] leading-[13px] text-black">From</span><span className="block truncate text-[14px] leading-[19px] text-black">{x.from}</span></span>
               <span className={`min-w-0 ${read.includes(x.id) ? "" : ""}`}><span className="block truncate text-[12px] font-light leading-[13px] text-[#555]">{x.list}</span><span className={`block truncate text-[14px] leading-[19px] text-black ${read.includes(x.id) ? "" : "font-semibold"}`}>{x.subject}</span></span>
