@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import placeholder from '@/assets/default-profile.asset.json';
 import { useSchool } from '@/lib/school-store';
 
 const cache = new Map<string, string>();
@@ -48,9 +47,10 @@ export function useHasPhoto(personId?: string) {
  * `fit` renders the photo at an exact CSS size (and loads a matching-resolution copy). With
  * `squareIfMissing`, people without a photo get a square placeholder of the fit width instead.
  */
-export function PersonPhoto({ personId, className = 'size-16', alt = 'Profile', full = false, fit, squareIfMissing = false, res = 1 }: { personId?: string | undefined; className?: string; alt?: string; full?: boolean; fit?: { w: number; h: number }; squareIfMissing?: boolean; /** Output resolution multiplier: above 1 is a touch sharper, below 1 a touch softer. */ res?: number }) {
+export function PersonPhoto({ personId, className = 'size-16', alt = 'Profile', full = false, fit, squareIfMissing = false, res = 1, plainBg = false }: { personId?: string | undefined; className?: string; alt?: string; full?: boolean; fit?: { w: number; h: number }; squareIfMissing?: boolean; /** Output resolution multiplier: above 1 is a touch sharper, below 1 a touch softer. */ res?: number; /** Show the white-background default silhouette (class website) instead of the grey one. */ plainBg?: boolean }) {
   const { photos, fullPhotos } = useSchool();
   const source = personId ? (full ? fullPhotos[personId] || photos[personId] : photos[personId]) : undefined;
+  const placeholder = { url: plainBg ? '/default-avatar-white.png' : '/default-avatar.png' };
   const square = Boolean(fit && squareIfMissing && !source);
   const w = fit ? fit.w : undefined, h = fit ? (square ? fit.w : fit.h) : undefined;
   const sized = useSized(source, w, h, res);

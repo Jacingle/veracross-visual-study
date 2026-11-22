@@ -90,7 +90,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
               <div className="text-[18px] leading-6">Teacher</div>
               {staffIds(c).map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
                 <div key={id} className="mt-1.5 flex items-start gap-3">
-                  <PersonPhoto personId={id} full res={1.4} fit={{ w: 55, h: 83 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
+                  <PersonPhoto personId={id} full plainBg res={1.4} fit={{ w: 58, h: 83 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
                   <div className="min-w-0 text-[15px] leading-[20px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
                     {phone && <div>{phone}</div>}<a href={`mailto:${f.email}`} className="text-vc-site-blue">Email</a></div>
                 </div>); })}

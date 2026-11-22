@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { fmtGrade } from "@/lib/fmt-grade";
 import { useState } from 'react';
 import { Printer } from "lucide-react";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
@@ -36,7 +37,7 @@ function Report() {
           const id = c.terms.find((t) => periodId.startsWith(t)); const t = id ? termById(id) : undefined;
           const list = assignments.filter((a) => a.courseId === c.id && custom.find((x) => x.id === a.id)?.inCalc !== false && (!t || (+a.due >= +t.start && +a.due <= +(periodId.endsWith('-M') ? t.mid : t.end) + 86399999)));
           const avg = weightedAverage(list, weights[c.id] ?? []); const key = `${c.id}|${sid}|${periodId}`;
-          return <div key={c.id} className="border-b border-vc-line py-4"><div className="flex justify-between gap-3"><div className="text-[16px]"><Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: 'detail' }} className="text-vc-link-strong">{courseTitle(c)}</Link> <span className="text-[13px] text-muted-foreground">· {teacherFull(c.teacherId)}</span></div><div className="text-[18px]">{termGrades[key] || (avg === null ? '-' : `${letterFor(avg)} · ${avg.toFixed(2)}%`)}</div></div>{comments[key] && <p className="mt-1.5 whitespace-pre-line text-[14px] text-foreground/80">{comments[key]}</p>}</div>;
+          return <div key={c.id} className="border-b border-vc-line py-4"><div className="flex justify-between gap-3"><div className="text-[16px]"><Link to="/grades/$classId" params={{ classId: c.id }} search={{ tab: 'detail' }} className="text-vc-link-strong">{courseTitle(c)}</Link> <span className="text-[13px] text-muted-foreground">· {teacherFull(c.teacherId)}</span></div><div className="text-[18px]">{termGrades[key] || (avg === null ? '-' : `${letterFor(avg)} · ${fmtGrade(avg)}%`)}</div></div>{comments[key] && <p className="mt-1.5 whitespace-pre-line text-[14px] text-foreground/80">{comments[key]}</p>}</div>;
         })}
         {!periods.length && <p className="py-8 text-[13px] text-muted-foreground">No reports available.</p>}
       </div>

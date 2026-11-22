@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { fmtGrade } from "@/lib/fmt-grade";
 import { VcSelect } from '@/components/teacher/VcSelect';
 import { Bell, Book, Calendar, ChevronLeft, ChevronRight, Image, Library, MessageSquareText, PanelsTopLeft, Pencil, Settings, UsersRound } from "lucide-react";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
@@ -80,14 +81,14 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
     <PortalShell portal="teacher" area="teacher" bare maxWidth={1900}>
       <div ref={box} style={{ zoom }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[175px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[7px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[165px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
-      <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[14px]`}>
-        <div className="mb-[22px] flex items-start gap-[10px] pl-[15px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />
-          <div className="min-w-0"><div className="truncate text-[12px] font-medium leading-[15px]">{c.id}: {c.name}</div>
-            <VcSelect aria-label="Change class" className="w-full cursor-pointer bg-transparent text-[9.5px] leading-[13px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
+      <aside className={`${open ? "" : "hidden"} bg-[#f3f6f7] pt-[14px]`}>
+        <div className="mb-[22px] flex items-start gap-[10px] pl-[15px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-[#9a9ba1]" strokeWidth={1.4} />
+          <div className="min-w-0"><div className="truncate text-[10.5px] font-semibold leading-[15px] text-[#515352]">{c.id}: {c.name}</div>
+            <VcSelect aria-label="Change class" className="w-full cursor-pointer bg-transparent text-[8px] leading-[13px] text-[#a7a8aa] outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</VcSelect></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[10px] ${active === id ? "bg-[#dbeafb] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[14px] text-foreground/50" strokeWidth={1.5} />{label}</Link>))}
+            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[10.5px] ${active === id ? "bg-[#cfe8f8] text-[#4f6579]" : "text-[#8c8e90] hover:bg-background"}`}><Icon className={`size-[14px] ${active === id ? "fill-[#465c6c]/15 text-[#465c6c]" : "text-[#9a9ba1]"}`} strokeWidth={1.4} />{label}</Link>))}
       </aside>
       <div className="min-w-0" >
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
@@ -104,7 +105,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
               const av = weightedAverage(scored, w);
               const missing = list.filter((a) => a.due < today() && scoreOf(scores, a, s.id) === undefined).length;
               return (
-                <tr key={s.id} className="border-b border-vc-line"><td className="py-1.5">{s.last}, {s.first}</td><td>{s.grade}</td><td className="font-semibold">{av !== null ? `${letterFor(av)} · ${av.toFixed(2)}%` : "—"}</td>
+                <tr key={s.id} className="border-b border-vc-line"><td className="py-1.5">{s.last}, {s.first}</td><td>{s.grade}</td><td className="font-semibold">{av !== null ? `${letterFor(av)} · ${fmtGrade(av)}%` : "—"}</td>
                   <td className={missing ? "text-destructive" : "text-muted-foreground"}>{missing}</td>
                   <td className="text-right"><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "grades", sid: s.id }} className="text-vc-link-strong hover:underline">Grades & Comments</Link></td></tr>);
             })}</tbody>

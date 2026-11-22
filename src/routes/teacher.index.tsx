@@ -21,13 +21,13 @@ const h2 = "text-[20px] leading-[30px] text-[#2f2f2f]";
 const hov = "";
 const shade = "shadow-[0_3px_0_#d6d9d8]";
 const btn = `flex h-[34px] items-center justify-center gap-2 bg-[#f0f0f0] text-[12.5px] font-semibold text-[#575757] ${shade}`;
-const blueBtn = `flex h-8 items-center justify-center gap-2 bg-[#eaf4fa] text-[12.5px] font-semibold text-[#5f8ba3] ${shade}`;
+const blueBtn = `flex h-8 items-center justify-center gap-2 bg-[#eaf4fa] text-[12.5px] font-semibold text-vc-link ${shade}`;
 const addBtn = `flex h-[34px] items-center justify-center gap-2 bg-[#ecf2f0] text-[12.5px] font-semibold text-[#6fa58b] ${shade}`;
 type Dest = "/resources" | "/messages" | "/calendar" | "/directories" | "/teacher/news" | "/teacher/purchases";
 type TileIcon = ComponentType<{ className?: string }>;
 /** Same tile as the student home: a soft blue square with the icon above the label; it darkens on hover. */
 function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Record<string, string>; label: string; icon: TileIcon; solid?: boolean }) {
-  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-normal leading-[18px] bg-[#ebf1f9] text-[#7f9db3] [--cut:#ebf1f9]`}><Icon className={solid ? "size-6 fill-[#336d91] stroke-(--cut) text-[#336d91]" : "size-6 text-[#336d91]"} />{label}</Link>;
+  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-semibold leading-[18px] bg-[#ebf1f9] text-vc-link [--cut:#ebf1f9]`}><Icon className={solid ? "size-6 fill-[#336d91] stroke-(--cut) text-[#336d91]" : "size-6 text-[#336d91]"} />{label}</Link>;
 }
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
@@ -105,7 +105,7 @@ function TeacherHome() {
           <h2 className={`mb-[11px] ${h2}`}>Faculty Portal</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/resources" label="My Library" icon={GridSolid} />
-            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-normal leading-[18px] bg-[#ebf1f9] text-[#7f9db3] [--cut:#ebf1f9]`}><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</span>}
+            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-semibold leading-[18px] bg-[#ebf1f9] text-vc-link [--cut:#ebf1f9]`}><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</span>}
             <Tile to="/messages" label="My Messages" icon={SharpEnvelope} />
             <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>

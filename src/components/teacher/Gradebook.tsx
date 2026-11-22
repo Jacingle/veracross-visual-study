@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { fmtGrade } from "@/lib/fmt-grade";
 import { VcSelect } from '@/components/teacher/VcSelect';
 import { format } from "date-fns";
 import { ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Eye, EyeOff, FileText, Pencil, Plus, Scale } from "lucide-react";
@@ -77,7 +78,7 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
               <th key={a.id} className={`group relative h-[90px] min-w-[116px] max-w-[116px] rounded-[4px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
                 <Link {...link(a)} className="block h-full px-[6px] pb-2 pt-[6px]" aria-label={`Open assignment ${a.title}`}>
                   <span style={chip(a.category)} className="inline-block rounded-[2px] px-1 text-[7.5px] font-bold uppercase leading-[11px] text-primary-foreground">{a.category}</span>
-                  <span className="mt-[7px] block overflow-hidden whitespace-nowrap text-[9.8px] font-bold leading-[13px] text-[#222]" title={a.title}>{a.title}</span>
+                  <span className="mt-[7px] line-clamp-2 break-words text-[9.8px] font-bold leading-[13px] text-[#222]" title={a.title}>{a.title}</span>
                   <span className="absolute bottom-[14px] left-[6px] text-[10px] text-[#b5b5b5] group-hover:hidden">{format(a.due, "MMM dd")}</span>
                   <span className="absolute bottom-[14px] left-[6px] hidden items-center gap-3 text-[11px] font-bold uppercase text-foreground group-hover:flex"><span className="font-normal normal-case text-foreground/80">{format(a.due, "MMM dd")}</span><span className="flex items-center gap-1"><Pencil className="size-3.5" fill="currentColor" />Edit</span></span>
                 </Link>
@@ -89,7 +90,7 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
               <tr key={s.id}>
                 <td className="sticky left-0 z-10 bg-background pr-3"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-[29px] rounded-full" /><div className="leading-[14px]"><div className="text-[10.5px] font-bold">{s.first}</div><div className="text-[10.5px] text-[#b3b3b3]">{s.last}</div></div></div></td>
                 <td className="group/g h-[32px] rounded-[4px] bg-[#e9f1f9] p-0 text-center text-[10.8px] text-[#555]">
-                  <span className="relative inline-flex items-center justify-center px-0">{av !== null ? av.toFixed(2) : "—"}
+                  <span className="relative inline-flex items-center justify-center px-0">{av !== null ? fmtGrade(av) : "—"}
                     <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradedetail", sid: s.id }} aria-label={`Open ${s.first} ${s.last}'s grade detail`} title="Grade detail" className="absolute -right-[22px] top-1/2 hidden -translate-y-1/2 text-black group-hover/g:block"><PaperIcon /></Link></span>
                 </td>
                 {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k] ?? "" : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; const hidden = isHidden(a); return (
@@ -103,8 +104,8 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
             {stats.map(([label, fn]) => { const g = fn(avgList); return (
               <tr key={label}>
                 <td className="sticky left-0 z-10 bg-background pr-3 text-right text-[12px]">{label}</td>
-                <td className="h-[32px] rounded-[4px] bg-[#e9f1f9] text-center text-[10.8px]">{g !== null ? g.toFixed(2) : "—"}</td>
-                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={`h-[32px] rounded-[4px] text-center text-[12px] ${isHidden(a) ? "bg-vc-tile-warm" : "bg-[#f4f4f4]"}`}>{r !== null ? r.toFixed(2) : ""}</td>; })}
+                <td className="h-[32px] rounded-[4px] bg-[#e9f1f9] text-center text-[10.8px]">{g !== null ? fmtGrade(g) : "—"}</td>
+                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={`h-[32px] rounded-[4px] text-center text-[12px] ${isHidden(a) ? "bg-vc-tile-warm" : "bg-[#f4f4f4]"}`}>{r !== null ? fmtGrade(r) : ""}</td>; })}
               </tr>); })}
           </tbody>
         </table>

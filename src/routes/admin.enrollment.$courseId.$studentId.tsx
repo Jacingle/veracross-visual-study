@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { fmtGrade } from "@/lib/fmt-grade";
 import { format } from "date-fns";
 import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
 import { courseTitle, studentById, teacherFull } from "@/lib/sis-data";
@@ -36,7 +37,7 @@ function Record({ c, s }: { c: Section; s: Student }) {
       </div>
       <div className="mt-3 grid grid-cols-[320px_minmax(0,1fr)] gap-3">
         <Panel title="Report Flags & Grades">
-          <F l="Current Average" v={av !== null ? `${letterFor(av)} · ${av.toFixed(2)}%` : "—"} />
+          <F l="Current Average" v={av !== null ? `${letterFor(av)} · ${fmtGrade(av)}%` : "—"} />
           <F l="Mid-Semester 1" v={termGrades[`${c.id}|${s.id}|MS1`] || (av !== null ? `${letterFor(av)} (calculated)` : "—")} />
           <F l="Semester 1" v={termGrades[`${c.id}|${s.id}|S1`] || "Not posted"} />
           <F l="MS1 Comment" v={comments[`${c.id}|${s.id}|MS1`] ? "Entered" : "Not entered"} />

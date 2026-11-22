@@ -1,4 +1,5 @@
 import { ATT_STATUSES } from "@/lib/attendance";
+import { fmtGrade } from "@/lib/fmt-grade";
 import { VcSelect } from '@/components/teacher/VcSelect';
 import { categoryColor } from "@/lib/category-colors";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
@@ -123,7 +124,7 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
           <VcSelect aria-label="Grading period" className="h-8 border border-vc-line px-2 text-[13px]" value={term} onChange={(e) => setTerm(e.target.value)}>{TERMS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</VcSelect>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3 text-[13px]">
-          <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">CALCULATED GRADE</div><div className="text-[20px]">{avg !== null ? `${letterFor(avg)} · ${avg.toFixed(2)}%` : "—"}</div></div>
+          <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">CALCULATED GRADE</div><div className="text-[20px]">{avg !== null ? `${letterFor(avg)} · ${fmtGrade(avg)}%` : "—"}</div></div>
           <label className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">POSTED GRADE</div>
             <VcSelect className="mt-1 h-8 w-full border border-vc-line bg-background px-2" value={termGrades[k] ?? ""} onChange={(e) => update((x) => ({ ...x, termGrades: { ...x.termGrades, [k]: e.target.value } }))}>{LETTERS.map((l) => <option key={l} value={l}>{l || "— use calculated —"}</option>)}</VcSelect></label>
           <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">REPORTS</div><div className="mt-1 text-vc-link-strong">Progress Report · Report Card</div></div>
