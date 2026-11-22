@@ -56,7 +56,7 @@ function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
   const s = rosterOf(c).find((x) => x.id === sid);
   const list = all.map((a) => ({ ...a, score: scoreOf(scores, a, sid ?? "") }));
   if (!s) return <div className="min-h-screen bg-vc-paper"><p className="p-8 text-[14px]">That student isn't in this class. <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong">Back to the gradebook</Link></p></div>;
-  return <div className="min-h-screen bg-vc-paper"><PaperGuard><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PaperGuard></div>;
+  return <div className="min-h-screen bg-vc-paper"><div className="px-4 pt-3 text-[13px]"><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong hover:underline">← Back to the gradebook</Link></div><PaperGuard><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PaperGuard></div>;
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
@@ -71,7 +71,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const [zoom, setZoom] = useState(1.18);
   useEffect(() => {
     const host = box.current?.parentElement; if (!host) return;
-    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.max(0.6, w / 1414)); };
+    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.max(1, w / 1414)); };
     fit(); const ro = new ResizeObserver(fit); ro.observe(host); return () => ro.disconnect();
   }, []);
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
@@ -90,7 +90,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
       </aside>
       <div className="min-w-0">
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
-        <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[25px] w-[112px] items-center gap-2 rounded-[4px] bg-[#4d4d4d] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
+        <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[26px] shrink-0 items-center gap-[8px] whitespace-nowrap rounded-[4px] bg-[#4d4d4d] px-[12px] text-[12px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
         <span className="ml-[8px] border-b-2 border-[#4fb3e6] px-[17px] pb-[9px] pt-[8px] text-[11.5px] text-[#4fb3e6]">Weights</span>
         <span className="relative mb-2 ml-[8px]"><VcSelect aria-label="Term" value={wterm} onChange={(e) => setWterm(e.target.value)} className="h-[23px] w-[99px] rounded-[3px] border border-[#e1e4e8] bg-background pl-2 pr-5 text-[10.5px] text-foreground/70 outline-none">{c.terms.map((x) => <option key={x} value={x}>{termLabel(x).replace(/^\d{4}-\d{2} /, "")}</option>)}</VcSelect></span>
       </div>}

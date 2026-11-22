@@ -36,7 +36,7 @@ export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
     return (
       <div className="relative">
         <div className="flex items-end border-b border-[#ececec] pl-[15px] pt-[6px]">
-          <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[25px] w-[112px] items-center gap-2 rounded-[4px] bg-[#4d4d4d] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-[14px] place-items-center rounded-full bg-primary-foreground text-[#4d4d4d]"><ChevronLeft className="size-2.5" strokeWidth={3.5} /></span>Back to Scores</Link>
+          <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[26px] shrink-0 items-center gap-[8px] whitespace-nowrap rounded-[4px] bg-[#4d4d4d] px-[12px] text-[12px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-[14px] place-items-center rounded-full bg-primary-foreground text-[#4d4d4d]"><ChevronLeft className="size-2.5" strokeWidth={3.5} /></span>Back to Scores</Link>
           {([["details", "Assignment Info"], ["students", "Students"]] as const).map(([k, label], n) => (
             <button key={k} type="button" disabled={!a && k === "students"} onClick={() => go({ aid, sub: k })} className={`${n === 0 ? "ml-[8px]" : ""} border-b-2 px-[17px] pb-[9px] pt-[8px] text-[11.5px] ${cur === k ? "border-[#4fb3e6] text-[#4fb3e6]" : "border-transparent text-[#a8a8a8]"}`}>{label}</button>))}
         </div>
@@ -127,11 +127,11 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
   const [f, setF] = useState<CustomAssignment>(existing ?? {
     id: a?.id ?? `c-${crypto.randomUUID().slice(0, 8)}`, courseId, title: a?.title ?? "", category: a?.category ?? "HOMEWORK",
     assigned: isoDay(a?.assigned ?? today()), due: isoDay(a?.due ?? today()), points: a?.points ?? 100, details: "", notes: a?.notes ?? "",
-    // Scores stay hidden until the teacher turns "Display on Portals" on (or uses the eye in the gradebook).
-    published: a ? true : false, inCalc: true, extraCredit: false, allSections: false, method: "Points", weight: 100,
+    // "Display on Portals?" starts ON; the teacher can turn it off or use the eye in the gradebook.
+    published: true, inCalc: true, extraCredit: false, allSections: false, method: "Points", weight: 100,
   });
-  const typeRows = assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => ({ key: t.description.toUpperCase(), label: t.description }));
-  const types = typeRows.some((t) => t.key === f.category) ? typeRows : [...typeRows, { key: f.category as string, label: f.category.charAt(0) + f.category.slice(1).toLowerCase() }];
+  const typeRows = assignmentTypes.filter((t) => !t.obsolete).map((t) => ({ key: t.description.toUpperCase(), label: t.description })).sort((x, y) => x.label.localeCompare(y.label));
+  const types = typeRows.some((t) => t.key === f.category) ? typeRows : [...typeRows, { key: f.category as string, label: f.category.charAt(0) + f.category.slice(1).toLowerCase() }].sort((x, y) => x.label.localeCompare(y.label));
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     const r = schema.safeParse(f);
@@ -239,7 +239,7 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
         <div className="grid h-[36px] grid-cols-3 text-center text-[11px]"><span className="relative grid place-items-center text-[#4fb3e6]">Feedback<i className="absolute bottom-0 h-[2px] w-[52px] bg-[#4fb3e6]" /></span></div>
         <div className="flex-1 overflow-y-auto px-[24px] pt-[14px]">
           {comments[`s|${fbKey}`] && <div className="flex gap-2.5"><PersonPhoto personId={fbStudent.id} className="size-[26px] rounded-full" /><div><div className="text-[12px] font-bold">{fbStudent.first} {fbStudent.last}</div><div className="mb-3 text-[10px] text-[#b0b0b0]">Commented</div><div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{comments[`s|${fbKey}`]}</div></div></div>}
-          {comments[`a|${fbKey}`] && <div className="mt-3 flex gap-2.5"><PersonPhoto personId={user?.personId} className="size-[26px] rounded-full" /><div><div className="text-[12px] font-bold">{user?.first} {user?.last}</div><div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{comments[`a|${fbKey}`]}</div></div></div>}
+          {comments[`a|${fbKey}`] && <div className="mt-3 flex gap-2.5"><PersonPhoto personId={user?.personId} className="size-[26px] rounded-full" /><div><div className="text-[12px] font-bold">{user?.first} {user?.last}</div><div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{comments[`a|${fbKey}`]}</div><div className="mt-1 flex gap-3 pl-3 text-[10.5px] text-[#8a8a8a]"><button type="button" className="hover:underline" onClick={() => setFb({ ...fb, text: comments[`a|${fbKey}`] ?? "" })}>Edit</button><button type="button" className="hover:underline" onClick={() => { set("comments", `a|${fbKey}`, ""); setFb({ ...fb, text: "" }); toast.success("Feedback deleted"); }}>Delete</button></div></div></div>}
           {!comments[`s|${fbKey}`] && !comments[`a|${fbKey}`] && <p className="pt-10 text-center text-[11px] text-[#b0b0b0]">No feedback yet.</p>}
         </div>
         <form className="flex gap-2.5 px-[18px] pb-[14px]" onSubmit={(e) => { e.preventDefault(); if (!fb.text.trim()) return; set("comments", `a|${fbKey}`, fb.text.trim()); setFb({ ...fb, text: "" }); toast.success("Feedback posted"); }}>

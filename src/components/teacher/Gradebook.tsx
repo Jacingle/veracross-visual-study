@@ -90,7 +90,7 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
                 <td className="sticky left-0 z-10 bg-background pr-3"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-[27px] rounded-full" /><div className="leading-[14px]"><div className="text-[12px] font-semibold">{s.first}</div><div className="text-[12px] text-vc-gray/80">{s.last}</div></div></div></td>
                 <td className="group/g h-[31px] rounded-[4px] bg-vc-sky p-0 text-center text-[12px] text-foreground/80">
                   <span className="relative inline-flex items-center justify-center px-0">{av !== null ? Number(av.toFixed(2)) : "—"}
-                    <a href={`/teacher/class/${encodeURIComponent(courseId)}?tab=gradedetail&sid=${encodeURIComponent(s.id)}`} target="_blank" rel="noopener" aria-label={`Open ${s.first} ${s.last}'s grade detail in a new tab`} title="Open grade detail in a new tab" className="absolute -right-[22px] top-1/2 hidden -translate-y-1/2 text-black group-hover/g:block"><PaperIcon /></a></span>
+                    <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradedetail", sid: s.id }} aria-label={`Open ${s.first} ${s.last}'s grade detail`} title="Grade detail" className="absolute -right-[22px] top-1/2 hidden -translate-y-1/2 text-black group-hover/g:block"><PaperIcon /></Link></span>
                 </td>
                 {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k] ?? "" : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; const hidden = isHidden(a); return (
                   <td key={a.id} className="p-0">

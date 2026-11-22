@@ -58,7 +58,7 @@ function TeacherHome() {
           <div className="grid grid-cols-5 border border-vc-line">
             {week.map((d, i) => { const items = assignments.filter((a) => isSameDay(a.due, d)); return (
               <div key={+d} className={i ? "border-l border-vc-line" : ""}>
-                <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase ${i === 0 ? "text-vc-navbar" : "bg-vc-bar text-foreground/70"}`} style={i === 0 ? { background: "color-mix(in oklab, var(--vc-navbar) 16%, white)" } : undefined}>{format(d, "EEE - MMM d")}</div>
+                <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase ${i === 0 ? "text-foreground/70" : "bg-vc-bar text-foreground/70"}`} style={i === 0 ? { background: "#fdf4e3" } : undefined}>{format(d, "EEE - MMM d")}</div>
                 <div className="min-h-[150px] space-y-2 px-2 py-2 text-[12px] leading-4">
                   {items.slice(0, 5).map((a) => <Link key={a.id} to="/teacher/class/$classId" params={{ classId: a.courseId }} search={{ tab: "assignments" }} className="block text-vc-submit hover:underline">{a.courseId}: {a.title}</Link>)}
                   {items.length > 5 && <div className="text-vc-gray">+{items.length - 5} more</div>}
@@ -78,8 +78,9 @@ function TeacherHome() {
           </div>
 
           <h2 className={`${h2} mt-6`}>All Classes</h2>
-          <div role="tablist" className="mt-3 flex overflow-x-auto whitespace-nowrap border-b border-vc-line">
-            {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px h-[44px] px-6 text-[14.5px] ${tab === t ? "border-x border-t border-vc-line bg-background text-vc-navbar" : "text-foreground"}`}>{t}</button>)}
+          <div role="tablist" className="mt-3 flex items-end overflow-x-auto whitespace-nowrap">
+            {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`h-[39px] px-6 text-[14px] ${tab === t ? "rounded-t-[3px] border-x border-t border-vc-line bg-background text-vc-navbar" : "border-b border-vc-line text-foreground"}`}>{t}</button>)}
+            <div aria-hidden className="h-[39px] min-w-[22px] flex-1 border-b border-vc-line" />
           </div>
           <div className="mt-1">
             {shown.map((c) => (

@@ -130,7 +130,7 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
         </div>
         <label className="mt-3 block text-[11px] text-muted-foreground">COMMENT</label>
         <textarea className="mt-1 h-44 w-full border border-vc-line p-2 text-[14px] leading-relaxed" maxLength={2000} value={text} onChange={(e) => update((x) => ({ ...x, comments: { ...x.comments, [k]: e.target.value } }))} placeholder={`Write a ${TERMS.find((t) => t.id === term)?.label} comment for ${s.first}…`} />
-        <div className="flex items-center justify-between text-[12px] text-muted-foreground"><span>{text.trim() ? text.trim().split(/\s+/).length : 0} words · {text.length}/2000 characters · saved automatically</span>
+        <div className="flex items-center justify-between text-[12px] text-muted-foreground"><span>{text.trim() ? <button type="button" className="mr-3 text-destructive hover:underline" onClick={() => update((x) => ({ ...x, comments: { ...x.comments, [k]: "" } }))}>Delete comment</button> : null}{text.trim() ? text.trim().split(/\s+/).length : 0} words · {text.length}/2000 characters · saved automatically</span>
           <div className="flex gap-2">
             <button disabled={idx <= 0} onClick={() => pick(roster[idx - 1]?.id ?? s.id)} className="h-8 border border-vc-line px-3 text-foreground disabled:opacity-40">Previous</button>
             <button disabled={idx >= roster.length - 1} onClick={() => pick(roster[idx + 1]?.id ?? s.id)} className="h-8 bg-vc-link-strong px-3 text-primary-foreground disabled:opacity-40">Next Student</button>
