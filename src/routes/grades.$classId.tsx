@@ -5,6 +5,7 @@ import { usePortal } from '@/lib/portal-store';
 import { updateKey } from '@/components/portal/ClassRow';
 import { ArrowRight, Printer } from 'lucide-react';
 import { CommentsSolid } from '@/components/portal/icons';
+import { ErrorPage } from '@/components/common/ErrorPage';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { Button } from '@/components/ui/button';
 import { GradeCalculation } from "@/components/portal/GradeCalculation";
@@ -40,7 +41,7 @@ function Grades() {
       <Link to="/class/$classId" params={{ classId }} className="absolute right-3 top-3 flex items-center gap-1 text-[12px] text-vc-link">View Class Website <ArrowRight className="size-3" /></Link>
     </div>
     <div className="flex pl-[26px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-[15px] py-[9px] text-[14.5px] leading-5 ${Boolean(tab) === Boolean(v) ? 'bg-vc-bar font-semibold text-foreground' : 'text-vc-gray'}`}>{label}</Link>)}</div>
-    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} startFilter={startFilter ?? 'all'} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
+    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} startFilter={startFilter ?? 'all'} />}</> : <ErrorPage fullPage={false} title="Access Restricted" message="You do not have access to this class." detail="You are not enrolled in this class." />}</PortalShell>;
 }
 function AllAssignments({ list, teacherName, fresh, startFilter }: { list: Assignment[]; teacherName: string; fresh: Set<string>; startFilter: string }) {
   const { comments, aStatus, user, weights } = useSchool();

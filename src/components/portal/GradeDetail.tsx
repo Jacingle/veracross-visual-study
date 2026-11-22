@@ -18,6 +18,7 @@ import { termById, termOn } from '@/lib/terms';
 import { pageHead } from '@/lib/head';
 
 const category = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
+const pct = (a: Assignment) => a.score !== undefined && a.points > 0 ? a.score / a.points * 100 : null;
 
 export type DetailStudent = { personId: string; first: string; last: string; grade?: number | undefined };
 /** The Grade Detail paper. Students see their own; a teacher opens it for any student in the class. */

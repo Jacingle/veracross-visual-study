@@ -3,6 +3,7 @@ import { VcSelect } from '@/components/teacher/VcSelect';
 import { Bell, Book, Calendar, ChevronLeft, ChevronRight, Image, Library, MessageSquareText, PanelsTopLeft, Pencil, Settings, UsersRound } from "lucide-react";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { z } from "zod";
+import { ErrorPage } from "@/components/common/ErrorPage";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Detail } from "@/components/portal/GradeDetail";
 import { Gradebook } from "@/components/teacher/Gradebook";
@@ -40,14 +41,14 @@ function ClassManager() {
   const search = Route.useSearch();
   const mineAll = useMySections();
   const c = mineAll.find((x) => x.id === classId);
-  if (!c) return <PortalShell portal="teacher" area="teacher"><p className="p-8 text-[14px]">This class isn't available — it may be unpublished or not assigned to you. <Link to="/teacher" className="text-vc-link-strong">Back to faculty home</Link></p></PortalShell>;
+  if (!c) return <ErrorPage title="Access Restricted" message="You do not have access to this class." detail="It may be unpublished or not assigned to you." />;
   return search.tab === "gradedetail" ? <StudentPaper c={c} sid={search.sid} /> : <Manager key={c.id} c={c} mine={mineAll} />;
 }
 /** Shows what went wrong instead of a blank error page, so a broken document can be reported precisely. */
 class PaperGuard extends Component<{ children: ReactNode }, { err: Error | null }> {
   state = { err: null as Error | null };
   static getDerivedStateFromError(err: Error) { return { err }; }
-  render() { return this.state.err ? <div className="p-8 text-[14px]"><b>This grade detail couldn't be shown.</b><pre className="mt-2 whitespace-pre-wrap text-[12px] text-destructive">{this.state.err.message}</pre></div> : this.props.children; }
+  render() { return this.state.err ? <ErrorPage title="Something Went Wrong" message="This grade detail couldn't be shown." detail={`${this.state.err.message} Please contact your support representative if the problem continues.`} /> : this.props.children; }
 }
 /** A student's Grade Detail, same paper the student sees; opened in a new tab from the gradebook. */
 function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
@@ -55,7 +56,7 @@ function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
   const all = useSectionAssignments(c.id);
   const s = rosterOf(c).find((x) => x.id === sid);
   const list = all.map((a) => ({ ...a, score: scoreOf(scores, a, sid ?? "") }));
-  if (!s) return <div className="min-h-screen bg-vc-paper"><p className="p-8 text-[14px]">That student isn't in this class. <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong">Back to the gradebook</Link></p></div>;
+  if (!s) return <ErrorPage title="Page Not Found" message="That student is not in this class." />;
   return <div className="min-h-screen bg-vc-paper"><div className="px-4 pt-3 text-[13px]"><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong hover:underline">← Back to the gradebook</Link></div><PaperGuard><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PaperGuard></div>;
 }
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
@@ -88,7 +89,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
             className={`mx-[10px] mb-[9px] flex h-[34px] items-center gap-[10px] rounded-[6px] pl-[9px] text-[12px] ${active === id ? "bg-[#d6e8fa] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[17px] text-foreground/55" strokeWidth={1.4} />{label}</Link>))}
       </aside>
-      <div className="min-w-0">
+      <div className="min-w-0" style={{ zoom: 1.08 }}>
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
         <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[26px] shrink-0 items-center gap-[8px] whitespace-nowrap rounded-[4px] bg-[#4d4d4d] px-[12px] text-[12px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
         <span className="ml-[8px] border-b-2 border-[#4fb3e6] px-[17px] pb-[9px] pt-[8px] text-[11.5px] text-[#4fb3e6]">Weights</span>

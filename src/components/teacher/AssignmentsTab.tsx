@@ -47,12 +47,12 @@ export function AssignmentsTab({ courseId, list, roster, aid, sub }: Props) {
           <div><span style={chip(a.category)} className="inline-block rounded-[2px] px-[5px] py-px text-[8.5px] font-semibold leading-[11px] text-primary-foreground opacity-90">{nice(a.category)}</span>
             <h3 className="text-[13.5px] font-normal leading-[17px]">{a.title}</h3></div>
         </div>}
-        {a && cur === "details" && <div className="flex items-center gap-2 px-[13px] pt-[14px]">
-          <div className="flex h-[26px] w-[64px] overflow-hidden rounded-[3px] border border-[#ececec] text-[#8a8a8a]">
+        {a && cur === "details" && <div className="flex items-start gap-3 px-[13px] pb-0 pt-[17px]">
+          <div className="flex h-[30px] w-[73px] overflow-hidden rounded-[3px] border border-[#ececec] text-[#8a8a8a]">
             <button type="button" aria-label="Previous assignment" disabled={i <= 0} onClick={() => step(-1)} className="grid flex-1 place-items-center border-r border-[#ececec] disabled:opacity-40"><ChevronLeft className="size-3.5" /></button>
             <button type="button" aria-label="Next assignment" disabled={i < 0 || i >= list.length - 1} onClick={() => step(1)} className="grid flex-1 place-items-center disabled:opacity-40"><ChevronRight className="size-3.5" /></button></div>
-          <span style={chip(a.category)} className="rounded-[2px] px-[5px] py-px text-[8.5px] font-semibold leading-[11px] text-primary-foreground opacity-90">{nice(a.category)}</span>
-          <h3 className="text-[13.5px] font-normal">{a.title}</h3></div>}
+          <div><span style={chip(a.category)} className="inline-block rounded-[2px] px-[5px] py-px text-[8.5px] font-semibold leading-[11px] text-primary-foreground opacity-90">{nice(a.category)}</span>
+            <h3 className="text-[13.5px] font-normal leading-[17px]">{a.title}</h3></div></div>}
         {cur === "details" || !a ? <Editor key={aid} courseId={courseId} a={a} onSaved={(id) => go({ aid: id })} onDeleted={() => go({})} /> : <StudentList a={a} roster={roster} />}
       </div>
     );
@@ -149,13 +149,11 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
   };
   return (
     <form onSubmit={save} className="px-[13px] pb-8 pt-[14px]">
-      {existing && <div className="mb-4 flex flex-wrap items-center gap-6 text-[11px]">
-        <button type="button" onClick={() => toast("Attachments aren't available in this version yet.")} className="flex h-[26px] items-center gap-1.5 rounded-[3px] bg-[#e8ecf0] px-3 font-medium"><Paperclip className="size-3" />Attach Files</button>
-        <button type="button" onClick={del} className="h-[26px] rounded-[3px] border border-[#e0645c] px-3 font-medium text-[#d9453d] hover:bg-[#fbe9e9]">Delete Assignment</button></div>}
       <div className="grid gap-x-[13px] lg:grid-cols-[minmax(0,479px)_minmax(0,479px)]">
         <div>
           <F label="Description"><input aria-label="Description" className={`${box} h-[27px]`} value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></F>
           <F label="Assignment Details"><RichText label="Assignment Details" value={f.details} onChange={(v) => setF({ ...f, details: v })} /></F>
+          {existing && <button type="button" onClick={() => toast("Attachments aren't available in this version yet.")} className="-mt-[4px] mb-[14px] flex h-[26px] items-center gap-1.5 rounded-[3px] border border-[#e1e4e8] bg-background px-3 text-[11px] text-[#6b7075]">Attach Files<Paperclip className="size-3" /></button>}
           <F label="Teacher Notes (Internal)"><RichText label="Teacher Notes" value={f.notes} onChange={(v) => setF({ ...f, notes: v })} /></F>
         </div>
         <div>
@@ -164,7 +162,7 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
             <F label="Date Assigned"><DatePick label="Date Assigned" value={f.assigned} onChange={(v) => setF({ ...f, assigned: v, due: v > f.due ? v : f.due })} /></F>
             <F label="Due Date"><DatePick label="Due Date" value={f.due} onChange={(v) => setF({ ...f, due: v })} /></F></div>
           <div className="grid grid-cols-2 gap-[12px]">
-            <F label="Grading Method"><VcSelect aria-label="Grading Method" className={`${box} text-[#8a8f94]`} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter"].map((m) => <option key={m}>{m}</option>)}</VcSelect></F>
+            <F label="Grading Method"><VcSelect aria-label="Grading Method" disabled={Boolean(existing)} className={`${box} text-[#8a8f94] ${existing ? "!border-transparent !bg-[#f4f4f4]" : ""}`} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>{["Points", "Letter"].map((m) => <option key={m}>{m}</option>)}</VcSelect></F>
             <F label="Max Score"><input aria-label="Max Score" className={box} inputMode="numeric" value={String(f.points)} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setF({ ...f, points: Number(e.target.value) })} /></F></div>
           <div className="grid grid-cols-2 gap-[12px]">
             <F label="Weight"><input aria-label="Weight" className={box} inputMode="decimal" value={String(f.weight ?? 100)} onChange={(e) => /^\d{0,3}(\.\d?)?$/.test(e.target.value) && setF({ ...f, weight: Number(e.target.value) })} /></F></div>
@@ -173,7 +171,9 @@ function Editor({ courseId, a, onSaved, onDeleted }: { courseId: string; a: Assi
             <Toggle label="Extra Credit" on={f.extraCredit} set={(v) => setF({ ...f, extraCredit: v })} />
             <Toggle label="Applies to All Sections?" on={f.allSections} set={(v) => setF({ ...f, allSections: v })} />
             <Toggle label="Display on Portals?" on={f.published} set={(v) => setF({ ...f, published: v })} /></div>
-          <button className="mt-[4px] h-[34px] w-[126px] rounded-[4px] bg-[#5cb360] text-[11.5px] font-medium text-primary-foreground shadow-[0_1px_3px_rgba(0,0,0,.2)] hover:brightness-105">Save Assignment</button>
+          <div className="mt-[4px] flex items-center gap-3">
+          {existing && <button type="button" onClick={del} className="h-[34px] w-[118px] rounded-[4px] border border-[#e8a9a5] bg-[#fdf1f0] text-[11.5px] text-[#d9453d] hover:bg-[#fbe4e2]">Delete Assignment</button>}
+          <button className="h-[34px] w-[126px] rounded-[4px] bg-[#5cb360] text-[11.5px] font-medium text-primary-foreground shadow-[0_1px_3px_rgba(0,0,0,.2)] hover:brightness-105">Save Assignment</button></div>
         </div>
       </div>
     </form>
