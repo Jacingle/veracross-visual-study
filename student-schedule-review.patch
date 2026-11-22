@@ -1,0 +1,761 @@
+diff --git a/src/components/admin/AxiomShell.tsx b/src/components/admin/AxiomShell.tsx
+index ca7b170..b8c1db9 100644
+--- a/src/components/admin/AxiomShell.tsx
++++ b/src/components/admin/AxiomShell.tsx
+@@ -1,6 +1,6 @@
+ import { PersonPhoto } from "@/components/common/PersonPhoto";
+ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+-import { ArrowLeft, BookOpen, ChevronRight, ClipboardList, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
++import { ArrowLeft, BookOpen, CalendarDays, ChevronRight, ClipboardList, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+ import { useEffect, useMemo, useState, type ReactNode } from "react";
+ import { RoleGate } from "@/components/auth/RoleGate";
+ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+@@ -28,6 +28,7 @@ export const AXIOM_LINKS = [
+   { to: "/admin/report-layouts", label: "Report Card Layouts", icon: FileText },
+   { to: "/admin/terms", label: "School Years & Terms", icon: Clock },
+   { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock },
++  { to: "/admin/student-schedules", label: "Student Schedules", icon: CalendarDays },
+   { to: "/admin/messages", label: "Communications", icon: Mail },
+   { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt },
+ ] as const;
+@@ -135,7 +136,7 @@ function Frame({ title, crumbs, actions, compactRail, recordMenu, children }: {
+           <div className="px-2 py-2">{mode === 'homepages' && <div><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">Homepages</h3>
+             <Link to="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Home className="size-4 text-ax-top" />{SYSTEM_HOME.title}</Link>
+             {HOMEPAGES.map((h) => <Link key={h.id} to="/admin/home/$pageId" params={{ pageId: h.id }} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><LayoutGrid className="size-4 text-ax-top" />{h.title}</Link>)}</div>}
+-          {mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group === 'System' ? 'System pages' : group === 'Academics' ? 'Academics pages' : 'People & Communications pages'}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/classes', '/admin/terms', '/admin/scheduling', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
++          {mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group === 'System' ? 'System pages' : group === 'Academics' ? 'Academics pages' : 'People & Communications pages'}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/classes', '/admin/terms', '/admin/scheduling', '/admin/student-schedules', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
+         </SheetContent>
+       </Sheet>
+     </div>
+diff --git a/src/components/admin/ScheduleViews.tsx b/src/components/admin/ScheduleViews.tsx
+new file mode 100644
+index 0000000..d1d85de
+--- /dev/null
++++ b/src/components/admin/ScheduleViews.tsx
+@@ -0,0 +1,150 @@
++// Views for one student's schedule on the administrator's Student Schedules page. They only draw what
++// reviewStudent() worked out; every change goes back to the page through callbacks.
++import { CircleCheck, Pencil, Plus, TriangleAlert, Info, X } from "lucide-react";
++import { axTd, axTh } from "@/components/admin/AxiomDetail";
++import { blockTimes, dayLabel, fmtTime, weeklyGrid, type Issue, type ReviewSection, type StudentReview, type TermReview } from "@/lib/schedule-review";
++import type { SchedulingSet } from "@/lib/scheduling";
++import { teacherFull } from "@/lib/sis-data";
++
++export type ClassActions = { onChange: (c: ReviewSection) => void; onDrop: (c: ReviewSection) => void };
++const ghost = "grid size-6 place-items-center text-vc-link-strong hover:bg-vc-panel";
++
++/** The problems found for this student, worst first; an empty-block problem offers to add a class straight into that block. */
++export function IssueList({ review, onAdd }: { review: StudentReview; onAdd: (i: Issue) => void }) {
++  if (!review.issues.length) return <p className="flex items-center gap-2 bg-vc-success-soft px-3 py-2"><CircleCheck className="size-4 text-vc-success" />No problems found: every block has exactly one class and both terms are even.</p>;
++  return (
++    <ul aria-label="Schedule problems" className="divide-y divide-vc-line border border-vc-line">
++      {review.issues.map((i) => (
++        <li key={i.id} className={`flex items-start gap-2 px-3 py-2 ${i.severity === "error" ? "bg-vc-danger-soft" : "bg-vc-tile-warm"}`}>
++          {i.severity === "error" ? <TriangleAlert aria-label="Error" className="mt-0.5 size-4 shrink-0 text-destructive" /> : <Info aria-label="Warning" className="mt-0.5 size-4 shrink-0 text-vc-gray-dark" />}
++          <span className="min-w-0 flex-1">{i.message}</span>
++          {i.kind === "empty-block" && <button type="button" onClick={() => onAdd(i)} className="shrink-0 text-vc-link-strong underline">Add a class</button>}
++        </li>))}
++    </ul>
++  );
++}
++
++function ClassTile({ c, actions }: { c: ReviewSection; actions: ClassActions }) {
++  const teacher = c.teacherIds[0];
++  return (
++    <div className="flex items-start justify-between gap-2 py-0.5">
++      <div className="min-w-0"><div className="font-semibold">{c.name}</div><div className="text-[12px] text-vc-gray">{[c.code, teacher ? teacherFull(teacher) : "", c.room].filter(Boolean).join(" · ")}</div></div>
++      <div className="flex shrink-0">
++        <button type="button" aria-label={`Change section of ${c.name}`} title="Change section" onClick={() => actions.onChange(c)} className={ghost}><Pencil className="size-3.5" /></button>
++        <button type="button" aria-label={`Drop ${c.name}`} title="Drop this class (all of its terms)" onClick={() => actions.onDrop(c)} className={`${ghost} text-destructive`}><X className="size-4" /></button>
++      </div>
++    </div>
++  );
++}
++
++function BlockCell({ term, name, actions, onAdd }: { term: TermReview; name: string; actions: ClassActions; onAdd: (term: TermReview, blockId: string, blockName: string) => void }) {
++  const row = term.rows.find((r) => r.block.name === name);
++  if (!row) return <td className={`${axTd} bg-vc-panel align-top text-vc-gray`}>Not in this timetable</td>;
++  const conflict = row.sections.length > 1;
++  const empty = row.sections.length === 0;
++  const tone = conflict || (empty && row.required) ? "bg-vc-danger-soft" : empty ? "bg-vc-panel text-vc-gray" : "bg-background";
++  return (
++    <td className={`${axTd} align-top ${tone}`} data-state={conflict ? "conflict" : empty ? (row.required ? "empty" : "free") : "ok"}>
++      {conflict && <div className="mb-1 flex items-center gap-1 text-[12px] font-semibold text-destructive"><TriangleAlert className="size-3.5" />{row.sections.length} classes in one block</div>}
++      {row.sections.map((c) => <ClassTile key={c.id} c={c} actions={actions} />)}
++      {empty && (row.required
++        ? <div className="flex items-center justify-between gap-2"><span className="font-semibold text-destructive">Nothing scheduled</span><button type="button" onClick={() => onAdd(term, row.block.id, row.block.name)} className="flex items-center gap-1 text-vc-link-strong underline"><Plus className="size-3.5" />Add class</button></div>
++        : <span>Free</span>)}
++    </td>
++  );
++}
++
++/** Veracross "Block View": one row per block of the timetable, one column per term, so a gap or a double-booking stands out. */
++export function BlockView({ review, actions, onAdd, onRequired }: { review: StudentReview; actions: ClassActions; onAdd: (term: TermReview, blockId: string, blockName: string) => void; onRequired: (blockIds: string[], on: boolean) => void }) {
++  const names = [...new Set(review.terms.flatMap((t) => t.rows.map((r) => r.block.name)))];
++  const unplaced = review.terms.some((t) => t.unplaced.length);
++  return (
++    <div className="overflow-x-auto">
++      <table className="w-full min-w-[680px] border-collapse">
++        <thead><tr><th className={`${axTh} w-[260px]`}>Block</th>{review.terms.map((t) => <th key={t.termId} className={axTh}>{t.label}<div className="text-[12px] font-normal text-vc-gray">{t.classes.length} {t.classes.length === 1 ? "class" : "classes"}{t.expected ? ` · ${t.expected} expected` : ""}</div></th>)}</tr></thead>
++        <tbody>
++          {names.map((name) => {
++            const rows = review.terms.flatMap((t) => t.rows.filter((r) => r.block.name === name).map((r) => ({ t, r })));
++            const first = rows[0];
++            const required = first?.r.required ?? true;
++            return (
++              <tr key={name}>
++                <td className={`${axTd} align-top`}>
++                  <div className="font-semibold">{name}</div>
++                  <div className="text-[12px] text-vc-gray">{blockTimes(first?.t.set, first?.r.block.id) || "No meeting times"}</div>
++                  <label className="mt-1 flex items-center gap-1.5 text-[12px] text-vc-gray-dark"><input type="checkbox" checked={required} aria-label={`${name} needs a class`} onChange={(e) => onRequired(rows.map((x) => x.r.block.id), e.target.checked)} />Needs a class</label>
++                </td>
++                {review.terms.map((t) => <BlockCell key={t.termId} term={t} name={name} actions={actions} onAdd={onAdd} />)}
++              </tr>);
++          })}
++          {unplaced && <tr><td className={`${axTd} align-top`}><div className="font-semibold">Not in a block</div><div className="text-[12px] text-vc-gray">Classes the timetable can't place</div></td>{review.terms.map((t) => <td key={t.termId} className={`${axTd} align-top bg-vc-tile-warm`}>{t.unplaced.map((c) => <ClassTile key={c.id} c={c} actions={actions} />)}</td>)}</tr>}
++        </tbody>
++      </table>
++    </div>
++  );
++}
++
++/** The set's week for one term: days across, meeting times down, each time showing its block and the student's class in it. */
++export function WeekView({ term }: { term: TermReview }) {
++  if (!term.set) return <p className="px-3 py-6 text-center text-vc-gray">No scheduling set covers {term.label}.</p>;
++  const grid = weeklyGrid(term.set);
++  if (!grid.slots.length) return <p className="px-3 py-6 text-center text-vc-gray">{term.set.name} has no meeting times yet.</p>;
++  return (
++    <div className="overflow-x-auto">
++      <table className="w-full min-w-[640px] border-collapse">
++        <thead><tr><th className={`${axTh} w-[120px]`}>Time</th>{grid.days.map((d) => <th key={d} className={axTh}>{dayLabel(d)}</th>)}</tr></thead>
++        <tbody>
++          {grid.slots.map((slot) => (
++            <tr key={slot.key}>
++              <td className={`${axTd} align-top text-[13px]`}>{blockTimesOf(slot.start, slot.end)}</td>
++              {grid.days.map((d) => {
++                const m = grid.cell(d, slot.key);
++                const row = m ? term.rows.find((r) => r.block.id === m.blockId) : undefined;
++                if (!m || !row) return <td key={d} className={`${axTd} bg-vc-panel`} />;
++                const bad = row.sections.length > 1 || (row.required && row.sections.length === 0);
++                return (
++                  <td key={d} className={`${axTd} align-top ${bad ? "bg-vc-danger-soft" : row.sections.length ? "bg-background" : "bg-vc-panel text-vc-gray"}`}>
++                    <div className="text-[11px] font-semibold uppercase text-vc-gray-dark">{row.block.name}</div>
++                    {row.sections.map((c) => <div key={c.id} className="font-semibold">{c.name}<span className="font-normal text-vc-gray"> {c.room}</span></div>)}
++                    {!row.sections.length && <div>{row.required ? <span className="font-semibold text-destructive">Nothing scheduled</span> : "Free"}</div>}
++                  </td>);
++              })}
++            </tr>))}
++        </tbody>
++      </table>
++    </div>
++  );
++}
++const blockTimesOf = (start: string, end: string) => `${fmtTime(start)}–${fmtTime(end)}`;
++
++/** A plain list of the student's classes with their block, times and room. */
++export function ListView({ review, sets, actions }: { review: StudentReview; sets: SchedulingSet[]; actions: ClassActions }) {
++  const classes = [...new Map(review.terms.flatMap((t) => t.classes).map((c) => [c.id, c])).values()];
++  const blockOf = (c: ReviewSection) => { const set = sets.find((s) => s.id === c.scheduleSetId); return { set, block: set?.blocks.find((b) => b.id === c.scheduleBlockId) }; };
++  const order = (c: ReviewSection) => { const { set, block } = blockOf(c); return set && block ? set.blocks.indexOf(block) : 999; };
++  classes.sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name));
++  if (!classes.length) return <p className="px-3 py-6 text-center text-vc-gray">This student isn't enrolled in any classes this year.</p>;
++  return (
++    <div className="overflow-x-auto">
++      <table className="w-full min-w-[760px] border-collapse">
++        <thead><tr>{["Block", "Class", "Teacher", "Room", "Terms", "Meets", ""].map((h, i) => <th key={i} className={axTh}>{h}</th>)}</tr></thead>
++        <tbody>{classes.map((c) => {
++          const { set, block } = blockOf(c);
++          return (
++            <tr key={c.id}>
++              <td className={axTd}>{block?.name ?? <span className="text-vc-gray">None</span>}</td>
++              <td className={axTd}><span className="font-semibold">{c.name}</span> <span className="text-vc-gray">{c.code}</span></td>
++              <td className={axTd}>{c.teacherIds[0] ? teacherFull(c.teacherIds[0]) : "—"}</td>
++              <td className={axTd}>{c.room || "—"}</td>
++              <td className={axTd}>{c.terms.map((t) => t.split("-")[1]).join(" + ")}</td>
++              <td className={`${axTd} text-[13px]`}>{blockTimes(set, block?.id) || "—"}</td>
++              <td className={`${axTd} w-[72px]`}><div className="flex">
++                <button type="button" aria-label={`Change section of ${c.name}`} title="Change section" onClick={() => actions.onChange(c)} className={ghost}><Pencil className="size-3.5" /></button>
++                <button type="button" aria-label={`Drop ${c.name}`} title="Drop this class (all of its terms)" onClick={() => actions.onDrop(c)} className={`${ghost} text-destructive`}><X className="size-4" /></button>
++              </div></td>
++            </tr>);
++        })}</tbody>
++      </table>
++    </div>
++  );
++}
+diff --git a/src/lib/schedule-review.test.ts b/src/lib/schedule-review.test.ts
+new file mode 100644
+index 0000000..52cd75a
+--- /dev/null
++++ b/src/lib/schedule-review.test.ts
+@@ -0,0 +1,106 @@
++import { describe, expect, it } from "vitest";
++import { blockTimes, changeSection, enrollStudent, fmtTime, placementFor, reviewStudent, weeklyGrid, withdrawStudent, type ReviewSection } from "./schedule-review";
++import type { SchedulingSet } from "./scheduling";
++
++const set: SchedulingSet = {
++  id: "set", name: "Weekly", terms: ["2026-S1", "2026-S2"], weekdays: [1, 2],
++  blocks: [{ id: "a", name: "A Block", days: [], start: "", end: "" }, { id: "b", name: "B Block", days: [], start: "", end: "" }, { id: "l", name: "Lunch", days: [], start: "", end: "" }],
++  meetings: [
++    { id: "m1", day: 1, start: "08:00", end: "08:50", blockId: "a" }, { id: "m2", day: 1, start: "09:00", end: "09:50", blockId: "b" },
++    { id: "m3", day: 2, start: "08:00", end: "08:50", blockId: "b" }, { id: "m4", day: 2, start: "09:00", end: "09:50", blockId: "a" },
++  ],
++};
++const cls = (id: string, courseNo: string, block: string | undefined, terms = ["2026-S1", "2026-S2"], extra: Partial<ReviewSection> = {}): ReviewSection => ({
++  id, code: id, name: `Course ${courseNo}`, courseNo, terms, scheduleSetId: block ? "set" : undefined, scheduleBlockId: block,
++  teacherIds: [], room: "", studentIds: ["s1"], published: true, ...extra,
++});
++const review = (sections: ReviewSection[], settings = {}) => reviewStudent({ sections, studentId: "s1", yearId: "2026", sets: [set], settings });
++const kinds = (sections: ReviewSection[], settings = {}) => review(sections, settings).issues.map((i) => i.kind);
++
++describe("student schedule review", () => {
++  it("accepts a full, even schedule (Lunch does not need a class)", () => {
++    const r = review([cls("e1", "ENG", "a"), cls("m1", "MATH", "b")]);
++    expect(r.issues).toEqual([]);
++    expect(r.terms[0]?.rows.find((x) => x.block.id === "l")?.required).toBe(false);
++  });
++  it("flags a block with nothing in it, per term", () => {
++    const r = review([cls("e1", "ENG", "a"), cls("m1", "MATH", "b", ["2026-S1"])]);
++    const empty = r.issues.filter((i) => i.kind === "empty-block");
++    expect(empty).toHaveLength(1);
++    expect(empty[0]?.termId).toBe("2026-S2");
++    expect(empty[0]?.blockId).toBe("b");
++  });
++  it("flags two classes in one block", () => {
++    const r = review([cls("e1", "ENG", "a"), cls("m1", "MATH", "a"), cls("h1", "HIST", "b")]);
++    const conflict = r.issues.find((i) => i.kind === "block-conflict");
++    expect(conflict?.sectionIds.sort()).toEqual(["e1", "m1"]);
++    expect(r.issues.some((i) => i.kind === "empty-block")).toBe(false);
++  });
++  it("flags two sections of the same course in overlapping terms, but not in different terms", () => {
++    expect(kinds([cls("e1", "ENG", "a"), cls("e2", "ENG", "b"), cls("m1", "MATH", "b")])).toContain("duplicate-course");
++    const split = [cls("e1", "ENG", "a", ["2026-S1"]), cls("e2", "ENG", "a", ["2026-S2"]), cls("m1", "MATH", "b")];
++    expect(kinds(split)).not.toContain("duplicate-course");
++  });
++  it("flags a term with too few classes, using the blocks that need a class unless a minimum is set", () => {
++    expect(kinds([cls("e1", "ENG", "a")])).toContain("term-short");
++    expect(kinds([cls("e1", "ENG", "a"), cls("m1", "MATH", "b")], { minPerTerm: 3 })).toContain("term-short");
++    expect(kinds([cls("e1", "ENG", "a"), cls("m1", "MATH", "b")], { minPerTerm: 2 })).not.toContain("term-short");
++  });
++  it("flags uneven terms", () => {
++    const r = review([cls("e1", "ENG", "a"), cls("m1", "MATH", "b"), cls("h1", "HIST", undefined, ["2026-S1"])]);
++    const uneven = r.issues.find((i) => i.kind === "term-uneven");
++    expect(uneven?.message).toMatch(/Semester 1 has 3 classes but .*Semester 2 has 2 classes/);
++  });
++  it("warns about classes with no block, drafts, and terms without a timetable", () => {
++    const k = kinds([cls("e1", "ENG", "a"), cls("m1", "MATH", "b"), cls("x1", "ART", undefined, ["2026-S1", "2026-S2"], { published: false })]);
++    expect(k).toContain("unscheduled");
++    expect(k).toContain("unpublished");
++    const none = reviewStudent({ sections: [], studentId: "s1", yearId: "2026", sets: [] });
++    expect(none.issues.map((i) => i.kind)).toContain("no-timetable");
++  });
++  it("lets the administrator require or exempt a block", () => {
++    const base = [cls("e1", "ENG", "a"), cls("m1", "MATH", "b")];
++    expect(kinds(base, { required: { l: true } })).toContain("empty-block");
++    expect(kinds([cls("e1", "ENG", "a")], { required: { b: false } })).not.toContain("empty-block");
++  });
++  it("ignores other students' classes and other school years", () => {
++    const other = cls("z1", "ENG", "a", ["2025-S1"]);
++    expect(review([other, cls("o1", "ENG", "a", ["2026-S1", "2026-S2"], { studentIds: ["s2"] })]).terms.every((t) => t.classes.length === 0)).toBe(true);
++  });
++});
++
++describe("previewing a section for a student", () => {
++  const mine = [cls("e1", "ENG", "a"), cls("m1", "MATH", "b")];
++  it("reports a taken block and a repeated course", () => {
++    expect(placementFor({ candidate: cls("h1", "HIST", "a", ["2026-S1"], { studentIds: [] }), mine, sets: [set] }).conflicts[0]).toMatch(/A Block is already taken by Course ENG/);
++    expect(placementFor({ candidate: cls("e2", "ENG", "l", ["2026-S2"], { studentIds: [] }), mine, sets: [set] }).conflicts[0]).toMatch(/Already in Course ENG/);
++  });
++  it("is clear when swapping sections of one course and when the block is open", () => {
++    expect(placementFor({ candidate: cls("e2", "ENG", "a", ["2026-S1", "2026-S2"], { studentIds: [] }), mine, sets: [set], replacing: "e1" }).conflicts).toEqual([]);
++    expect(placementFor({ candidate: cls("h1", "HIST", "l", ["2026-S1"], { studentIds: [] }), mine, sets: [set] }).conflicts).toEqual([]);
++  });
++  it("notes a section that has no block", () => {
++    expect(placementFor({ candidate: cls("h1", "HIST", undefined, ["2026-S1"], { studentIds: [] }), mine, sets: [set] }).notes).toHaveLength(1);
++  });
++});
++
++describe("enrollment helpers and timetable text", () => {
++  const all = [cls("e1", "ENG", "a", undefined, { studentIds: [] }), cls("e2", "ENG", "b", undefined, { studentIds: ["s1"] })];
++  it("enrolls, withdraws and changes section without touching others", () => {
++    expect(enrollStudent(all, "e1", "s1")[0]?.studentIds).toEqual(["s1"]);
++    expect(enrollStudent(enrollStudent(all, "e1", "s1"), "e1", "s1")[0]?.studentIds).toEqual(["s1"]);
++    expect(withdrawStudent(all, "e2", "s1")[1]?.studentIds).toEqual([]);
++    const moved = changeSection(all, "s1", "e2", "e1");
++    expect(moved.map((c) => c.studentIds)).toEqual([["s1"], []]);
++  });
++  it("describes block times and the weekly grid", () => {
++    expect(fmtTime("13:05")).toBe("1:05 pm");
++    expect(fmtTime("00:00")).toBe("12:00 am");
++    expect(blockTimes(set, "a")).toBe("Mon 8:00 am–8:50 am · Tue 9:00 am–9:50 am");
++    expect(blockTimes(set, "l")).toBe("");
++    const g = weeklyGrid(set);
++    expect(g.days).toEqual([1, 2]);
++    expect(g.slots.map((s) => s.start)).toEqual(["08:00", "09:00"]);
++    expect(g.cell(2, "09:00-09:50")?.blockId).toBe("a");
++  });
++});
+diff --git a/src/lib/schedule-review.ts b/src/lib/schedule-review.ts
+new file mode 100644
+index 0000000..c35b88b
+--- /dev/null
++++ b/src/lib/schedule-review.ts
+@@ -0,0 +1,128 @@
++// Student schedule review: lays one student's classes onto the school year's timetable (the scheduling
++// set that covers each term) and reports problems. Pure functions, no React, so the rules can be tested.
++import { blockMeetings, type BlockMeeting, type ScheduleBlock, type SchedulingSet } from "./scheduling";
++import { makeYear, termLabel } from "./terms";
++
++/** The parts of a class (section) the review needs; the school store's Section fits this. */
++export type ReviewSection = {
++  id: string; code: string; name: string; courseNo: string; terms: string[];
++  scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined;
++  teacherIds: string[]; room: string; studentIds: string[]; published: boolean;
++};
++
++/** Saved administrator choices: which blocks must hold a class, and the minimum classes per term (blank = one per required block). */
++export type ReviewSettings = { required?: Record<string, boolean>; minPerTerm?: number | null };
++
++export type IssueKind = "duplicate-course" | "block-conflict" | "empty-block" | "term-short" | "term-uneven" | "unscheduled" | "no-timetable" | "unpublished";
++export type Issue = { id: string; kind: IssueKind; severity: "error" | "warning"; termId?: string | undefined; blockId?: string | undefined; sectionIds: string[]; message: string };
++
++export type BlockRow = { block: ScheduleBlock; required: boolean; sections: ReviewSection[] };
++export type TermReview = {
++  termId: string; label: string; set: SchedulingSet | undefined; rows: BlockRow[];
++  /** Every class the student has this term, including ones that are not in a block of the timetable. */
++  classes: ReviewSection[]; /** Classes that are in the term but not placed in a block of this term's timetable. */ unplaced: ReviewSection[]; expected: number;
++};
++export type StudentReview = { terms: TermReview[]; issues: Issue[]; errors: number; warnings: number };
++
++/** Blocks that are normally not a class (Lunch, Advisory ...) start as "does not need a class"; the administrator can change this. */
++export const NON_CLASS_BLOCK = /lunch|break|recess|assembly|chapel|advisory|community|office hours|flex/i;
++export const blockRequired = (b: ScheduleBlock, settings: ReviewSettings = {}) => settings.required?.[b.id] ?? !NON_CLASS_BLOCK.test(b.name);
++
++export const yearTerms = (yearId: string) => makeYear(Number(yearId)).terms;
++/** The timetable a term follows: the first scheduling set that lists the term. */
++export const setForTerm = (sets: SchedulingSet[], termId: string) => sets.find((s) => s.terms.includes(termId));
++export const sectionsInYear = <T extends { studentIds: string[]; terms: string[] }>(sections: T[], studentId: string, yearId: string) =>
++  sections.filter((c) => c.studentIds.includes(studentId) && c.terms.some((t) => t.startsWith(`${yearId}-`)));
++
++const plural = (n: number, one: string, many = `${one}es`) => `${n} ${n === 1 ? one : many}`;
++const list = (xs: string[]) => xs.join(", ");
++
++export function reviewStudent({ sections, studentId, yearId, sets, settings = {} }: { sections: ReviewSection[]; studentId: string; yearId: string; sets: SchedulingSet[]; settings?: ReviewSettings }): StudentReview {
++  const mine = sectionsInYear(sections, studentId, yearId);
++  const issues: Issue[] = [];
++  const add = (i: Omit<Issue, "id">) => issues.push({ ...i, id: [i.kind, i.termId ?? "", i.blockId ?? "", ...i.sectionIds].join(":") });
++
++  const terms: TermReview[] = yearTerms(yearId).map((t) => {
++    const label = termLabel(t.id);
++    const classes = mine.filter((c) => c.terms.includes(t.id));
++    const set = setForTerm(sets, t.id);
++    const rows: BlockRow[] = (set?.blocks ?? []).map((block) => ({
++      block, required: blockRequired(block, settings),
++      sections: classes.filter((c) => c.scheduleSetId === set?.id && c.scheduleBlockId === block.id),
++    }));
++    const placed = new Set(rows.flatMap((r) => r.sections.map((c) => c.id)));
++    const unplaced = classes.filter((c) => !placed.has(c.id));
++    const expected = settings.minPerTerm ?? rows.filter((r) => r.required).length;
++
++    if (!set) add({ kind: "no-timetable", severity: "warning", termId: t.id, sectionIds: [], message: `No scheduling set covers ${label}, so its blocks can't be checked.` });
++    for (const r of rows) {
++      if (r.sections.length > 1) add({ kind: "block-conflict", severity: "error", termId: t.id, blockId: r.block.id, sectionIds: r.sections.map((c) => c.id), message: `${r.block.name} has ${r.sections.length} classes in ${label}: ${list(r.sections.map((c) => c.name))}.` });
++      if (r.required && r.sections.length === 0) add({ kind: "empty-block", severity: "error", termId: t.id, blockId: r.block.id, sectionIds: [], message: `Nothing is scheduled in ${r.block.name} in ${label}.` });
++    }
++    for (const c of unplaced) add({ kind: "unscheduled", severity: "warning", termId: t.id, sectionIds: [c.id], message: set && c.scheduleSetId && c.scheduleSetId !== set.id ? `${c.name} uses a different scheduling set than ${label} follows (${set.name}).` : `${c.name} has no block yet in ${label}, so it can't be placed on the timetable.` });
++    const byCourse = new Map<string, ReviewSection[]>();
++    for (const c of classes) byCourse.set(c.courseNo, [...(byCourse.get(c.courseNo) ?? []), c]);
++    for (const [courseNo, group] of byCourse) if (group.length > 1) add({ kind: "duplicate-course", severity: "error", termId: t.id, sectionIds: group.map((c) => c.id), message: `Enrolled in ${group.length} sections of ${group[0]?.name ?? courseNo} in ${label}: ${list(group.map((c) => c.code))}.` });
++    if (expected > 0 && classes.length < expected) add({ kind: "term-short", severity: "error", termId: t.id, sectionIds: [], message: `${label} has ${plural(classes.length, "class")}; at least ${expected} ${settings.minPerTerm != null ? "are required" : "are expected (one per block that needs a class)"}.` });
++    return { termId: t.id, label, set, rows, classes, unplaced, expected };
++  });
++
++  const [a, b] = terms;
++  if (a && b && a.classes.length !== b.classes.length) add({ kind: "term-uneven", severity: "error", sectionIds: [], message: `Uneven terms: ${a.label} has ${plural(a.classes.length, "class")} but ${b.label} has ${plural(b.classes.length, "class")}.` });
++  for (const c of mine) if (!c.published) add({ kind: "unpublished", severity: "warning", sectionIds: [c.id], message: `${c.name} (${c.code}) is a draft, so it doesn't show on the student's portal.` });
++
++  issues.sort((x, y) => Number(y.severity === "error") - Number(x.severity === "error"));
++  return { terms, issues, errors: issues.filter((i) => i.severity === "error").length, warnings: issues.filter((i) => i.severity === "warning").length };
++}
++
++/** What adding (or swapping in) a section would do to a student's schedule, before it is saved. */
++export function placementFor({ candidate, mine, sets, replacing }: { candidate: ReviewSection; mine: ReviewSection[]; sets: SchedulingSet[]; replacing?: string | undefined }): { conflicts: string[]; notes: string[] } {
++  const conflicts: string[] = [], notes: string[] = [];
++  const set = sets.find((s) => s.id === candidate.scheduleSetId);
++  const block = set?.blocks.find((b) => b.id === candidate.scheduleBlockId);
++  if (!block) notes.push("This section has no block yet, so the schedule can't be checked.");
++  for (const c of mine) {
++    if (c.id === replacing || c.id === candidate.id) continue;
++    const shared = c.terms.filter((t) => candidate.terms.includes(t));
++    if (!shared.length) continue;
++    const when = list(shared.map(termLabel));
++    if (c.courseNo === candidate.courseNo) conflicts.push(`Already in ${c.name} (${c.code}) in ${when}.`);
++    else if (block && c.scheduleSetId === candidate.scheduleSetId && c.scheduleBlockId === candidate.scheduleBlockId) conflicts.push(`${block.name} is already taken by ${c.name} in ${when}.`);
++  }
++  return { conflicts, notes };
++}
++
++export const enrollStudent = <T extends { id: string; studentIds: string[] }>(sections: T[], sectionId: string, studentId: string): T[] =>
++  sections.map((c) => (c.id === sectionId && !c.studentIds.includes(studentId) ? { ...c, studentIds: [...c.studentIds, studentId] } : c));
++export const withdrawStudent = <T extends { id: string; studentIds: string[] }>(sections: T[], sectionId: string, studentId: string): T[] =>
++  sections.map((c) => (c.id === sectionId ? { ...c, studentIds: c.studentIds.filter((x) => x !== studentId) } : c));
++/** Move a student from one section to another section of the same course. */
++export const changeSection = <T extends { id: string; studentIds: string[] }>(sections: T[], studentId: string, fromId: string, toId: string): T[] =>
++  enrollStudent(withdrawStudent(sections, fromId, studentId), toId, studentId);
++
++const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
++/** 24-hour "13:05" as the school writes it: "1:05 pm". */
++export const fmtTime = (t: string) => {
++  const [h, m] = t.split(":").map(Number);
++  if (h === undefined || m === undefined || Number.isNaN(h) || Number.isNaN(m)) return t;
++  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
++};
++const dayOrder = (d: number) => (d + 6) % 7;
++/** When a block meets, for example "Mon 8:00 am–8:50 am · Wed 9:00 am–9:50 am". */
++export function blockTimes(set: SchedulingSet | undefined, blockId: string | undefined): string {
++  if (!set || !blockId) return "";
++  const ms = blockMeetings(set, blockId).sort((x, y) => dayOrder(x.day) - dayOrder(y.day) || x.start.localeCompare(y.start));
++  if (ms.length) return ms.map((m) => `${DAY[m.day]} ${fmtTime(m.start)}–${fmtTime(m.end)}`).join(" · ");
++  const b = set.blocks.find((x) => x.id === blockId);
++  return b?.start && b.end ? `${[...b.days].sort((x, y) => dayOrder(x) - dayOrder(y)).map((d) => DAY[d]).join(" ")} ${fmtTime(b.start)}–${fmtTime(b.end)}` : "";
++}
++
++export type WeeklyGrid = { days: number[]; slots: { key: string; start: string; end: string }[]; cell: (day: number, slotKey: string) => BlockMeeting | undefined };
++/** The set's week as a grid: a column per day, a row per distinct meeting time. */
++export function weeklyGrid(set: SchedulingSet): WeeklyGrid {
++  const days = [...(set.weekdays ?? [])].sort((x, y) => dayOrder(x) - dayOrder(y));
++  const ms = (set.meetings ?? []).filter((m) => days.includes(m.day));
++  const slots = [...new Map(ms.map((m) => [`${m.start}-${m.end}`, { key: `${m.start}-${m.end}`, start: m.start, end: m.end }])).values()].sort((x, y) => x.start.localeCompare(y.start));
++  return { days, slots, cell: (day, key) => ms.find((m) => m.day === day && `${m.start}-${m.end}` === key) };
++}
++export const dayLabel = (d: number) => DAY[d] ?? "";
+diff --git a/src/lib/school-store.tsx b/src/lib/school-store.tsx
+index 9eb0440..27412b0 100644
+--- a/src/lib/school-store.tsx
++++ b/src/lib/school-store.tsx
+@@ -18,6 +18,7 @@ import { useRouterState } from "@tanstack/react-router";
+ import { toast } from "sonner";
+ import type { ResourceTopic, SitePost } from "./class-site";
+ import type { SchedulingSet } from './scheduling';
++import type { ReviewSettings } from './schedule-review';
+ import { DEFAULT_DOC_LAYOUT, defaultPortals, type DocLayout, type PortalRec } from './axiom';
+ 
+ export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
+@@ -92,6 +93,8 @@ type State = {
+   schedulingSets: SchedulingSet[];
+   portals: PortalRec[]; docLayout: DocLayout;
+   assignmentTypes: AssignmentType[];
++  /** Student Schedules review: blocks that need a class and the minimum classes per term. */
++  scheduleReview?: ReviewSettings;
+ };
+ const INITIAL: State = {
+   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
+diff --git a/src/routes/admin.student-schedules.tsx b/src/routes/admin.student-schedules.tsx
+new file mode 100644
+index 0000000..1e82090
+--- /dev/null
++++ b/src/routes/admin.student-schedules.tsx
+@@ -0,0 +1,200 @@
++import { createFileRoute, Link } from "@tanstack/react-router";
++import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react";
++import { useMemo, useState } from "react";
++import { toast } from "sonner";
++import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
++import { AxAction, axInput } from "@/components/admin/AxiomDetail";
++import { BlockView, IssueList, ListView, WeekView, type ClassActions } from "@/components/admin/ScheduleViews";
++import { PersonPhoto } from "@/components/common/PersonPhoto";
++import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
++import { enrollmentPeople } from "@/lib/class-records";
++import { blockTimes, changeSection, enrollStudent, placementFor, reviewStudent, sectionsInYear, withdrawStudent, type ReviewSection, type StudentReview } from "@/lib/schedule-review";
++import { useSchool } from "@/lib/school-store";
++import { teacherFull } from "@/lib/sis-data";
++import { schoolYears, termLabel } from "@/lib/terms";
++import { pageHead } from "@/lib/head";
++
++export const Route = createFileRoute("/admin/student-schedules")({
++  head: () => pageHead("Axiom · Student Schedules", "Review one student's schedule by block, fix conflicts and gaps, and add or change courses."),
++  component: StudentSchedules,
++});
++
++type Person = ReturnType<typeof enrollmentPeople>[number];
++type Target = { termId?: string | undefined; blockId?: string | undefined; blockName?: string | undefined; replace?: ReviewSection | undefined };
++const personName = (u: Person) => `${u.last}, ${u.preferred || u.first}`;
++const VIEWS = [{ id: "block", label: "Block View" }, { id: "week", label: "Weekly Grid" }, { id: "list", label: "List View" }] as const;
++
++function StudentSchedules() {
++  const { users, sections, schedulingSets, scheduleReview, update } = useSchool();
++  const settings = useMemo(() => scheduleReview ?? {}, [scheduleReview]);
++  const years = schoolYears();
++  const [year, setYear] = useState(years[1]?.id ?? years[0]?.id ?? "");
++  const [pick, setPick] = useState("");
++  const [q, setQ] = useState("");
++  const [onlyErrors, setOnlyErrors] = useState(false);
++  const [view, setView] = useState<(typeof VIEWS)[number]["id"]>("block");
++  const [weekTerm, setWeekTerm] = useState("");
++  const [adding, setAdding] = useState<Target | null>(null);
++
++  const students = useMemo(() => enrollmentPeople(users, "student"), [users]);
++  const reviews = useMemo(() => new Map<string, StudentReview>(students.map((u) => [u.personId, reviewStudent({ sections, studentId: u.personId, yearId: year, sets: schedulingSets, settings })])), [students, sections, year, schedulingSets, settings]);
++  const needle = q.trim().toLowerCase();
++  const visible = students.filter((u) => (!needle || `${u.first} ${u.last} ${u.preferred ?? ""}`.toLowerCase().includes(needle)) && (!onlyErrors || (reviews.get(u.personId)?.errors ?? 0) > 0));
++  const current = students.find((u) => u.personId === pick) ?? visible[0];
++  const review = current ? reviews.get(current.personId) : undefined;
++  const at = current ? visible.findIndex((u) => u.personId === current.personId) : -1;
++  const flagged = [...reviews.values()].filter((r) => r.errors > 0).length;
++  const mine = current ? sectionsInYear(sections, current.personId, year) : [];
++  const term = review?.terms.find((t) => t.termId === weekTerm) ?? review?.terms.find((t) => t.set) ?? review?.terms[0];
++
++  const step = (d: number) => {
++    if (!visible.length) return;
++    const next = at < 0 ? (d > 0 ? 0 : visible.length - 1) : (at + d + visible.length) % visible.length;
++    setPick(visible[next]?.personId ?? "");
++  };
++  const nextProblem = () => {
++    const from = current ? students.findIndex((u) => u.personId === current.personId) : -1;
++    for (let i = 1; i <= students.length; i++) {
++      const u = students[(from + i) % students.length];
++      if (u && u.personId !== current?.personId && (reviews.get(u.personId)?.errors ?? 0) > 0) { setPick(u.personId); return; }
++    }
++    toast.success("No other students have schedule errors.");
++  };
++  const actions: ClassActions = {
++    onChange: (c) => setAdding({ replace: c }),
++    onDrop: (c) => {
++      if (!current || !confirm(`Drop ${c.name} (${c.code}) for ${personName(current)}? This removes it from all of its terms.`)) return;
++      update((s) => ({ ...s, sections: withdrawStudent(s.sections, c.id, current.personId) }));
++      toast.success(`${c.name} dropped`);
++    },
++  };
++  const setMin = (v: string) => update((s) => ({ ...s, scheduleReview: { ...s.scheduleReview, minPerTerm: v.trim() === "" ? null : Math.max(0, Math.floor(Number(v)) || 0) } }));
++  const setRequired = (ids: string[], on: boolean) => update((s) => ({ ...s, scheduleReview: { ...s.scheduleReview, required: { ...s.scheduleReview?.required, ...Object.fromEntries(ids.map((id) => [id, on])) } } }));
++
++  return (
++    <AxiomShell title="Student Schedules" crumbs={[{ label: "System", to: "/admin/courses" }]} actions={<AxAction disabled={!current} onClick={() => setAdding({})}>Add Course</AxAction>}>
++      <div className="grid gap-3 lg:grid-cols-[270px_minmax(0,1fr)]">
++        <Panel title={`Students (${visible.length})`} className="self-start">
++          <input aria-label="Find a student" className={axInput} placeholder="Find a student" value={q} onChange={(e) => setQ(e.target.value)} />
++          <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={onlyErrors} onChange={(e) => setOnlyErrors(e.target.checked)} />Only students with errors <span className="text-vc-gray">({flagged})</span></label>
++          <ul aria-label="Students" className="-mx-3 mt-2 max-h-[60vh] overflow-y-auto border-t border-vc-line">
++            {visible.map((u) => { const r = reviews.get(u.personId); const on = u.personId === current?.personId; return (
++              <li key={u.personId}><button type="button" aria-current={on ? "true" : undefined} onClick={() => setPick(u.personId)} className={`flex w-full items-center justify-between gap-2 border-b border-l-[4px] border-b-vc-line px-3 py-2 text-left ${on ? "border-l-vc-link bg-vc-tile font-semibold" : "border-l-transparent text-vc-link-strong hover:bg-vc-panel"}`}>
++                <span className="truncate">{personName(u)}</span>
++                {r && r.errors > 0 ? <span title={`${r.errors} errors`} className="shrink-0 rounded-sm bg-destructive px-1.5 text-[11px] font-bold text-primary-foreground">{r.errors}</span> : <span className="shrink-0 text-[11px] text-vc-success">OK</span>}
++              </button></li>); })}
++            {!visible.length && <li className="px-3 py-4 text-vc-gray">{students.length ? "No students match." : "No active students yet. Add students under Users & Security."}</li>}
++          </ul>
++        </Panel>
++
++        <div className="min-w-0 space-y-3">
++          <Panel title="Review">
++            <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
++              <label className="block">School Year<select aria-label="School year" className={`${axInput} mt-0.5 w-[130px]`} value={year} onChange={(e) => setYear(e.target.value)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></label>
++              <label className="block">Minimum classes per term<input type="number" min={0} aria-label="Minimum classes per term" className={`${axInput} mt-0.5 w-[150px]`} placeholder="One per block" value={settings.minPerTerm ?? ""} onChange={(e) => setMin(e.target.value)} /></label>
++              <div className="ml-auto flex flex-wrap items-center gap-1.5">
++                <button type="button" aria-label="Previous student" title="Previous student" onClick={() => step(-1)} disabled={!visible.length} className="grid size-[30px] place-items-center border border-vc-gray-light/80 bg-background hover:bg-vc-panel disabled:opacity-50"><ChevronLeft className="size-4" /></button>
++                <span className="min-w-[70px] text-center text-vc-gray-dark">{at >= 0 ? `${at + 1} of ${visible.length}` : `– of ${visible.length}`}</span>
++                <button type="button" aria-label="Next student" title="Next student" onClick={() => step(1)} disabled={!visible.length} className="grid size-[30px] place-items-center border border-vc-gray-light/80 bg-background hover:bg-vc-panel disabled:opacity-50"><ChevronRight className="size-4" /></button>
++                <button type="button" onClick={nextProblem} disabled={!flagged} className="h-[30px] border border-vc-gray-light/80 bg-background px-3 hover:bg-vc-panel disabled:opacity-50">Next student with errors</button>
++              </div>
++            </div>
++            <p className="mt-2 text-[12px] text-vc-gray">Each term follows the scheduling set that covers it. A block that needs a class must have exactly one; every term needs at least the minimum above (blank means one per block that needs a class), and the terms should match.</p>
++          </Panel>
++
++          {!current || !review ? <Panel title="Schedule"><p className="py-8 text-center text-vc-gray">Choose a student to review their schedule.</p></Panel> : <>
++            <section className="flex flex-wrap items-center gap-3 border border-vc-line bg-background px-3 py-2">
++              <PersonPhoto personId={current.personId} className="size-12" />
++              <div className="min-w-0"><h2 className="text-[18px] font-normal">{current.first} {current.last}</h2><div className="text-vc-gray">Grade {current.grade ?? 9} · {current.email}</div></div>
++              <div className="ml-auto flex flex-wrap items-center gap-2">
++                {review.terms.map((t) => <span key={t.termId} className="border border-vc-line bg-vc-panel px-2 py-1">{t.label}: <b>{t.classes.length}</b></span>)}
++                {review.errors > 0 ? <span className="flex items-center gap-1 bg-destructive px-2 py-1 font-semibold text-primary-foreground"><TriangleAlert className="size-3.5" />{review.errors} {review.errors === 1 ? "error" : "errors"}</span> : <span className="bg-ax-go px-2 py-1 font-semibold text-primary-foreground">No errors</span>}
++                {review.warnings > 0 && <span className="bg-vc-tile-warm px-2 py-1">{review.warnings} {review.warnings === 1 ? "warning" : "warnings"}</span>}
++              </div>
++            </section>
++
++            <Panel title="Problems"><IssueList review={review} onAdd={(i) => setAdding({ termId: i.termId, blockId: i.blockId, blockName: review.terms.flatMap((t) => t.rows).find((r) => r.block.id === i.blockId)?.block.name })} /></Panel>
++
++            <section className="border border-vc-line bg-background">
++              <div role="tablist" aria-label="Schedule view" className="flex flex-wrap items-center gap-1 border-b border-vc-line bg-ax-head px-2 pt-1.5">
++                {VIEWS.map((v) => <button key={v.id} type="button" role="tab" aria-selected={view === v.id} onClick={() => setView(v.id)} className={`-mb-px border border-b-0 px-4 py-1.5 text-[13px] ${view === v.id ? "border-vc-line bg-background font-semibold" : "border-transparent text-vc-link-strong hover:bg-vc-panel"}`}>{v.label}</button>)}
++                {view === "week" && <span className="ml-auto flex gap-1 pb-1">{review.terms.map((t) => <button key={t.termId} type="button" aria-pressed={term?.termId === t.termId} onClick={() => setWeekTerm(t.termId)} className={`border px-2 py-0.5 text-[12px] ${term?.termId === t.termId ? "border-vc-link bg-vc-tile font-semibold" : "border-vc-line bg-background"}`}>{t.label}</button>)}</span>}
++              </div>
++              {review.terms.every((t) => !t.set) && <p className="border-b border-vc-line bg-vc-tile-warm px-3 py-2">No scheduling set covers this school year, so blocks can't be shown. <Link to="/admin/scheduling" className="text-vc-link-strong underline">Create a scheduling set</Link></p>}
++              {view === "block" && <BlockView review={review} actions={actions} onRequired={setRequired} onAdd={(t, blockId, blockName) => setAdding({ termId: t.termId, blockId, blockName })} />}
++              {view === "week" && term && <WeekView term={term} />}
++              {view === "list" && <ListView review={review} sets={schedulingSets} actions={actions} />}
++            </section>
++          </>}
++        </div>
++      </div>
++      {adding && current && <CourseDialog key={`${adding.replace?.id ?? "new"}:${adding.blockId ?? ""}:${adding.termId ?? ""}`} target={adding} student={current} year={year} mine={mine} onClose={() => setAdding(null)} />}
++    </AxiomShell>
++  );
++}
++
++/** Add a course to the student's schedule (choose the course, then a section), or change the section of one they have. */
++function CourseDialog({ target, student, year, mine, onClose }: { target: Target; student: Person; year: string; mine: ReviewSection[]; onClose: () => void }) {
++  const { sections, courses, schedulingSets, update } = useSchool();
++  const replace = target.replace;
++  const [courseNo, setCourseNo] = useState(replace?.courseNo ?? "");
++  const [courseQ, setCourseQ] = useState("");
++  const [choice, setChoice] = useState("");
++  const inYear = (terms: string[]) => terms.some((t) => t.startsWith(`${year}-`));
++  const cq = courseQ.trim().toLowerCase();
++  const courseOptions = courses.filter((c) => sections.some((s) => s.courseNo === c.id && inYear(s.terms)) && (!cq || `${c.name} ${c.id}`.toLowerCase().includes(cq))).sort((a, b) => a.name.localeCompare(b.name));
++  const blockOf = (s: ReviewSection) => schedulingSets.find((x) => x.id === s.scheduleSetId)?.blocks.find((b) => b.id === s.scheduleBlockId);
++  const fillsTarget = (s: ReviewSection) => Boolean(target.blockName) && blockOf(s)?.name === target.blockName && (!target.termId || s.terms.includes(target.termId));
++  const candidates = sections
++    .filter((s) => s.courseNo === courseNo && inYear(s.terms) && !s.studentIds.includes(student.personId))
++    .map((s) => ({ s, fit: placementFor({ candidate: s, mine, sets: schedulingSets, replacing: replace?.id }) }))
++    .sort((a, b) => Number(fillsTarget(b.s)) - Number(fillsTarget(a.s)) || a.s.code.localeCompare(b.s.code));
++  const selected = candidates.find((c) => c.s.id === choice);
++  const course = courses.find((c) => c.id === courseNo);
++  const confirmAdd = () => {
++    if (!selected) return;
++    update((st) => ({ ...st, sections: replace ? changeSection(st.sections, student.personId, replace.id, selected.s.id) : enrollStudent(st.sections, selected.s.id, student.personId) }));
++    toast.success(replace ? `Changed to ${selected.s.code}` : `${selected.s.name} added for ${student.first} ${student.last}`);
++    onClose();
++  };
++  const bad = (selected?.fit.conflicts.length ?? 0) > 0;
++  return (
++    <Dialog open onOpenChange={(v) => !v && onClose()}>
++      <DialogContent className="max-h-[90dvh] max-w-[920px] overflow-y-auto text-[13px]">
++        <DialogHeader>
++          <DialogTitle>{replace ? `Change Section: ${replace.name}` : "Add Course"} <span className="font-normal text-vc-gray">· {personName(student)}</span></DialogTitle>
++          <DialogDescription>{target.blockName ? `Pick a section that fills ${target.blockName}${target.termId ? ` in ${termLabel(target.termId)}` : ""}.` : replace ? "Pick another section of this course." : "Pick a course, then the section to put the student in."}</DialogDescription>
++        </DialogHeader>
++        {!replace && <div className="grid gap-2 sm:grid-cols-[200px_minmax(0,1fr)]">
++          <input aria-label="Find a course" className={axInput} placeholder="Find a course" value={courseQ} onChange={(e) => setCourseQ(e.target.value)} />
++          <select aria-label="Course" className={axInput} value={courseNo} onChange={(e) => { setCourseNo(e.target.value); setChoice(""); }}><option value="">— choose a course —</option>{courseOptions.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.id}){c.dept ? ` · ${c.dept}` : ""}</option>)}</select>
++        </div>}
++        {courseNo && <div className="overflow-x-auto border border-vc-line">
++          <table className="w-full min-w-[720px] border-collapse text-[13px]">
++            <thead><tr className="bg-ax-head text-left">{["", "Section", "Teacher", "Room", "Terms", "Block", "Enrolled", "Fit"].map((h, i) => <th key={i} className="border-r border-dotted border-vc-line px-2 py-1.5 font-semibold">{h}</th>)}</tr></thead>
++            <tbody>{candidates.map(({ s, fit }) => {
++              const set = schedulingSets.find((x) => x.id === s.scheduleSetId);
++              return (
++                <tr key={s.id} className={`border-t border-vc-line ${choice === s.id ? "bg-vc-tile" : ""}`}>
++                  <td className="px-2 py-1.5"><input type="radio" name="section" aria-label={`Choose ${s.code}`} checked={choice === s.id} onChange={() => setChoice(s.id)} /></td>
++                  <td className="px-2 py-1.5"><b>{s.code}</b> <span className="text-vc-gray">{s.name}</span>{!s.published && <span className="ml-1 text-vc-gray">(draft)</span>}</td>
++                  <td className="px-2 py-1.5">{s.teacherIds[0] ? teacherFull(s.teacherIds[0]) : "—"}</td>
++                  <td className="px-2 py-1.5">{s.room || "—"}</td>
++                  <td className="px-2 py-1.5">{s.terms.map((t) => t.split("-")[1]).join(" + ")}</td>
++                  <td className="px-2 py-1.5">{blockOf(s)?.name ?? <span className="text-vc-gray">None</span>}<div className="text-[12px] text-vc-gray">{blockTimes(set, s.scheduleBlockId)}</div>{fillsTarget(s) && <div className="text-[12px] font-semibold text-vc-success">Fills {target.blockName}</div>}</td>
++                  <td className="px-2 py-1.5">{s.studentIds.length}</td>
++                  <td className="px-2 py-1.5">{fit.conflicts.length ? <span className="font-semibold text-destructive">{fit.conflicts[0]}{fit.conflicts.length > 1 ? ` (+${fit.conflicts.length - 1} more)` : ""}</span> : fit.notes.length ? <span className="text-vc-gray">{fit.notes[0]}</span> : <span className="font-semibold text-vc-success">Fits</span>}</td>
++                </tr>);
++            })}</tbody>
++          </table>
++          {!candidates.length && <p className="px-3 py-6 text-center text-vc-gray">{course ? `No other sections of ${course.name} are offered in this school year.` : "No sections."}</p>}
++        </div>}
++        {bad && selected && <p role="alert" className="flex items-start gap-2 bg-vc-danger-soft px-3 py-2"><TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" /><span>{selected.fit.conflicts.join(" ")} Adding it will create a conflict you can fix on the schedule afterwards.</span></p>}
++        <div className="flex justify-end gap-2">
++          <button type="button" onClick={onClose} className="h-[34px] border border-vc-gray-light/80 px-4 hover:bg-vc-panel">Cancel</button>
++          <AxAction disabled={!selected} onClick={confirmAdd}>{replace ? "Change Section" : bad ? "Add Anyway" : "Add to Schedule"}</AxAction>
++        </div>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/src/test/student-schedules.test.tsx b/src/test/student-schedules.test.tsx
+new file mode 100644
+index 0000000..cd2a06c
+--- /dev/null
++++ b/src/test/student-schedules.test.tsx
+@@ -0,0 +1,97 @@
++import { createMemoryHistory, createRootRoute, createRouter, Outlet, RouterProvider } from "@tanstack/react-router";
++import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { Route as PageRoute } from "@/routes/admin.student-schedules";
++import { SchoolStoreProvider } from "@/lib/school-store";
++import { PortalStoreProvider } from "@/lib/portal-store";
++import { yearStartFor } from "@/lib/terms";
++
++const Y = String(yearStartFor(new Date()));
++const person = (id: string, first: string, last: string, role: "student" | "teacher") => ({ id: `u-${id}`, email: `${first}.${last}@x.org`.toLowerCase(), password: "pw1234", role, first, last, personId: id, active: true, grade: 9 });
++const sec = (id: string, courseNo: string, name: string, block: string, students: string[], terms = [`${Y}-S1`, `${Y}-S2`]) => ({
++  id, code: id, name, section: "1", teacherId: "t1", block: "", room: "R1", letter: "", pct: 0, type: "ACADEMIC", days: [], time: "", courseNo, teacherIds: ["t1"], terms, published: true, studentIds: students,
++  website: { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] }, scheduleSetId: "ss", scheduleBlockId: block,
++});
++const meetings = [1, 2, 3, 4, 5].flatMap((day) => [["a", "08:00", "08:50"], ["b", "09:00", "09:50"], ["l", "12:00", "12:40"], ["c", "13:00", "13:50"]].map(([blockId, start, end]) => ({ id: `${day}${blockId}`, day, start, end, blockId })));
++const seed = {
++  sampleCleared: true, sessionId: "u-admin",
++  users: [{ id: "u-admin", email: "administrator@ulls.org", password: "administrator@ulls.org", role: "admin", first: "School", last: "Administrator", personId: "", active: true }, person("s-ann", "Ann", "Abbott", "student"), person("s-bob", "Bob", "Bishop", "student"), person("t1", "Tess", "Teacher", "teacher")],
++  courses: [["ENG", "English 9"], ["MATH", "Algebra"], ["SCI", "Biology"]].map(([id, name]) => ({ id, name, type: "ACADEMIC", dept: "", credits: 1, description: "" })),
++  schedulingSets: [{ id: "ss", name: "Weekly", terms: [`${Y}-S1`, `${Y}-S2`], weekdays: [1, 2, 3, 4, 5], blocks: [["a", "A Block"], ["b", "B Block"], ["c", "C Block"], ["l", "Lunch"]].map(([id, name]) => ({ id, name, days: [], start: "", end: "" })), meetings }],
++  sections: [
++    sec("ENG-1", "ENG", "English 9", "a", ["s-ann", "s-bob"]), sec("MATH-1", "MATH", "Algebra", "b", ["s-ann"]), sec("SCI-1", "SCI", "Biology", "c", ["s-ann"]),
++    sec("MATH-2", "MATH", "Algebra", "a", ["s-bob"]), sec("SCI-2", "SCI", "Biology", "c", []),
++  ],
++};
++
++function mount() {
++  const root = createRootRoute({ component: () => <SchoolStoreProvider><PortalStoreProvider><Outlet /></PortalStoreProvider></SchoolStoreProvider> });
++  const page = PageRoute.update({ id: "/admin/student-schedules", path: "/admin/student-schedules", getParentRoute: () => root } as never);
++  const router = createRouter({ routeTree: root.addChildren([page as never]), history: createMemoryHistory({ initialEntries: ["/admin/student-schedules"] }) });
++  return render(<RouterProvider router={router} />);
++}
++
++beforeEach(() => { localStorage.clear(); localStorage.setItem("cra-school-v2", JSON.stringify(seed)); });
++afterEach(cleanup);
++
++describe("Student Schedules page", () => {
++  it("shows a clean schedule for one student and the problems for another", async () => {
++    mount();
++    expect(await screen.findByText(/No problems found/)).toBeInTheDocument();
++    expect(screen.getByText("No errors")).toBeInTheDocument();
++    fireEvent.click(within(screen.getByRole("list", { name: "Students" })).getByText("Bishop, Bob"));
++    const problems = await screen.findByRole("list", { name: "Schedule problems" });
++    expect(within(problems).getAllByText(/A Block has 2 classes/).length).toBe(2);
++    expect(within(problems).getAllByText(/Nothing is scheduled in B Block/).length).toBe(2);
++    expect(within(problems).getAllByText(/Nothing is scheduled in C Block/).length).toBe(2);
++    expect(within(problems).getAllByText(/has 2 classes; at least 3 are expected/).length).toBe(2);
++    expect(document.querySelectorAll('[data-state="conflict"]').length).toBe(2);
++    expect(document.querySelectorAll('[data-state="empty"]').length).toBe(4);
++    expect(document.querySelectorAll('[data-state="free"]').length).toBe(2);
++  });
++
++  it("adds a course into an empty block, then drops it", async () => {
++    mount();
++    fireEvent.click(await screen.findByText("Bishop, Bob"));
++    await screen.findByRole("list", { name: "Schedule problems" });
++    // Row order is B Block (S1, S2) then C Block (S1, S2): the third button fills C Block in Semester 1.
++    fireEvent.click(screen.getAllByRole("button", { name: /Add class/ })[2]!);
++    const dialog = await screen.findByRole("dialog");
++    fireEvent.change(within(dialog).getByLabelText("Course"), { target: { value: "SCI" } });
++    expect(within(dialog).getAllByText("Fills C Block").length).toBe(2);
++    fireEvent.click(within(dialog).getByLabelText("Choose SCI-2"));
++    fireEvent.click(within(dialog).getByRole("button", { name: "Add to Schedule" }));
++    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
++    await waitFor(() => expect(screen.queryAllByText(/Nothing is scheduled in C Block/).length).toBe(0));
++    vi.spyOn(window, "confirm").mockReturnValue(true);
++    fireEvent.click(screen.getAllByRole("button", { name: "Drop Biology" })[0]!);
++    expect((await screen.findAllByText(/Nothing is scheduled in C Block/)).length).toBe(2);
++  });
++
++  it("warns before adding a section that clashes, and jumps to the next student with errors", async () => {
++    mount();
++    await screen.findByText(/No problems found/);
++    fireEvent.click(screen.getByRole("button", { name: "Add Course" }));
++    const dialog = await screen.findByRole("dialog");
++    fireEvent.change(within(dialog).getByLabelText("Course"), { target: { value: "MATH" } });
++    fireEvent.click(within(dialog).getByLabelText("Choose MATH-2"));
++    expect(within(dialog).getByRole("alert")).toHaveTextContent(/A Block is already taken by English 9/);
++    expect(within(dialog).getByRole("button", { name: "Add Anyway" })).toBeInTheDocument();
++    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
++    fireEvent.click(screen.getByRole("button", { name: "Next student with errors" }));
++    expect(await screen.findByRole("list", { name: "Schedule problems" })).toBeInTheDocument();
++  });
++
++  it("changes a student to another section of the same course", async () => {
++    mount();
++    fireEvent.click(await screen.findByText("Bishop, Bob"));
++    await screen.findByRole("list", { name: "Schedule problems" });
++    fireEvent.click(screen.getAllByRole("button", { name: "Change section of Algebra" })[0]!);
++    const dialog = await screen.findByRole("dialog");
++    expect(within(dialog).getByText(/Pick another section/)).toBeInTheDocument();
++    fireEvent.click(within(dialog).getByLabelText("Choose MATH-1"));
++    fireEvent.click(within(dialog).getByRole("button", { name: "Change Section" }));
++    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
++    await waitFor(() => expect(screen.queryAllByText(/A Block has 2 classes/).length).toBe(0));
++  });
++});
