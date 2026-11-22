@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { differenceInCalendarDays, format } from "date-fns";
-import { ArrowLeft, Clock, Tag, Undo2, Users } from "lucide-react";
+import { ArrowLeft, Clock, Inbox, Tag, Undo2, Users } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -67,7 +67,8 @@ function Rows({ items, open }: { items: Item[]; open: (m: Item) => void }) {
         <div key={g.label}>
           <div className="mx-[21px] mt-[10px] border-b border-[#dcdcdc] pb-[13px] pt-[4px] text-center text-[18px] font-semibold text-[#444]">{g.label}</div>
           {g.items.map((x) => (
-            <button key={x.id} type="button" onClick={() => open(x)} className="mx-[21px] grid h-[59px] w-[calc(100%-42px)] grid-cols-[190px_minmax(0,1fr)_110px] items-start gap-x-3 border-b border-[#dcdcdc] pl-[17px] pt-[9px] text-left hover:bg-[#fafafa]">
+            <button key={x.id} type="button" onClick={() => open(x)} className="relative mx-[21px] grid h-[59px] w-[calc(100%-42px)] grid-cols-[190px_minmax(0,1fr)_110px] items-start gap-x-3 border-b border-[#dcdcdc] pl-[17px] pt-[9px] text-left hover:bg-[#fafafa]">
+              {!read.includes(x.id) && <span aria-label="Unread" className="absolute left-[5px] top-[26px] size-[9px] rounded-full bg-[#4f87e0]" />}
               <span className="min-w-0"><span className="block text-[9.5px] leading-[13px] text-black">From</span><span className="block truncate text-[14px] leading-[19px] text-black">{x.from}</span></span>
               <span className={`min-w-0 ${read.includes(x.id) ? "" : ""}`}><span className="block truncate text-[12px] font-light leading-[13px] text-[#555]">{x.list}</span><span className={`block truncate text-[14px] leading-[19px] text-black ${read.includes(x.id) ? "" : "font-semibold"}`}>{x.subject}</span></span>
               <span className="text-right text-[10px] font-semibold leading-[13px] text-[#999]">{format(x.date, "EEE, MMM dd")}</span>
@@ -89,7 +90,7 @@ function Messages() {
   const s = Route.useSearch();
   const { id, view = "recent", person, cat } = s;
   const nav = useNavigate({ from: "/messages" });
-  const { markRead } = usePortal();
+  const { markRead, read } = usePortal();
   const inbox = useInbox();
   const { user } = useSchool();
   const m = inbox.find((x) => x.id === id);
@@ -123,7 +124,7 @@ function Messages() {
   const title = view === "people" ? (person ? "Messages" : "Messages - People") : view === "categories" ? (cat ? "Messages" : "Messages - Categories") : "Messages";
   let body: ReactNode;
   if (view === "recent") {
-    body = <div className="pb-6 pt-[17px]"><div className="px-[21px]"><button type="button" onClick={() => inbox.forEach((x) => markRead(x.id))} className={outlineBtn}>Mark All Read</button></div>
+    body = <div className="pb-6 pt-[17px]"><div className="px-[21px]"><button type="button" onClick={() => inbox.forEach((x) => markRead(x.id))} className={outlineBtn}><Inbox className="size-3.5" />Mark All Read</button></div>
       {inbox.length ? <Rows items={inbox} open={open} /> : <p className="py-12 text-center text-[13px] text-[#777]">No messages.</p>}</div>;
   } else if (view === "people") {
     if (person) {
@@ -147,7 +148,7 @@ function Messages() {
     body = <div className="px-[21px] pb-14 pt-[22px]">{groups.map((g) => (
       <div key={g.g} className="mb-[22px]"><div className="border-b border-[#dcdcdc] pb-[13px] text-center text-[18px] font-semibold text-[#444]">{g.g}</div>
         <div className="mt-[10px] grid grid-cols-2 gap-y-3 pl-[17px]">{g.lists.map((l) => (
-          <button key={l} type="button" onClick={() => nav({ search: { view: "categories", cat: l } })} className="text-left"><span className="block text-[15px] leading-[19px] text-black">{l}</span><span className="block text-[12px] font-light leading-[17px] text-[#666]">Last Message: {format(inbox.find((x) => x.list === l)!.date, "MMM dd")}</span></button>))}
+          <button key={l} type="button" onClick={() => nav({ search: { view: "categories", cat: l } })} className="relative text-left">{inbox.some((x) => x.list === l && !read.includes(x.id)) && <span aria-label="Unread" className="absolute -left-[13px] top-[8px] size-[9px] rounded-full bg-[#4aa3ff]" />}<span className="block text-[15px] leading-[19px] text-black">{l}</span><span className="block text-[12px] font-light leading-[17px] text-[#666]">Last Message: {format(inbox.find((x) => x.list === l)!.date, "MMM dd")}</span></button>))}
         </div></div>))}{!groups.length && <p className="py-10 text-center text-[13px] text-[#777]">No messages.</p>}</div>;
   }
   return (

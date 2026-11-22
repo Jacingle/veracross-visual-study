@@ -68,9 +68,10 @@ function Home() {
         </section>
         <aside>
           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>
-          <Link to="/messages" className="flex h-[62px] items-center gap-3 border-2 border-vc-line px-2 text-[17px] hover:bg-vc-panel">
-            <MailOutline className="size-[42px] shrink-0 text-vc-gray-light" />
-            <span>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</span>
+          <Link to="/messages" className="group flex h-[62px] items-center gap-3 border border-[#dedede] bg-white px-[9px] text-[17px] text-black hover:bg-[#ededed] hover:text-[#58aaf5]">
+            <span className="relative shrink-0"><MailOutline className={`size-[42px] ${unread ? "text-[#555]" : "text-[#bbb]"} group-hover:text-[#bbb]`} />{unread > 0 && <span className="absolute -right-[5px] -top-[3px] size-[11px] rounded-full bg-[#f0a04b]" />}</span>
+            <span className={unread ? "" : "text-[#58aaf5]"}>{unread ? "Unread messages" : "No unread messages"}</span>
+            {unread > 0 && <span className="ml-auto grid h-[28px] min-w-[28px] place-items-center rounded-[2px] bg-[#f0a04b] px-1 text-[16px] text-white">{unread}</span>}
           </Link>
           <Link to="/assignments" className="mt-[8.5px] flex h-[38px] items-center justify-center gap-2.5 rounded-[3px] border-b-[4px] border-b-vc-success-edge bg-vc-success text-[16px] font-semibold text-primary-foreground [--cut:var(--vc-success)] hover:opacity-90">
             <PlayDisc className="size-[22px]" /> Submit Assignments
