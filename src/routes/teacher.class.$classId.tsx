@@ -69,27 +69,27 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const [open, setOpen] = useState(true);
   const [wterm, setWterm] = useState(c.terms[0] ?? "");
   const box = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1.18);
+  const [zoom, setZoom] = useState(1);
   useEffect(() => {
     const host = box.current?.parentElement; if (!host) return;
-    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.max(1, w / 1414)); };
+    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.min(2.4, Math.max(0.7, w / 1256))); };
     fit(); const ro = new ResizeObserver(fit); ro.observe(host); return () => ro.disconnect();
   }, []);
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
   return (
     <PortalShell portal="teacher" area="teacher" bare maxWidth={1900}>
-      <div ref={box} style={{ zoom }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[198px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[17px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[188px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
-      <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[17px]`}>
-        <div className="mb-[29px] flex items-start gap-[9px] pl-[17px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />
+      <div ref={box} style={{ zoom }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[175px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[7px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[165px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
+      <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[14px]`}>
+        <div className="mb-[22px] flex items-start gap-[10px] pl-[15px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />
           <div className="min-w-0"><div className="truncate text-[12px] font-medium leading-[15px]">{c.id}: {c.name}</div>
             <VcSelect aria-label="Change class" className="w-full cursor-pointer bg-transparent text-[9.5px] leading-[13px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</VcSelect></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-[10px] mb-[9px] flex h-[34px] items-center gap-[10px] rounded-[6px] pl-[9px] text-[12px] ${active === id ? "bg-[#d6e8fa] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[17px] text-foreground/55" strokeWidth={1.4} />{label}</Link>))}
+            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[11.5px] ${active === id ? "bg-[#dbeafb] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[14px] text-foreground/50" strokeWidth={1.5} />{label}</Link>))}
       </aside>
-      <div className="min-w-0" style={{ zoom: 1.2 }}>
+      <div className="min-w-0" >
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
         <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[26px] shrink-0 items-center gap-[8px] whitespace-nowrap rounded-[4px] bg-[#4d4d4d] px-[12px] text-[12px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
         <span className="ml-[8px] border-b-2 border-[#4fb3e6] px-[17px] pb-[9px] pt-[8px] text-[11.5px] text-[#4fb3e6]">Weights</span>

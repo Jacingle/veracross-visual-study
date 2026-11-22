@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { isOtherClass } from "@/lib/course-types";
 import { addDays, format, isSameDay } from "date-fns";
-import { BookOpen, BookUser, CalendarDays, ChevronDown, ClipboardCheck, ClipboardList, FileText, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, Notebook, NotebookPen, Pencil, Plus, Repeat, Search, ShoppingCart, SquareUserRound, UserRound, Users, Link2 } from "lucide-react";
+import { BookOpen, BookUser, CalendarDays, ChevronDown, ClipboardCheck, ClipboardList, FileText, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, Notebook, PanelTop, NotebookPen, Pencil, Plus, Repeat, Search, ShoppingCart, SquareUserRound, UserRound, Users, Link2 } from "lucide-react";
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ALL_ASSIGNMENTS, today } from "@/lib/sis-data";
@@ -16,21 +16,21 @@ export const Route = createFileRoute("/teacher/")({
 });
 
 const TABS = ["My Classes", "Teams", "Programs", "Other Classes", "Future", "Completed"] as const;
-const h2 = "text-[20px] leading-[30px]";
+const h2 = "text-[20px] leading-[30px] text-[#2f2f2f]";
 const hov = "";
 /** Basketball glyph (solid disc with seams) for the Athletic Calendar tile. */
 function Basketball({ className }: { className?: string }) {
-  return <svg aria-hidden viewBox="0 0 24 24" className={className}><circle cx="12" cy="12" r="10" fill="#3b77b0" /><g fill="none" stroke="#e9f2fa" strokeWidth="1.5"><path d="M12 2v20M2 12h20" /><path d="M5 4.5c3 2.5 3 12.5 0 15M19 4.5c-3 2.5-3 12.5 0 15" /></g></svg>;
+  return <svg aria-hidden viewBox="0 0 24 24" className={className}><circle cx="12" cy="12" r="10" fill="#336d91" /><g fill="none" stroke="#ebf1f9" strokeWidth="1.5"><path d="M12 2v20M2 12h20" /><path d="M5 4.5c3 2.5 3 12.5 0 15M19 4.5c-3 2.5-3 12.5 0 15" /></g></svg>;
 }
-const shade = "shadow-[0_2px_0_rgba(0,0,0,.13)]";
-const btn = `flex h-[34px] items-center justify-center gap-2 bg-[#f0f0f0] text-[12.5px] font-semibold text-[#545454] ${shade}`;
-const blueBtn = `flex h-8 items-center justify-center gap-2 bg-[#ebf2fc] text-[12.5px] font-semibold text-[#3e6e94] ${shade}`;
-const addBtn = `flex h-[34px] items-center justify-center gap-2 bg-[#ecf2f0] text-[12.5px] font-semibold text-[#4f9a68] ${shade}`;
+const shade = "shadow-[0_3px_0_#d6d9d8]";
+const btn = `flex h-[34px] items-center justify-center gap-2 bg-[#f0f0f0] text-[12.5px] font-semibold text-[#575757] ${shade}`;
+const blueBtn = `flex h-8 items-center justify-center gap-2 bg-[#eaf4fa] text-[12.5px] font-semibold text-[#5f8ba3] ${shade}`;
+const addBtn = `flex h-[34px] items-center justify-center gap-2 bg-[#ecf2f0] text-[12.5px] font-semibold text-[#6fa58b] ${shade}`;
 type Dest = "/resources" | "/messages" | "/calendar" | "/directories" | "/teacher/news" | "/teacher/purchases";
 type TileIcon = ComponentType<{ className?: string }>;
 /** Same tile as the student home: a soft blue square with the icon above the label; it darkens on hover. */
 function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Record<string, string>; label: string; icon: TileIcon; solid?: boolean }) {
-  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#e9f2fa] text-[#6b9bc5] [--cut:#e9f2fa]`}><Icon className={solid ? "size-6 fill-[#3b77b0] stroke-[#e9f2fa]" : "size-6 text-[#3b77b0]"} />{label}</Link>;
+  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#ebf1f9] text-[#84a3ba] [--cut:#ebf1f9]`}><Icon className={solid ? "size-6 fill-[#336d91] stroke-[#ebf1f9]" : "size-6 text-[#336d91]"} />{label}</Link>;
 }
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
@@ -76,7 +76,7 @@ function TeacherHome() {
           <div className="mt-4 grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
             {todays.map(({ c, label }) => (
               <div key={`${c.id}-${label}`} className="border-l-2 border-vc-link pl-3">
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[18px] leading-6 text-vc-link hover:underline"><b className="font-semibold">{c.id}</b>: {c.name}</Link>
+                <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[18px] leading-6 text-vc-link hover:underline"><b className="font-semibold">{c.id}</b><span className="font-light opacity-80">: {c.name}</span></Link>
                 <div className="text-[12px] text-vc-gray">{label}</div>
                 <Attendance taken={attDone.includes(`${c.id}|${day}`)} classId={c.id} />
               </div>))}
@@ -91,13 +91,13 @@ function TeacherHome() {
           <div className="mt-1">
             {shown.map((c) => (
               <div key={c.id} className="border-b border-vc-line border-l-2 border-l-vc-link pb-3 pl-4 pt-3">
-                <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[18px] leading-6 text-vc-link hover:underline"><b className="font-semibold">{c.id}</b>: {c.name}</Link>
+                <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[18px] leading-6 text-vc-link hover:underline"><b className="font-semibold">{c.id}</b><span className="font-light opacity-80">: {c.name}</span></Link>
                 <Attendance taken={attDone.includes(`${c.id}|${day}`)} classId={c.id} />
                 <div className="mt-2 flex flex-nowrap items-center gap-x-7 overflow-x-auto whitespace-nowrap text-[14px] text-vc-link-strong">
-                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="flex items-center gap-1.5 font-semibold"><Pencil className="size-4" />Gradebook</Link>
-                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5"><Globe className="size-4" />Website<ChevronDown className="size-3" /></Link>
-                  <Link to="/messages" className="flex items-center gap-1.5"><Mail className="size-4" />Contact<ChevronDown className="size-3" /></Link>
-                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="flex items-center gap-1.5"><Menu className="size-4" />More<ChevronDown className="size-3" /></Link>
+                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="flex items-center gap-1.5 font-semibold"><Pencil className="size-4 fill-[#b1b1b1] text-[#b1b1b1]" />Gradebook</Link>
+                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5"><PanelTop className="size-4 text-[#b1b1b1]" />Website<span className="text-[8px] text-[#b6b6b6]">▼</span></Link>
+                  <Link to="/messages" className="flex items-center gap-1.5"><Mail className="size-4 text-[#b1b1b1]" />Contact<span className="text-[8px] text-[#b6b6b6]">▼</span></Link>
+                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="flex items-center gap-1.5"><Menu className="size-4 text-[#c4c4c4]" />More<span className="text-[8px] text-[#b6b6b6]">▼</span></Link>
                 </div>
               </div>))}
             {!shown.length && <p className="py-8 text-center text-[14px] text-vc-gray">No classes here.{tab === "My Classes" ? " Classes appear once the school office schedules and publishes them." : ""}</p>}
@@ -108,16 +108,16 @@ function TeacherHome() {
           <h2 className={`mb-[11px] ${h2}`}>Faculty Portal</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/resources" label="My Library" icon={Library} solid />
-            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#e9f2fa] text-[#6b9bc5] [--cut:#e9f2fa]`}><Notebook className="size-6 fill-[#3b77b0] stroke-[#e9f2fa] text-[#3b77b0]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><Notebook className="size-6 fill-[#3b77b0] stroke-[#e9f2fa] text-[#3b77b0]" />Lesson Planner</span>}
+            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#ebf1f9] text-[#84a3ba] [--cut:#ebf1f9]`}><Notebook className="size-6 fill-[#336d91] stroke-[#ebf1f9] text-[#336d91]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><Notebook className="size-6 fill-[#336d91] stroke-[#ebf1f9] text-[#336d91]" />Lesson Planner</span>}
             <Tile to="/messages" label="My Messages" icon={Mail} solid />
             <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>
           <div className="mt-[17px] grid grid-cols-2 gap-2">
-            <Link to="/calendar" className={blueBtn}><SquareUserRound className="size-[15px] fill-[#3e6e94] stroke-[#ebf2fc]" />Class Schedule</Link>
-            <Link to="/directories" search={{ type: "faculty" }} className={blueBtn}><UserRound className="size-[15px]" />Update Profile</Link>
+            <Link to="/calendar" className={blueBtn}><SquareUserRound className="size-[15px] fill-[#3d7099] stroke-[#eaf4fa]" />Class Schedule</Link>
+            <Link to="/directories" search={{ type: "faculty" }} className={blueBtn}><UserRound className="size-[15px] text-[#3d7099]" />Update Profile</Link>
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Reserve Resources</h2>
-          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><ShoppingCart className="size-[15px] fill-[#333]" />My Resources</Link><Link to="/resources" className={btn}><FileText className="size-[15px] fill-[#333] stroke-[#f0f0f0]" />Find Resources</Link></div>
+          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><ShoppingCart className="size-[15px] fill-black" />My Resources</Link><Link to="/resources" className={btn}><FileText className="size-[15px] fill-black stroke-[#f0f0f0]" />Find Resources</Link></div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Manage Students</h2>
           <form className="relative" onSubmit={(e) => { e.preventDefault(); }}>
             <Search strokeWidth={1.25} className="absolute left-3 top-1/2 size-[26px] -translate-y-1/2 text-[#555]" />
@@ -125,8 +125,8 @@ function TeacherHome() {
           </form>
           {q.trim() && <Link to="/directories" search={{ type: "students", last: q.trim() }} className="mt-1 block text-[13px] text-vc-link-strong">Search the student directory for “{q.trim()}” →</Link>}
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {toolLink("Add Behavior", <Plus className="size-[16px]" strokeWidth={3} />, "grades", addBtn)}
-            {toolLink("Add Comment", <Plus className="size-[16px]" strokeWidth={3} />, "grades", addBtn)}
+            {toolLink("Add Behavior", <Plus className="size-[16px] text-[#539677]" strokeWidth={3} />, "grades", addBtn)}
+            {toolLink("Add Comment", <Plus className="size-[16px] text-[#539677]" strokeWidth={3} />, "grades", addBtn)}
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>School Links</h2>
           <div className="grid grid-cols-2 gap-2">
