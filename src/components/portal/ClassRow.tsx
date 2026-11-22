@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
+import { fmtGrade } from "@/lib/fmt-grade";
 import { Clock } from "lucide-react";
 import { type Course, courseTitle, teacherShort, today } from "@/lib/sis-data";
 import { letterFor } from "@/lib/grading";
-import { useClassAverage, useStudentAssignments, useSchool } from "@/lib/school-store";
+import { staffIds, useClassAverage, useStudentAssignments, useSchool } from "@/lib/school-store";
 import { teacherNames } from "@/lib/student-presentation";
 import { usePortal } from "@/lib/portal-store";
 
@@ -14,12 +15,12 @@ export function ClassRow({ c, variant }: { c: Course; variant: "home" | "overvie
   const av = useClassAverage(c.id);
   const { users, sections } = useSchool();
   const section = sections.find((s) => s.id === c.id);
-  const faculty = teacherNames(section?.teacherIds ?? [c.teacherId], users.map((u) => ({ ...u, id: u.personId })));
+  const faculty = teacherNames(section ? staffIds(section) : [c.teacherId], users.map((u) => ({ ...u, id: u.personId })));
   
   const { read } = usePortal();
   const fresh = useStudentAssignments().filter((a) => a.courseId === c.id && a.score !== undefined && !read.includes(updateKey(a.id, a.score))).length;
   const grade = av !== null
-    ? <>{variant === "overview" ? <span className="w-[22px] text-right">{letterFor(av)}</span> : <span className="w-9">{letterFor(av)}</span>}<span>{av.toFixed(2)}%</span></>
+    ? <>{variant === "overview" ? <span className="w-[22px] text-right">{letterFor(av)}</span> : <span className="w-9">{letterFor(av)}</span>}<span>{fmtGrade(av)}%</span></>
     : <span>-</span>;
   const updates = (
     <Link to="/grades/$classId" params={{ classId: c.id }} search={{ filter: "updates" }} className={`flex items-center text-[16px] leading-[22px] hover:underline ${fresh ? "text-vc-tile-warm-fg" : "text-vc-gray-light"}`}>

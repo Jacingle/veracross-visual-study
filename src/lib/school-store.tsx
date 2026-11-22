@@ -12,6 +12,7 @@ import blossoms from "@/assets/faculty-bg.jpg";
 import graduation from "@/assets/portal-bg.jpg";
 import painting from "@/assets/class-bg.jpg";
 import { setTypeColors } from "./type-colors";
+import { isOtherClass, normalizeCourseType } from "./course-types";
 import { readSchool, saveSchool, savesSettled } from "./browser-save";
 import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -33,11 +34,11 @@ export type Website = { bg: "none" | "color" | "photo"; color: string; photo: st
 export const BLANK_SITE: Website = { bg: "none", color: "#3a6ea5", photo: "", sections: [], pages: [] };
 /** A course is the catalog entry; a section (class) is one scheduled offering of it in specific terms. */
 export type CourseDef = { id: string; name: string; type: Course["type"]; dept: string; credits: number; description: string };
-export type Section = Course & { courseNo: string; teacherIds: string[]; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
+export type Section = Course & { courseNo: string; teacherIds: string[]; /** Teacher's aides: any number, in addition to the one teacher. */ aideIds?: string[] | undefined; terms: string[]; published: boolean; studentIds: string[]; website: Website; scheduleSetId?: string | undefined; scheduleBlockId?: string | undefined; /** Per-student registration details shown on the class record. */ regs?: Record<string, { late?: string; notes?: string }>; /** Keep this schedule for future scheduler results. */ scheduleLocked?: boolean };
 
 const Y = String(yearStartFor(new Date()));
 const FY = [`${Y}-S1`, `${Y}-S2`];
-const SEED_COURSES: CourseDef[] = [...new Map(ALL_SECTIONS.map((c) => [c.id.split("-")[0]!, { id: c.id.split("-")[0]!, name: c.name, type: c.type, dept: "", credits: c.type === "ADVISORY" ? 0 : 1, description: "" }])).values()];
+const SEED_COURSES: CourseDef[] = [...new Map(ALL_SECTIONS.map((c) => [c.id.split("-")[0]!, { id: c.id.split("-")[0]!, name: c.name, type: c.type, dept: "", credits: isOtherClass(c.type) ? 0 : 1, description: "" }])).values()];
 const SEED_SECTIONS: Section[] = ALL_SECTIONS.map((c) => ({
   ...c, courseNo: c.id.split("-")[0]!, teacherIds: [c.teacherId], published: true,
   terms: c.id === "210-1" ? [`${Y}-S2`] : FY, // Honors Biology starts next semester (shows under Future)
@@ -60,7 +61,7 @@ export type CustomAssignment = {
   /** Relative weight inside its category, and the original assignment this copy was made from ("Applies to All Sections"). */
   weight?: number; linkId?: string;
 };
-export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" };
+export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" | "direct"; /** Direct (internal) mail: people who receive it in their portal inbox. */ to?: string[]; /** Students whose parents/guardians were addressed (shown to the sender; there are no parent logins). */ parentsOf?: string[]; fromId?: string; html?: boolean };
 export type Purchase = { id: string; item: string; vendor: string; amount: number; reason: string; status: "Pending" | "Approved" | "Denied"; date: string; by: string };
 export type { Weight } from "./grading";
 /** An assignment type, set up once by the administrator; its color is used for that type everywhere in the app. */
@@ -141,6 +142,9 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
         v.users = (v.users ?? INITIAL.users).map((u) => u.id === "u-teacher" && u.personId === "t3" ? { ...u, personId: "p-teacher", first: "Faculty", last: "Account" } : u.id === "u-student" && u.personId === "me" ? { ...u, personId: "p-student", first: "Student", last: "Account" } : u);
         v.sampleCleared = true;
       }
+      if (v.courses) v.courses = v.courses.map((c) => ({ ...c, type: normalizeCourseType(c.type) }));
+      // A class has one teacher; extra teachers saved by older versions become teacher's aides.
+      if (v.sections) v.sections = v.sections.map((c) => ({ ...c, type: normalizeCourseType(c.type), ...(c.teacherIds.length > 1 ? { teacherIds: c.teacherIds.slice(0, 1), aideIds: [...new Set([...(c.aideIds ?? []), ...c.teacherIds.slice(1)])] } : {}) }));
       const users = v.users?.length ? v.users : INITIAL.users;
       const st = { ...DEFAULT_SETTINGS, ...v.settings };
       const first = !readyRef.current;
@@ -156,9 +160,10 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   useMemo(() => { setTypeColors(s.assignmentTypes); }, [s.assignmentTypes]);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
-    EXTRA.teachers = s.users.filter((u) => u.role === "teacher" && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
+    const aideSet = new Set(s.sections.flatMap((c) => c.aideIds ?? []));
+    EXTRA.teachers = s.users.filter((u) => (u.role === "teacher" || aideSet.has(u.personId)) && u.personId).map((u) => ({ id: u.personId, prefix: u.prefix ?? "", first: u.preferred || u.first, last: u.last, email: u.email, dept: "", title: "Faculty" }));
     EXTRA.students = s.users.filter((u) => u.role === "student" && u.personId).map((u) => ({ id: u.personId, first: u.preferred || u.first, last: u.last, email: u.email, grade: u.grade ?? 9, address: [u.address, u.city, u.state, u.postal].filter(Boolean).join(", "), homePhone: u.phone ?? "", parents: [] }));
-  }, [s.users]);
+  }, [s.users, s.sections]);
   const value = useMemo<Ctx>(() => ({
     ...s, ready, update,
     user: s.users.find((u) => u.id === s.sessionId && u.active) ?? null,
@@ -185,7 +190,7 @@ export function useSchool() { const c = useContext(C); if (!c) throw new Error("
 
 const short: Record<string, string> = { HOMEWORK: "HW", QUIZ: "QZ", TEST: "Test", COLLABORATION: "Col", "CLASSWORK/HOMEWORK": "CwHw", VOCABULARY: "Vocab", WRITING: "Wr", READING: "Rd" };
 export function toAssignment(c: CustomAssignment, base?: Assignment): Assignment {
-  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: c.details.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(), custom: true };
+  return { score: base?.score, id: c.id, courseId: c.courseId, category: c.category, title: c.title, short: short[c.category] ?? "HW", due: parseISO(c.due), assigned: parseISO(c.assigned), points: c.points, notes: (c.details ?? "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(), custom: true };
 }
 /** Classes the signed-in person sees: published ones they teach or are enrolled in (admins see all). */
 export function useMySections(): (Section & { status: ClassStatus })[] {
@@ -238,6 +243,8 @@ export function useSectionAssignments(courseId: string): Assignment[] {
     return [...base.filter((a) => !byId.has(a.id)), ...own].sort((a, b) => +a.due - +b.due);
   }, [custom, courseId]);
 }
+/** The class teacher followed by any teacher's aides, all shown the same way on portals. */
+export const staffIds = (c: { teacherIds: string[]; aideIds?: string[] | undefined }): string[] => [...new Set([...c.teacherIds, ...(c.aideIds ?? [])])];
 export const isoDay = (d: Date) => format(d, "yyyy-MM-dd");
 
 /** Inbox for the signed-in person: school messages plus admin announcements sent to their audience. */
@@ -245,7 +252,10 @@ export function useInbox() {
   const { sent, user } = useSchool();
   return useMemo(() => {
     const aud = user?.role === "student" ? "students" : "faculty";
-    const extra = sent.filter((m) => m.audience === "everyone" || m.audience === aud).map((m) => ({ id: m.id, from: m.from, list: m.list, subject: m.subject, body: m.body, date: parseISO(m.date) }));
-    return [...extra, ...MESSAGES].sort((a, b) => +b.date - +a.date);
+    const me = user?.personId ?? "";
+    const extra = sent
+      .filter((m) => (m.audience === "direct" ? (m.to ?? []).includes(me) || m.fromId === me : m.audience === "everyone" || m.audience === aud))
+      .map((m) => ({ id: m.id, from: m.from, fromId: m.fromId ?? "", list: m.list, subject: m.subject, body: m.body, html: Boolean(m.html), date: parseISO(m.date) }));
+    return [...extra, ...MESSAGES.map((m) => ({ ...m, fromId: "", html: false }))].sort((a, b) => +b.date - +a.date);
   }, [sent, user]);
 }

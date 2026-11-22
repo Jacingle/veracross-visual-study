@@ -9,6 +9,7 @@ import { useState } from "react";
 import { STUDENTS, TEACHERS } from "@/lib/sis-data";
 import { ROLE_LABEL } from "@/lib/auth-rules";
 import { useSchool } from "@/lib/school-store";
+import { HOMEPAGES } from "@/lib/admin-homepages";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/")({
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/admin/")({
 const TILES = [
   { group: "Users & Security", items: [{ to: "/admin/users", label: "Users", icon: Users }, { to: "/admin/queries", label: "Find People", icon: Search }] },
   { group: "Scheduling", items: [{ to: "/admin/terms", label: "School Years & Terms", icon: Clock }, { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock }, { to: "/admin/queries", label: "Find Classes", icon: Search }] },
-  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/courses", label: "Class Enrollments", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
+  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/classes", label: "Classes", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
   { group: "Portals", items: [{ to: "/admin/settings", label: "Portal Settings", icon: Palette }, { to: "/admin/settings", label: "Backgrounds", icon: Image }] },
   { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
 ] as const;
@@ -43,6 +44,9 @@ function AdminHome() {
             </Panel>))}
         </div>
         <div className="space-y-3">
+          <Panel title="Homepages" right={<span />}>
+            {HOMEPAGES.map((h) => <Link key={h.id} to="/admin/home/$pageId" params={{ pageId: h.id }} className="flex min-h-8 items-center border-b border-vc-line px-1 py-1 text-vc-link-strong last:border-0 hover:bg-vc-panel">{h.title}</Link>)}
+          </Panel>
           <Panel title="Accounts by Role" right={<Link to="/admin/users" className="font-normal text-vc-link-strong">View all</Link>}>
             {(["admin", "teacher", "student"] as const).map((r) => <div key={r} className="flex justify-between border-b border-vc-line py-1 last:border-0"><span>{ROLE_LABEL[r]}</span><b>{users.filter((u) => u.role === r).length}</b></div>)}
           </Panel>

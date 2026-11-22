@@ -1,4 +1,6 @@
 import { ATT_STATUSES } from "@/lib/attendance";
+import { fmtGrade } from "@/lib/fmt-grade";
+import { VcSelect } from '@/components/teacher/VcSelect';
 import { categoryColor } from "@/lib/category-colors";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { meetingsOn } from "@/lib/scheduling";
@@ -55,8 +57,7 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
           <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}><ChevronRight className="size-4" /></button>
         </div>
         <div className="relative">
-          <select aria-label="Attendance block" className="h-8 w-[210px] appearance-none rounded-[3px] border border-vc-line bg-background pl-3 pr-8 text-[12px] text-vc-gray shadow-sm">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>No Block Specified</option>}</select>
-          <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-vc-gray-light" />
+          <VcSelect aria-label="Attendance block" className="h-8 w-[210px] rounded-[3px] border border-vc-line bg-background pl-3 pr-8 text-[12px] text-vc-gray shadow-sm">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>No Block Specified</option>}</VcSelect>
         </div>
       </div>
       {!meets ? <p className="my-6 border border-vc-line bg-vc-panel p-4">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <>
@@ -120,17 +121,17 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
       <div>
         <div className="flex items-start justify-between border-b border-vc-line pb-2">
           <div><div className="text-[18px]">{s.first} {s.last}</div><div className="text-[12px] text-muted-foreground">Grade {s.grade} · {c.name}</div></div>
-          <select aria-label="Grading period" className="h-8 border border-vc-line px-2 text-[13px]" value={term} onChange={(e) => setTerm(e.target.value)}>{TERMS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
+          <VcSelect aria-label="Grading period" className="h-8 border border-vc-line px-2 text-[13px]" value={term} onChange={(e) => setTerm(e.target.value)}>{TERMS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</VcSelect>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3 text-[13px]">
-          <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">CALCULATED GRADE</div><div className="text-[20px]">{avg !== null ? `${letterFor(avg)} · ${avg.toFixed(2)}%` : "—"}</div></div>
+          <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">CALCULATED GRADE</div><div className="text-[20px]">{avg !== null ? `${letterFor(avg)} · ${fmtGrade(avg)}%` : "—"}</div></div>
           <label className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">POSTED GRADE</div>
-            <select className="mt-1 h-8 w-full border border-vc-line bg-background px-2" value={termGrades[k] ?? ""} onChange={(e) => update((x) => ({ ...x, termGrades: { ...x.termGrades, [k]: e.target.value } }))}>{LETTERS.map((l) => <option key={l} value={l}>{l || "— use calculated —"}</option>)}</select></label>
+            <VcSelect className="mt-1 h-8 w-full border border-vc-line bg-background px-2" value={termGrades[k] ?? ""} onChange={(e) => update((x) => ({ ...x, termGrades: { ...x.termGrades, [k]: e.target.value } }))}>{LETTERS.map((l) => <option key={l} value={l}>{l || "— use calculated —"}</option>)}</VcSelect></label>
           <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">REPORTS</div><div className="mt-1 text-vc-link-strong">Progress Report · Report Card</div></div>
         </div>
         <label className="mt-3 block text-[11px] text-muted-foreground">COMMENT</label>
         <textarea className="mt-1 h-44 w-full border border-vc-line p-2 text-[14px] leading-relaxed" maxLength={2000} value={text} onChange={(e) => update((x) => ({ ...x, comments: { ...x.comments, [k]: e.target.value } }))} placeholder={`Write a ${TERMS.find((t) => t.id === term)?.label} comment for ${s.first}…`} />
-        <div className="flex items-center justify-between text-[12px] text-muted-foreground"><span>{text.trim() ? text.trim().split(/\s+/).length : 0} words · {text.length}/2000 characters · saved automatically</span>
+        <div className="flex items-center justify-between text-[12px] text-muted-foreground"><span>{text.trim() ? <button type="button" className="mr-3 text-destructive hover:underline" onClick={() => update((x) => ({ ...x, comments: { ...x.comments, [k]: "" } }))}>Delete comment</button> : null}{text.trim() ? text.trim().split(/\s+/).length : 0} words · {text.length}/2000 characters · saved automatically</span>
           <div className="flex gap-2">
             <button disabled={idx <= 0} onClick={() => pick(roster[idx - 1]?.id ?? s.id)} className="h-8 border border-vc-line px-3 text-foreground disabled:opacity-40">Previous</button>
             <button disabled={idx >= roster.length - 1} onClick={() => pick(roster[idx + 1]?.id ?? s.id)} className="h-8 bg-vc-link-strong px-3 text-primary-foreground disabled:opacity-40">Next Student</button>
@@ -140,35 +141,36 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
   );
 }
 
-export function Weights({ c, list }: { c: Course; list: Assignment[] }) {
+export function Weights({ c, list, termId }: { c: Course; list: Assignment[]; termId?: string }) {
   const { weights, update, assignmentTypes } = useSchool();
   const used = [...new Set(list.map((a) => a.category))];
-  const cats = [...new Set([...used, ...assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => t.description)])];
-  const initial: Weight[] = weights[c.id] ?? defaultWeights(used);
+  const cats = [...new Set([...used, ...assignmentTypes.filter((t) => !t.obsolete).sort((x, y) => x.sortKey - y.sortKey).map((t) => t.description.toUpperCase())])];
+  const initial: Weight[] = weights[c.id] ?? [];
   const [w, setW] = useState<Weight[]>([...initial, ...cats.filter((x) => !initial.some((y) => y.cat === x)).map((cat) => ({ cat, weight: 0, drop: false }))]);
   const total = weightsTotal(w);
-  const head = "rounded-[6px] bg-vc-sky px-3 text-center text-[15px] font-semibold h-[50px]";
-  const cellCls = "rounded-[6px] bg-[#f4f4f4] px-3 text-center text-[15px] text-foreground/80 h-[54px]";
+  const head = "h-[30px] rounded-[4px] bg-[#e5eff9] px-2 text-center text-[11.5px] font-semibold text-foreground/85";
+  const cellCls = "h-[31px] rounded-[4px] bg-[#f4f4f4] px-2 text-center text-[11.5px] text-foreground/80";
+  // Weights are saved as soon as they add up to 100%.
+  const commit = (next: Weight[]) => { setW(next); if (weightsValid(next)) update((s) => ({ ...s, weights: { ...s.weights, [c.id]: next.filter((x) => x.weight > 0 || x.drop) } })); };
   return (
-    <div className="px-6 pb-8">
-      <h2 className="mb-5 mt-4 w-[720px] max-w-full text-center text-[20px] font-medium">{termLabel(c.terms[0] ?? "")}</h2>
-      <div className="mb-3 flex gap-2 text-[13px]"><Button size="sm" variant={!weights[c.id]?.length ? "default" : "outline"} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: [] } })); toast.success("Weighting by assignment points"); }}>Weight by Assignment Points</Button><Button size="sm" variant={weights[c.id]?.length ? "default" : "outline"} onClick={() => setW(defaultWeights(used))}>Weight by Assignment Type</Button></div>
-      <table className="w-[720px] max-w-full border-separate border-spacing-[5px] text-[15px]">
+    <div className="pb-8 pl-[31px] pr-4">
+      <h2 className="mb-[10px] mt-[22px] w-[533px] max-w-full text-center text-[13px] font-medium">{termLabel(termId ?? c.terms[0] ?? "").replace(/^\d{4}-\d{2} /, "")}</h2>
+      <table className="w-[541px] max-w-full border-separate border-spacing-[2px] text-[11.5px]">
+        <colgroup><col className="w-[122px]" /><col className="w-[98px]" /><col className="w-[98px]" /><col className="w-[99px]" /><col className="w-[100px]" /></colgroup>
         <thead><tr><th className={`${head} text-left`}>Assignment Types</th><th className={head}>Weight</th><th className={head}>Drop Lowest</th><th className={head}>Count</th><th className={head}>Total Points</th></tr></thead>
         <tbody>
-          <tr className="[&>td]:h-[54px] [&>td]:rounded-[6px] [&>td]:bg-vc-tile-warm [&>td]:px-3 [&>td]:text-center [&>td]:text-foreground/80"><td className="!text-right">Totals</td><td className={total === 100 ? "!bg-[#e4f4e2] text-vc-success" : "!bg-[#fbe9e9] text-destructive"}>{total}%</td><td /><td>{list.length}</td><td>{list.reduce((s2, a) => s2 + a.points, 0)}</td></tr>
-          {w.map((x, i) => { const items = list.filter((a) => a.category === x.cat); const st = categoryStats(items); const col = categoryColor(w, x.cat); const patch = (p2: Partial<Weight>) => setW(w.map((y, j) => (j === i ? { ...y, ...p2 } : y))); return (
+          <tr className="[&>td]:h-[31px] [&>td]:rounded-[4px] [&>td]:bg-[#fdf6e3] [&>td]:px-2 [&>td]:text-center [&>td]:text-[11.5px] [&>td]:text-foreground/80"><td className="!text-right">Totals</td><td className={total === 100 ? "!border !border-[#a9d8a5] !bg-[#e4f4e2] !text-[#3f8f3a]" : "!border !border-[#f0b8b8] !bg-[#fdecec] !text-[#d9534f]"}>{total}%</td><td /><td>{list.length}</td><td>{list.reduce((s2, a) => s2 + a.points, 0)}</td></tr>
+          {w.map((x, i) => { const items = list.filter((a) => a.category === x.cat); const st = categoryStats(items); const col = categoryColor(w, x.cat); const patch = (p2: Partial<Weight>) => commit(w.map((y, j) => (j === i ? { ...y, ...p2 } : y))); return (
           <tr key={x.cat}>
-            <td style={{ background: col }} className="h-[54px] min-w-[220px] rounded-[6px] px-3 text-left text-[15px] font-semibold uppercase text-primary-foreground">{x.cat}</td>
-            <td className={cellCls}><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-[34px] w-[64px] rounded-[3px] border border-vc-line bg-background pr-1.5 text-right outline-none focus:border-vc-link" value={x.weight ? String(x.weight) : ""} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && patch({ weight: Number(e.target.value) })} /> %</td>
-            <td className={cellCls}><input type="checkbox" className="size-[30px] rounded-[3px] border border-vc-line align-middle accent-vc-link" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
+            <td style={{ background: col }} className="h-[31px] rounded-[4px] pl-[10px] text-left text-[11.5px] font-bold uppercase text-primary-foreground">{x.cat}</td>
+            <td className={cellCls}><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-[22px] w-[35px] rounded-[2px] border border-[#e1e4e8] bg-background pr-1 text-right text-[11px] outline-none focus:border-[#4a9be0]" value={x.weight ? String(x.weight) : ""} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && patch({ weight: Number(e.target.value) })} /><span className="ml-1 text-[10px] text-vc-gray">%</span></td>
+            <td className={cellCls}><input type="checkbox" className="size-[17px] cursor-pointer rounded-[2px] border border-[#e1e4e8] bg-background align-middle checked:border-[#4a9be0] checked:bg-[#4a9be0]" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
             <td className={cellCls}>{st.count || ""}</td><td className={cellCls}>{items.reduce((s2, a) => s2 + a.points, 0) || ""}</td>
           </tr>); })}</tbody>
       </table>
-      {total !== 100 && <p className="mt-1 text-[12px] text-destructive">Weights must add up to 100% before you can save.</p>}
-      <div className="mt-4 flex gap-2">
-        <button disabled={!weightsValid(w)} onClick={() => { update((s) => ({ ...s, weights: { ...s.weights, [c.id]: w } })); toast.success("Assignment weights saved"); }} className="h-9 rounded-[6px] bg-vc-success px-5 text-[14px] font-semibold text-primary-foreground disabled:opacity-40">Save Weights</button>
-        <button onClick={() => setW(defaultWeights(used))} className="h-9 rounded-[6px] border border-vc-line px-4 text-[14px]">Reset to Equal</button>
+      <div className="mt-2 flex items-center gap-4 text-[11px] text-vc-gray">
+        {total !== 100 && <span>Weights are saved once they add up to 100%.</span>}
+        <button type="button" className="text-[#4a9be0] hover:underline" onClick={() => { setW(w.map((x) => ({ ...x, weight: 0, drop: false }))); update((s) => ({ ...s, weights: { ...s.weights, [c.id]: [] } })); toast.success("Weighting by assignment points"); }}>Weight by assignment points</button>
       </div>
     </div>
   );

@@ -202,3 +202,38 @@ export function CommentsSolid({ className, "aria-label": label }: { className?: 
     </svg>
   );
 }
+
+/** Solid 2×2 grid of squares (My Library). */
+export function GridSolid(p: P) {
+  return <svg {...solid} {...p}><path d="M3 3h18v18H3z" /><path d="M12 3v18M3 12h18" style={cutStroke} strokeWidth="2" /><path d="M5.6 5.6h4v4h-4zM14.4 5.6h4v4h-4zM5.6 14.4h4v4h-4zM14.4 14.4h4v4h-4z" style={cutFill} /></svg>;
+}
+
+/** Rounded square with a ring and dot (Class Schedule). */
+export function SquareDot(p: P) {
+  return <svg {...solid} {...p}><rect x="3" y="2" width="18" height="20" rx="3" /><circle cx="12" cy="12" r="4.2" style={cutFill} /><circle cx="12" cy="12" r="1.8" /></svg>;
+}
+
+/** Solid disc with a person (Update Profile). */
+export function UserDisc(p: P) {
+  return <svg {...solid} {...p}><circle cx="12" cy="12" r="10.5" /><circle cx="12" cy="9.3" r="3.2" style={cutFill} /><path d="M5.9 18.2c1.4-3.2 3.7-4.4 6.1-4.4s4.7 1.2 6.1 4.4A9 9 0 0 1 12 21a9 9 0 0 1-6.1-2.8z" style={cutFill} /></svg>;
+}
+
+/** Solid shopping cart (My Resources). */
+export function CartSolid(p: P) {
+  return <svg {...solid} {...p}><path d="M1.5 3h3.4l.7 3H22l-2.3 8.2H7.6l.4 1.8h11.5v2H6.4L3.3 5H1.5z" /><circle cx="8.2" cy="20.4" r="1.9" /><circle cx="17.8" cy="20.4" r="1.9" /></svg>;
+}
+
+/** Solid document with a tab and lines (Find Resources). */
+export function DocSolid(p: P) {
+  return <svg {...solid} {...p}><path d="M5 2h11l4 4v16H5z" /><path d="M8 11h9M8 15h9M8 19h6" style={cutStroke} strokeWidth="1.8" /><path d="M2 5h4v6H2z" /></svg>;
+}
+
+/** Rounded book with a bookmark notch (Gradebook, class sidebar). */
+export function GradebookIcon(p: P) {
+  return <svg {...solid} {...p}><rect x="4" y="2" width="16" height="20" rx="2.6" /><path d="M8.6 2v9.2l3.4-2.3 3.4 2.3V2z" style={cutFill} /></svg>;
+}
+
+/** Window with a left column (Website, class sidebar). */
+export function WebsiteIcon(p: P) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="1.2" /><path d="M3.5 8.2h17M8.7 8.2v12.3" /></svg>;
+}

@@ -5,6 +5,7 @@ import { usePortal } from '@/lib/portal-store';
 import { updateKey } from '@/components/portal/ClassRow';
 import { ArrowRight, Printer } from 'lucide-react';
 import { CommentsSolid } from '@/components/portal/icons';
+import { ErrorPage } from '@/components/common/ErrorPage';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { Button } from '@/components/ui/button';
 import { GradeCalculation } from "@/components/portal/GradeCalculation";
@@ -13,7 +14,7 @@ import { teacherFullNames, teacherNames } from "@/lib/student-presentation";
 import { categoryColor } from '@/lib/category-colors';
 import { courseTitle, today, type Assignment } from '@/lib/sis-data';
 import { categoryStats, defaultWeights, letterFor, weightedAverage } from '@/lib/grading';
-import { useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
+import { staffIds, useMySections, useSchool, useStudentAssignments, type Section } from '@/lib/school-store';
 import { termById, termOn } from '@/lib/terms';
 import { pageHead } from '@/lib/head';
 import { Detail } from '@/components/portal/GradeDetail';
@@ -31,16 +32,16 @@ function Grades() {
   const list = useStudentAssignments().filter((a) => a.courseId === classId).sort((a, b) => +b.due - +a.due);
   const { read } = usePortal();
   const { users } = useSchool();
-  const faculty = teacherNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
+  const faculty = teacherNames(c ? staffIds(c) : [], users.map((u) => ({ ...u, id: u.personId })));
   const [fresh] = useState(() => new Set(list.filter((a) => a.score !== undefined && !read.includes(updateKey(a.id, a.score))).map((a) => a.id)));
-  const fullNames = teacherFullNames(c?.teacherIds ?? [], users.map((u) => ({ ...u, id: u.personId })));
+  const fullNames = teacherFullNames(c ? staffIds(c) : [], users.map((u) => ({ ...u, id: u.personId })));
   return <PortalShell portal="student" maxWidth={930}>{c ? <>
     <div className="relative px-9 pb-[19px] pt-2.5">
       <h1 className="flex flex-wrap items-baseline gap-x-3 text-[25px] font-light leading-9"><span><strong className="font-semibold">{c.id}:</strong> {courseTitle(c)}</span><span className="text-[14px] italic text-vc-gray">{fullNames}</span></h1>
       <Link to="/class/$classId" params={{ classId }} className="absolute right-3 top-3 flex items-center gap-1 text-[12px] text-vc-link">View Class Website <ArrowRight className="size-3" /></Link>
     </div>
     <div className="flex pl-[26px]">{[['', 'All Assignments'], ['detail', 'Grade Detail']].map(([v, label]) => <Link key={v} to="/grades/$classId" params={{ classId }} search={v ? { tab: 'detail' } : {}} className={`px-[15px] py-[9px] text-[14.5px] leading-5 ${Boolean(tab) === Boolean(v) ? 'bg-vc-bar font-semibold text-foreground' : 'text-vc-gray'}`}>{label}</Link>)}</div>
-    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} startFilter={startFilter ?? 'all'} />}</> : <p className="p-8">You're not enrolled in this class.</p>}</PortalShell>;
+    {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} startFilter={startFilter ?? 'all'} />}</> : <ErrorPage fullPage={false} title="Access Restricted" message="You do not have access to this class." detail="You are not enrolled in this class." />}</PortalShell>;
 }
 function AllAssignments({ list, teacherName, fresh, startFilter }: { list: Assignment[]; teacherName: string; fresh: Set<string>; startFilter: string }) {
   const { comments, aStatus, user, weights } = useSchool();

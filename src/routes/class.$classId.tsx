@@ -9,7 +9,7 @@ import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
 import { CalendarIcon, DirectoryIcon, DiscussionsIcon, FolderIcon, HomeIcon, PhotosIcon, PostsIcon, TimelineIcon } from "@/components/site/SiteIcons";
 import { CalendarView, ClassPicker, DirectoryView, HomeView, InfoView, PageListView, PagesPlaceholder, PageView, PostsView, ResourcesView, TimelineView } from "@/components/site/SiteViews";
 import { courseTitle, teacher, today, type Assignment } from "@/lib/sis-data";
-import { useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
+import { staffIds, useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
 const TABS: { id: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
@@ -88,9 +88,9 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
           <aside className="space-y-[11px] text-[15px]">
             <div className="rounded-[3px] bg-background px-3 pb-[9px] pt-[9px] shadow-[0_1px_3px_rgba(0,0,0,.18)]">
               <div className="text-[18px] leading-6">Teacher</div>
-              {c.teacherIds.map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
+              {staffIds(c).map((id) => { const phone = users.find((u) => u.personId === id)?.phone; const f = teacher(id); return (
                 <div key={id} className="mt-1.5 flex items-start gap-3">
-                  <PersonPhoto personId={id} full fit={{ w: 55, h: 83 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
+                  <PersonPhoto personId={id} full plainBg res={1.4} fit={{ w: 58, h: 83 }} squareIfMissing alt={`${f.prefix} ${f.last}`.trim()} />
                   <div className="min-w-0 text-[15px] leading-[20px]"><div className="font-semibold">{f.prefix ? `${f.prefix} ${f.last}` : f.last}</div>
                     {phone && <div>{phone}</div>}<a href={`mailto:${f.email}`} className="text-vc-site-blue">Email</a></div>
                 </div>); })}

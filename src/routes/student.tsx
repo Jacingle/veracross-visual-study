@@ -9,7 +9,7 @@ import { Basketball, BookRibbon, ClockSolid, ListSquares } from "@/components/po
 import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
 import { MailOutline, PlayDisc } from "@/components/portal/icons";
 import { Button } from "@/components/ui/button";
-import { events, fmtDay, today, type Assignment } from "@/lib/sis-data";
+import { events, fmtDay, teacher, today, type Assignment } from "@/lib/sis-data";
 import { usePortal } from "@/lib/portal-store";
 import { useInbox, useStudentAssignments , useMySections } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -24,7 +24,7 @@ type TileIcon = ComponentType<{ className?: string }>;
 /** `solid` lucide icons are filled and stroke their details with --cut; custom icons read --cut themselves. */
 function Tile({ to, label, icon: Icon, warm, solid }: { to: "/schedule" | "/assignments" | "/classes" | "/calendar" | "/directories"; label: string; icon: TileIcon; warm?: boolean; solid?: boolean }) {
   return (
-    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)] hover:bg-vc-tile-warm-hover hover:[--cut:var(--vc-tile-warm-hover)]" : "bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]"}`}>
+    <Link to={to} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] ${warm ? "bg-vc-tile-warm text-vc-tile-warm-fg [--cut:var(--vc-tile-warm)]" : "bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)]"}`}>
       <Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}
     </Link>
   );
@@ -68,9 +68,10 @@ function Home() {
         </section>
         <aside>
           <h2 className={`mb-[11px] ${H2}`}>My Portal</h2>
-          <Link to="/messages" className="flex h-[62px] items-center gap-3 border-2 border-vc-line px-2 text-[17px] hover:bg-vc-panel">
-            <MailOutline className="size-[42px] shrink-0 text-vc-gray-light" />
-            <span>{unread ? `${unread} unread message${unread === 1 ? "" : "s"}` : "No unread messages"}</span>
+          <Link to="/messages" className="group flex h-[62px] items-center gap-3 border border-[#dedede] bg-white px-[9px] text-[17px] text-black hover:bg-[#ededed] hover:text-[#58aaf5]">
+            <span className="relative shrink-0"><MailOutline className={`size-[42px] ${unread ? "text-[#555]" : "text-[#bbb]"} group-hover:text-[#bbb]`} />{unread > 0 && <span className="absolute -right-[5px] -top-[3px] size-[11px] rounded-full bg-[#f0a04b]" />}</span>
+            <span className={unread ? "" : "text-[#58aaf5]"}>{unread ? "Unread messages" : "No unread messages"}</span>
+            {unread > 0 && <span className="ml-auto grid h-[28px] min-w-[28px] place-items-center rounded-[2px] bg-[#f0a04b] px-1 text-[16px] text-white">{unread}</span>}
           </Link>
           <Link to="/assignments" className="mt-[8.5px] flex h-[38px] items-center justify-center gap-2.5 rounded-[3px] border-b-[4px] border-b-vc-success-edge bg-vc-success text-[16px] font-semibold text-primary-foreground [--cut:var(--vc-success)] hover:opacity-90">
             <PlayDisc className="size-[22px]" /> Submit Assignments
@@ -99,7 +100,7 @@ function Home() {
             <Tile to="/directories" label="Student Directory" icon={BookUser} solid />
             <Tile to="/directories" label="Faculty/Staff Directory" icon={BookUser} solid />
           </div>
-          <Link to="/calendar" className="mt-2 flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]">
+          <Link to="/calendar" className="mt-2 flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)]">
             <CloudDownload className="size-[18px] fill-current stroke-(--cut)" /> Subscribe to Calendars
           </Link>
         </aside>

@@ -24,6 +24,7 @@ import { Route as StudentRouteImport } from './routes/student'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAssignmentTypesRouteImport } from './routes/admin.assignment-types'
+import { Route as AdminClassesRouteImport } from './routes/admin.classes'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminPurchasesRouteImport } from './routes/admin.purchases'
 import { Route as AdminQueriesRouteImport } from './routes/admin.queries'
@@ -37,8 +38,12 @@ import { Route as GradesClassIdRouteImport } from './routes/grades.$classId'
 import { Route as TeacherIndexRouteImport } from './routes/teacher.index'
 import { Route as TeacherNewsRouteImport } from './routes/teacher.news'
 import { Route as TeacherPurchasesRouteImport } from './routes/teacher.purchases'
+import { Route as AdminClassNewRouteImport } from './routes/admin.class.new'
+import { Route as AdminCourseCourseNoRouteImport } from './routes/admin.course.$courseNo'
+import { Route as AdminCourseNewRouteImport } from './routes/admin.course.new'
 import { Route as AdminCoursesIndexRouteImport } from './routes/admin.courses.index'
 import { Route as AdminCoursesCourseIdRouteImport } from './routes/admin.courses.$courseId'
+import { Route as AdminHomePageIdRouteImport } from './routes/admin.home.$pageId'
 import { Route as AdminPortalsIndexRouteImport } from './routes/admin.portals.index'
 import { Route as AdminPortalsPortalIdRouteImport } from './routes/admin.portals.$portalId'
 import { Route as TeacherClassClassIdRouteImport } from './routes/teacher.class.$classId'
@@ -119,6 +124,11 @@ const AdminAssignmentTypesRoute = AdminAssignmentTypesRouteImport.update({
   path: '/admin/assignment-types',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminClassesRoute = AdminClassesRouteImport.update({
+  id: '/admin/classes',
+  path: '/admin/classes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMessagesRoute = AdminMessagesRouteImport.update({
   id: '/admin/messages',
   path: '/admin/messages',
@@ -184,6 +194,21 @@ const TeacherPurchasesRoute = TeacherPurchasesRouteImport.update({
   path: '/teacher/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminClassNewRoute = AdminClassNewRouteImport.update({
+  id: '/admin/class/new',
+  path: '/admin/class/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCourseCourseNoRoute = AdminCourseCourseNoRouteImport.update({
+  id: '/admin/course/$courseNo',
+  path: '/admin/course/$courseNo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCourseNewRoute = AdminCourseNewRouteImport.update({
+  id: '/admin/course/new',
+  path: '/admin/course/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCoursesIndexRoute = AdminCoursesIndexRouteImport.update({
   id: '/admin/courses/',
   path: '/admin/courses/',
@@ -192,6 +217,11 @@ const AdminCoursesIndexRoute = AdminCoursesIndexRouteImport.update({
 const AdminCoursesCourseIdRoute = AdminCoursesCourseIdRouteImport.update({
   id: '/admin/courses/$courseId',
   path: '/admin/courses/$courseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminHomePageIdRoute = AdminHomePageIdRouteImport.update({
+  id: '/admin/home/$pageId',
+  path: '/admin/home/$pageId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPortalsIndexRoute = AdminPortalsIndexRouteImport.update({
@@ -231,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/student': typeof StudentRoute
   '/updates': typeof UpdatesRoute
   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
+  '/admin/classes': typeof AdminClassesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
   '/admin/queries': typeof AdminQueriesRoute
@@ -245,7 +276,11 @@ export interface FileRoutesByFullPath {
   '/teacher/purchases': typeof TeacherPurchasesRoute
   '/admin/': typeof AdminIndexRoute
   '/teacher/': typeof TeacherIndexRoute
+  '/admin/class/new': typeof AdminClassNewRoute
+  '/admin/course/$courseNo': typeof AdminCourseCourseNoRoute
+  '/admin/course/new': typeof AdminCourseNewRoute
   '/admin/courses/$courseId': typeof AdminCoursesCourseIdRoute
+  '/admin/home/$pageId': typeof AdminHomePageIdRoute
   '/admin/portals/$portalId': typeof AdminPortalsPortalIdRoute
   '/teacher/class/$classId': typeof TeacherClassClassIdRoute
   '/admin/courses/': typeof AdminCoursesIndexRoute
@@ -267,6 +302,7 @@ export interface FileRoutesByTo {
   '/student': typeof StudentRoute
   '/updates': typeof UpdatesRoute
   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
+  '/admin/classes': typeof AdminClassesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
   '/admin/queries': typeof AdminQueriesRoute
@@ -281,7 +317,11 @@ export interface FileRoutesByTo {
   '/teacher/purchases': typeof TeacherPurchasesRoute
   '/admin': typeof AdminIndexRoute
   '/teacher': typeof TeacherIndexRoute
+  '/admin/class/new': typeof AdminClassNewRoute
+  '/admin/course/$courseNo': typeof AdminCourseCourseNoRoute
+  '/admin/course/new': typeof AdminCourseNewRoute
   '/admin/courses/$courseId': typeof AdminCoursesCourseIdRoute
+  '/admin/home/$pageId': typeof AdminHomePageIdRoute
   '/admin/portals/$portalId': typeof AdminPortalsPortalIdRoute
   '/teacher/class/$classId': typeof TeacherClassClassIdRoute
   '/admin/courses': typeof AdminCoursesIndexRoute
@@ -304,6 +344,7 @@ export interface FileRoutesById {
   '/student': typeof StudentRoute
   '/updates': typeof UpdatesRoute
   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
+  '/admin/classes': typeof AdminClassesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/purchases': typeof AdminPurchasesRoute
   '/admin/queries': typeof AdminQueriesRoute
@@ -318,7 +359,11 @@ export interface FileRoutesById {
   '/teacher/purchases': typeof TeacherPurchasesRoute
   '/admin/': typeof AdminIndexRoute
   '/teacher/': typeof TeacherIndexRoute
+  '/admin/class/new': typeof AdminClassNewRoute
+  '/admin/course/$courseNo': typeof AdminCourseCourseNoRoute
+  '/admin/course/new': typeof AdminCourseNewRoute
   '/admin/courses/$courseId': typeof AdminCoursesCourseIdRoute
+  '/admin/home/$pageId': typeof AdminHomePageIdRoute
   '/admin/portals/$portalId': typeof AdminPortalsPortalIdRoute
   '/teacher/class/$classId': typeof TeacherClassClassIdRoute
   '/admin/courses/': typeof AdminCoursesIndexRoute
@@ -342,6 +387,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/updates'
     | '/admin/assignment-types'
+    | '/admin/classes'
     | '/admin/messages'
     | '/admin/purchases'
     | '/admin/queries'
@@ -356,7 +402,11 @@ export interface FileRouteTypes {
     | '/teacher/purchases'
     | '/admin/'
     | '/teacher/'
+    | '/admin/class/new'
+    | '/admin/course/$courseNo'
+    | '/admin/course/new'
     | '/admin/courses/$courseId'
+    | '/admin/home/$pageId'
     | '/admin/portals/$portalId'
     | '/teacher/class/$classId'
     | '/admin/courses/'
@@ -378,6 +428,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/updates'
     | '/admin/assignment-types'
+    | '/admin/classes'
     | '/admin/messages'
     | '/admin/purchases'
     | '/admin/queries'
@@ -392,7 +443,11 @@ export interface FileRouteTypes {
     | '/teacher/purchases'
     | '/admin'
     | '/teacher'
+    | '/admin/class/new'
+    | '/admin/course/$courseNo'
+    | '/admin/course/new'
     | '/admin/courses/$courseId'
+    | '/admin/home/$pageId'
     | '/admin/portals/$portalId'
     | '/teacher/class/$classId'
     | '/admin/courses'
@@ -414,6 +469,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/updates'
     | '/admin/assignment-types'
+    | '/admin/classes'
     | '/admin/messages'
     | '/admin/purchases'
     | '/admin/queries'
@@ -428,7 +484,11 @@ export interface FileRouteTypes {
     | '/teacher/purchases'
     | '/admin/'
     | '/teacher/'
+    | '/admin/class/new'
+    | '/admin/course/$courseNo'
+    | '/admin/course/new'
     | '/admin/courses/$courseId'
+    | '/admin/home/$pageId'
     | '/admin/portals/$portalId'
     | '/teacher/class/$classId'
     | '/admin/courses/'
@@ -451,6 +511,7 @@ export interface RootRouteChildren {
   StudentRoute: typeof StudentRoute
   UpdatesRoute: typeof UpdatesRoute
   AdminAssignmentTypesRoute: typeof AdminAssignmentTypesRoute
+  AdminClassesRoute: typeof AdminClassesRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminPurchasesRoute: typeof AdminPurchasesRoute
   AdminQueriesRoute: typeof AdminQueriesRoute
@@ -465,7 +526,11 @@ export interface RootRouteChildren {
   TeacherPurchasesRoute: typeof TeacherPurchasesRoute
   AdminIndexRoute: typeof AdminIndexRoute
   TeacherIndexRoute: typeof TeacherIndexRoute
+  AdminClassNewRoute: typeof AdminClassNewRoute
+  AdminCourseCourseNoRoute: typeof AdminCourseCourseNoRoute
+  AdminCourseNewRoute: typeof AdminCourseNewRoute
   AdminCoursesCourseIdRoute: typeof AdminCoursesCourseIdRoute
+  AdminHomePageIdRoute: typeof AdminHomePageIdRoute
   AdminPortalsPortalIdRoute: typeof AdminPortalsPortalIdRoute
   TeacherClassClassIdRoute: typeof TeacherClassClassIdRoute
   AdminCoursesIndexRoute: typeof AdminCoursesIndexRoute
@@ -580,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAssignmentTypesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/classes': {
+      id: '/admin/classes'
+      path: '/admin/classes'
+      fullPath: '/admin/classes'
+      preLoaderRoute: typeof AdminClassesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/messages': {
       id: '/admin/messages'
       path: '/admin/messages'
@@ -671,6 +743,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherPurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/class/new': {
+      id: '/admin/class/new'
+      path: '/admin/class/new'
+      fullPath: '/admin/class/new'
+      preLoaderRoute: typeof AdminClassNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/course/$courseNo': {
+      id: '/admin/course/$courseNo'
+      path: '/admin/course/$courseNo'
+      fullPath: '/admin/course/$courseNo'
+      preLoaderRoute: typeof AdminCourseCourseNoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/course/new': {
+      id: '/admin/course/new'
+      path: '/admin/course/new'
+      fullPath: '/admin/course/new'
+      preLoaderRoute: typeof AdminCourseNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/courses/': {
       id: '/admin/courses/'
       path: '/admin/courses'
@@ -683,6 +776,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/courses/$courseId'
       fullPath: '/admin/courses/$courseId'
       preLoaderRoute: typeof AdminCoursesCourseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/home/$pageId': {
+      id: '/admin/home/$pageId'
+      path: '/admin/home/$pageId'
+      fullPath: '/admin/home/$pageId'
+      preLoaderRoute: typeof AdminHomePageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/portals/': {
@@ -731,6 +831,7 @@ const rootRouteChildren: RootRouteChildren = {
   StudentRoute: StudentRoute,
   UpdatesRoute: UpdatesRoute,
   AdminAssignmentTypesRoute: AdminAssignmentTypesRoute,
+  AdminClassesRoute: AdminClassesRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminPurchasesRoute: AdminPurchasesRoute,
   AdminQueriesRoute: AdminQueriesRoute,
@@ -745,7 +846,11 @@ const rootRouteChildren: RootRouteChildren = {
   TeacherPurchasesRoute: TeacherPurchasesRoute,
   AdminIndexRoute: AdminIndexRoute,
   TeacherIndexRoute: TeacherIndexRoute,
+  AdminClassNewRoute: AdminClassNewRoute,
+  AdminCourseCourseNoRoute: AdminCourseCourseNoRoute,
+  AdminCourseNewRoute: AdminCourseNewRoute,
   AdminCoursesCourseIdRoute: AdminCoursesCourseIdRoute,
+  AdminHomePageIdRoute: AdminHomePageIdRoute,
   AdminPortalsPortalIdRoute: AdminPortalsPortalIdRoute,
   TeacherClassClassIdRoute: TeacherClassClassIdRoute,
   AdminCoursesIndexRoute: AdminCoursesIndexRoute,

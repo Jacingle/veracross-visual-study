@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { PortalShell, StudentTabs } from "@/components/portal/PortalShell";
 import { ClassRow } from "@/components/portal/ClassRow";
 import { SproutLine } from "@/components/portal/icons";
-import { today } from "@/lib/sis-data";
+import { teacher, today } from "@/lib/sis-data";
 import { useMySections } from "@/lib/school-store";
 import { Button } from "@/components/ui/button";
 import { termById } from "@/lib/terms";
@@ -78,7 +78,9 @@ function Overview() {
         <div aria-hidden className="h-[39px] w-[22px] border-b border-vc-line" />
       </div>
       <div className="px-6 pb-8 pt-[21px]">
-        {mine.length ? mine.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)
+        {mine.length ? <>
+          {mine.map((c) => <ClassRow key={c.id} c={c} variant="overview" />)}
+        </>
           :<p className="py-12 text-center text-[14px] text-muted-foreground">No {tab.toLowerCase()} classes to display.</p>}
       </div>
     </PortalShell>

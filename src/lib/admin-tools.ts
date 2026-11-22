@@ -15,5 +15,5 @@ export function downloadCsv(name: string, rows: (string | number | boolean)[][])
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
 }
 export function publishingError(c: Pick<Section, 'name' | 'section' | 'terms' | 'teacherIds' | 'studentIds' | 'block' | 'room'>, users: User[]) {
-  return validateClassRecord(c, users) ?? (!c.block.trim() || !c.room.trim() ? 'Set a block and room before publishing.' : null);
+  return validateClassRecord({ ...c, published: true }, users) ?? (!c.block.trim() || !c.room.trim() ? 'Set a block and room before publishing.' : null);
 }
