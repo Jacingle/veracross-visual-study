@@ -1,4 +1,5 @@
 import { ATT_STATUSES } from "@/lib/attendance";
+import { VcSelect } from '@/components/teacher/VcSelect';
 import { categoryColor } from "@/lib/category-colors";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { meetingsOn } from "@/lib/scheduling";
@@ -55,8 +56,7 @@ export function Attendance({ c, roster, date }: { c: Section; roster: Student[];
           <button aria-label="Next day" className="px-2.5" onClick={() => go(1)}><ChevronRight className="size-4" /></button>
         </div>
         <div className="relative">
-          <select aria-label="Attendance block" className="h-8 w-[210px] appearance-none rounded-[3px] border border-vc-line bg-background pl-3 pr-8 text-[12px] text-vc-gray shadow-sm">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>No Block Specified</option>}</select>
-          <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-vc-gray-light" />
+          <VcSelect aria-label="Attendance block" className="h-8 w-[210px] rounded-[3px] border border-vc-line bg-background pl-3 pr-8 text-[12px] text-vc-gray shadow-sm">{meetings.length ? meetings.map((b, i) => <option key={i}>{b.name || c.block}</option>) : <option>No Block Specified</option>}</VcSelect>
         </div>
       </div>
       {!meets ? <p className="my-6 border border-vc-line bg-vc-panel p-4">This class does not meet on {format(parseISO(date), "MMMM d, yyyy")} — attendance is only taken during its terms ({c.terms.map(termLabel).join(", ")}).</p> : <>
@@ -120,12 +120,12 @@ export function GradesComments({ c, roster, list, sid }: { c: Section; roster: S
       <div>
         <div className="flex items-start justify-between border-b border-vc-line pb-2">
           <div><div className="text-[18px]">{s.first} {s.last}</div><div className="text-[12px] text-muted-foreground">Grade {s.grade} · {c.name}</div></div>
-          <select aria-label="Grading period" className="h-8 border border-vc-line px-2 text-[13px]" value={term} onChange={(e) => setTerm(e.target.value)}>{TERMS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
+          <VcSelect aria-label="Grading period" className="h-8 border border-vc-line px-2 text-[13px]" value={term} onChange={(e) => setTerm(e.target.value)}>{TERMS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</VcSelect>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3 text-[13px]">
           <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">CALCULATED GRADE</div><div className="text-[20px]">{avg !== null ? `${letterFor(avg)} · ${avg.toFixed(2)}%` : "—"}</div></div>
           <label className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">POSTED GRADE</div>
-            <select className="mt-1 h-8 w-full border border-vc-line bg-background px-2" value={termGrades[k] ?? ""} onChange={(e) => update((x) => ({ ...x, termGrades: { ...x.termGrades, [k]: e.target.value } }))}>{LETTERS.map((l) => <option key={l} value={l}>{l || "— use calculated —"}</option>)}</select></label>
+            <VcSelect className="mt-1 h-8 w-full border border-vc-line bg-background px-2" value={termGrades[k] ?? ""} onChange={(e) => update((x) => ({ ...x, termGrades: { ...x.termGrades, [k]: e.target.value } }))}>{LETTERS.map((l) => <option key={l} value={l}>{l || "— use calculated —"}</option>)}</VcSelect></label>
           <div className="bg-vc-panel p-2.5"><div className="text-[11px] text-muted-foreground">REPORTS</div><div className="mt-1 text-vc-link-strong">Progress Report · Report Card</div></div>
         </div>
         <label className="mt-3 block text-[11px] text-muted-foreground">COMMENT</label>
@@ -163,7 +163,7 @@ export function Weights({ c, list, termId }: { c: Course; list: Assignment[]; te
           <tr key={x.cat}>
             <td style={{ background: col }} className="h-[31px] rounded-[4px] pl-[10px] text-left text-[11.5px] font-bold uppercase text-primary-foreground">{x.cat}</td>
             <td className={cellCls}><input aria-label={`${x.cat} weight`} inputMode="numeric" className="h-[22px] w-[35px] rounded-[2px] border border-[#e1e4e8] bg-background pr-1 text-right text-[11px] outline-none focus:border-[#4a9be0]" value={x.weight ? String(x.weight) : ""} onChange={(e) => /^\d{0,3}$/.test(e.target.value) && patch({ weight: Number(e.target.value) })} /><span className="ml-1 text-[10px] text-vc-gray">%</span></td>
-            <td className={cellCls}><input type="checkbox" className="size-[17px] cursor-pointer appearance-none rounded-[2px] border border-[#e1e4e8] bg-background align-middle checked:border-[#4a9be0] checked:bg-[#4a9be0]" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
+            <td className={cellCls}><input type="checkbox" className="size-[17px] cursor-pointer rounded-[2px] border border-[#e1e4e8] bg-background align-middle checked:border-[#4a9be0] checked:bg-[#4a9be0]" aria-label={`Drop lowest ${x.cat}`} checked={x.drop} onChange={(e) => patch({ drop: e.target.checked })} /></td>
             <td className={cellCls}>{st.count || ""}</td><td className={cellCls}>{items.reduce((s2, a) => s2 + a.points, 0) || ""}</td>
           </tr>); })}</tbody>
       </table>

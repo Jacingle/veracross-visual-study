@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Bell, BookOpen, ChevronDown, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Globe, Image, Library, MessageSquareText, Settings, UsersRound } from "lucide-react";
-import { Component, useState, type ReactNode } from "react";
+import { VcSelect } from '@/components/teacher/VcSelect';
+import { Bell, Book, Calendar, ChevronLeft, ChevronRight, Image, Library, MessageSquareText, PanelsTopLeft, Pencil, Settings, UsersRound } from "lucide-react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Detail } from "@/components/portal/GradeDetail";
@@ -17,10 +18,10 @@ import { isoDay, rosterOf, useMySections, useSchool, useSectionAssignments, type
 import { pageHead } from "@/lib/head";
 
 const TABS = [
-  { id: "overview", label: "Students", icon: UsersRound }, { id: "attendance", label: "Attendance", icon: CalendarCheck },
-  { id: "gradebook", label: "Gradebook", icon: BookOpen }, { id: "grades", label: "Grades & Comments", icon: MessageSquareText },
-  { id: "notifications", label: "Notifications", icon: Bell }, { id: "calendar", label: "Calendar", icon: CalendarDays },
-  { id: "website", label: "Website", icon: Globe }, { id: "photos", label: "Photos", icon: Image }, { id: "settings", label: "Settings", icon: Settings },
+  { id: "overview", label: "Students", icon: UsersRound }, { id: "attendance", label: "Attendance", icon: Pencil },
+  { id: "gradebook", label: "Gradebook", icon: Book }, { id: "grades", label: "Grades & Comments", icon: MessageSquareText },
+  { id: "notifications", label: "Notifications", icon: Bell }, { id: "calendar", label: "Calendar", icon: Calendar },
+  { id: "website", label: "Website", icon: PanelsTopLeft }, { id: "photos", label: "Photos", icon: Image }, { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 /** Pages reached from inside the gradebook; the Gradebook item stays selected while on them. */
 const UNDER_GRADEBOOK = ["assignments", "weights", "reports"];
@@ -66,25 +67,32 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const w = weights[c.id] ?? [];
   const [open, setOpen] = useState(true);
   const [wterm, setWterm] = useState(c.terms[0] ?? "");
+  const box = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1.18);
+  useEffect(() => {
+    const host = box.current?.parentElement; if (!host) return;
+    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.max(0.6, w / 1414)); };
+    fit(); const ro = new ResizeObserver(fit); ro.observe(host); return () => ro.disconnect();
+  }, []);
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;
   return (
     <PortalShell portal="teacher" area="teacher" bare maxWidth={1900}>
-      <div style={{ zoom: 1.18 }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[200px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[17px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[190px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
+      <div ref={box} style={{ zoom }} className={`relative grid min-h-[560px] overflow-hidden rounded-[14px] bg-background shadow-xl ${open ? "grid-cols-[198px_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={open ? "Collapse menu" : "Expand menu"} title={open ? "Collapse menu" : "Expand menu"} className={`absolute top-[17px] z-20 grid size-[18px] place-items-center rounded-full border border-vc-line bg-background shadow-sm ${open ? "left-[188px]" : "left-2"}`}>{open ? <ChevronLeft className="size-3.5" strokeWidth={3} /> : <ChevronRight className="size-3.5" strokeWidth={3} />}</button>
       <aside className={`${open ? "" : "hidden"} bg-[#f4f6fa] pt-[17px]`}>
         <div className="mb-[29px] flex items-start gap-[9px] pl-[17px] pr-3"><Library className="mt-0.5 size-[17px] shrink-0 text-foreground/55" strokeWidth={1.5} />
           <div className="min-w-0"><div className="truncate text-[12px] font-medium leading-[15px]">{c.id}: {c.name}</div>
-            <select aria-label="Change class" className="w-full cursor-pointer appearance-none bg-transparent text-[9.5px] leading-[13px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
-              <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</select></div></div>
+            <VcSelect aria-label="Change class" className="w-full cursor-pointer bg-transparent text-[9.5px] leading-[13px] text-muted-foreground outline-none" value={c.id} onChange={(e) => nav({ to: "/teacher/class/$classId", params: { classId: e.target.value }, search: { tab: active } })}>
+              <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</VcSelect></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-[10px] mb-[9px] flex h-[34px] items-center gap-[9px] rounded-[6px] pl-[8px] text-[11.5px] ${active === id ? "bg-[#d6e8fa] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[16px] text-foreground/55" strokeWidth={1.5} />{label}</Link>))}
+            className={`mx-[10px] mb-[9px] flex h-[34px] items-center gap-[10px] rounded-[6px] pl-[9px] text-[12px] ${active === id ? "bg-[#d6e8fa] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[17px] text-foreground/55" strokeWidth={1.4} />{label}</Link>))}
       </aside>
       <div className="min-w-0">
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
         <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[25px] w-[112px] items-center gap-2 rounded-[4px] bg-[#4d4d4d] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
         <span className="ml-[8px] border-b-2 border-[#4fb3e6] px-[17px] pb-[9px] pt-[8px] text-[11.5px] text-[#4fb3e6]">Weights</span>
-        <span className="relative mb-2 ml-[8px]"><select aria-label="Term" value={wterm} onChange={(e) => setWterm(e.target.value)} className="h-[23px] w-[99px] appearance-none rounded-[3px] border border-[#e1e4e8] bg-background pl-2 pr-5 text-[10.5px] text-foreground/70 outline-none">{c.terms.map((x) => <option key={x} value={x}>{termLabel(x).replace(/^\d{4}-\d{2} /, "")}</option>)}</select><ChevronDown className="pointer-events-none absolute right-1.5 top-[6px] size-2.5 text-foreground/50" /></span>
+        <span className="relative mb-2 ml-[8px]"><VcSelect aria-label="Term" value={wterm} onChange={(e) => setWterm(e.target.value)} className="h-[23px] w-[99px] rounded-[3px] border border-[#e1e4e8] bg-background pl-2 pr-5 text-[10.5px] text-foreground/70 outline-none">{c.terms.map((x) => <option key={x} value={x}>{termLabel(x).replace(/^\d{4}-\d{2} /, "")}</option>)}</VcSelect></span>
       </div>}
       <div className={tab === "attendance" ? "px-6 py-6" : tab === "gradebook" || tab === "weights" || tab === "assignments" ? "" : "px-4 py-4 pl-[15px]"}>
         {tab === "overview" && (

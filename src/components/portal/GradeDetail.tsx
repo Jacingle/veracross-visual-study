@@ -17,6 +17,8 @@ import { staffIds, useMySections, useSchool, useStudentAssignments, type Section
 import { termById, termOn } from '@/lib/terms';
 import { pageHead } from '@/lib/head';
 
+const category = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
+
 export type DetailStudent = { personId: string; first: string; last: string; grade?: number | undefined };
 /** The Grade Detail paper. Students see their own; a teacher opens it for any student in the class. */
 export function Detail({ list, c, student, standalone = false }: { list: Assignment[]; c: Section; student?: DetailStudent; standalone?: boolean }) {

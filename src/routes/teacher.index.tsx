@@ -58,7 +58,7 @@ function TeacherHome() {
           <div className="grid grid-cols-5 border border-vc-line">
             {week.map((d, i) => { const items = assignments.filter((a) => isSameDay(a.due, d)); return (
               <div key={+d} className={i ? "border-l border-vc-line" : ""}>
-                <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase text-foreground/70 ${i === 0 ? "bg-vc-select text-vc-navbar" : "bg-vc-bar"}`}>{format(d, "EEE - MMM d")}</div>
+                <div className={`px-2 py-1.5 text-[12px] font-semibold uppercase ${i === 0 ? "text-vc-navbar" : "bg-vc-bar text-foreground/70"}`} style={i === 0 ? { background: "color-mix(in oklab, var(--vc-navbar) 16%, white)" } : undefined}>{format(d, "EEE - MMM d")}</div>
                 <div className="min-h-[150px] space-y-2 px-2 py-2 text-[12px] leading-4">
                   {items.slice(0, 5).map((a) => <Link key={a.id} to="/teacher/class/$classId" params={{ classId: a.courseId }} search={{ tab: "assignments" }} className="block text-vc-submit hover:underline">{a.courseId}: {a.title}</Link>)}
                   {items.length > 5 && <div className="text-vc-gray">+{items.length - 5} more</div>}

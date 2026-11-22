@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { VcSelect } from '@/components/teacher/VcSelect';
 import { format } from "date-fns";
 import { ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Eye, EyeOff, FileText, Pencil, Plus, Scale } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -11,7 +12,18 @@ import { isoDay, useSchool } from "@/lib/school-store";
 import { today, type Assignment, type Student } from "@/lib/sis-data";
 import { termById, termOn } from "@/lib/terms";
 
-const sel = "h-[24px] min-w-[98px] appearance-none rounded-[4px] border border-vc-line bg-background pl-2.5 pr-7 text-[11px] text-foreground/80 outline-none focus:border-vc-link";
+const sel = "h-[24px] min-w-[98px] rounded-[4px] border border-vc-line bg-background pl-2.5 pr-7 text-[11px] text-foreground/80 outline-none focus:border-vc-link";
+
+/** Small black document with a folded corner and text lines. */
+function PaperIcon() {
+  return (
+    <svg aria-hidden width="13" height="16" viewBox="0 0 13 16" className="block">
+      <path d="M1.5 0.5h6.2L12.5 5.3V14a1.5 1.5 0 0 1-1.5 1.5H1.5A1.5 1.5 0 0 1 0 14V2A1.5 1.5 0 0 1 1.5 0.5Z" fill="currentColor" />
+      <path d="M7.5 0.5V4.2a1 1 0 0 0 1 1h4" fill="none" stroke="#fff" strokeWidth="0.9" />
+      <path d="M2.6 8.3h7.3M2.6 10.4h7.3M2.6 12.5h4.6" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /** Faculty gradebook: one card per assignment, one row per student. Unpublished columns are yellow. */
 export function Gradebook({ courseId, terms, list: all, roster }: { courseId: string; terms: string[]; list: Assignment[]; roster: Student[] }) {
@@ -42,7 +54,7 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
   const median = (v: number[]) => { if (!v.length) return null; const t = [...v].sort((x, y) => x - y); const m = Math.floor(t.length / 2); return t.length % 2 ? t[m] ?? null : ((t[m - 1] ?? 0) + (t[m] ?? 0)) / 2; };
   const sd = (v: number[]) => { if (v.length < 2) return null; const m = v.reduce((x, y) => x + y, 0) / v.length; return Math.sqrt(v.reduce((x, y) => x + (y - m) ** 2, 0) / v.length); };
   const stats: [string, (v: number[]) => number | null][] = [["Class Average", (v) => (v.length ? v.reduce((x, y) => x + y, 0) / v.length : null)], ["Class Median", median], ["Standard Dev", sd]];
-  const cell = "h-[30px] w-full rounded-[4px] bg-[#f4f4f4] text-center text-[12px] text-foreground/80";
+  const cell = "h-[31px] w-full rounded-[4px] bg-[#f4f4f4] text-center text-[12.5px] text-foreground/80";
   const warm = "bg-vc-tile-warm shadow-[inset_3px_0_0_var(--vc-sky)]";
   const link = (a: Assignment) => ({ to: "/teacher/class/$classId" as const, params: { classId: courseId }, search: { tab: "assignments" as const, aid: a.id } });
   return (
@@ -52,22 +64,22 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
         <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "weights" }} className="flex h-[24px] items-center gap-2 rounded-[4px] bg-[#5b9bde] px-3 text-[11px] font-medium text-primary-foreground hover:brightness-95"><Scale className="size-3.5" />Weighting</Link>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setDesc((v) => !v)} className="flex items-center gap-1.5 text-[11px] text-foreground/60" aria-label="Date order" title="Switch date order">Date Order {desc ? <ArrowDownWideNarrow className="size-3.5" /> : <ArrowUpWideNarrow className="size-3.5" />}</button>
-          <div className="relative"><select aria-label="Term" className={sel} value={termId} onChange={(e) => setTermId(e.target.value)}>{terms.map((t) => <option key={t} value={t}>{termById(t)?.label ?? t}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-[7px] size-2.5 text-foreground/60" /></div>
-          <div className="relative"><select aria-label="Assignment type filter" value={type} onChange={(e) => setType(e.target.value)} className={`${sel} !min-w-[136px]`}><option value="all">All Assignment Types</option>{types.map((t) => <option key={t} value={t}>{t}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-[7px] size-2.5 text-foreground/60" /></div>
+          <div className="relative"><VcSelect aria-label="Term" className={sel} value={termId} onChange={(e) => setTermId(e.target.value)}>{terms.map((t) => <option key={t} value={t}>{termById(t)?.label ?? t}</option>)}</VcSelect></div>
+          <div className="relative"><VcSelect aria-label="Assignment type filter" value={type} onChange={(e) => setType(e.target.value)} className={`${sel} !min-w-[136px]`}><option value="all">All Assignment Types</option>{types.map((t) => <option key={t} value={t}>{t}</option>)}</VcSelect></div>
         </div>
       </div>
       <div className="overflow-x-auto pb-6 pl-[15px] pr-4 pt-[14px]">
         <table className="border-separate border-spacing-[3px]">
           <thead><tr>
-            <th className="sticky left-0 z-10 min-w-[101px] bg-background" />
-            <th className="h-[86px] min-w-[74px] rounded-[4px] bg-vc-sky px-1 pb-3 text-center align-bottom text-[11.5px] font-semibold leading-[15px]">Calculated Grade</th>
+            <th className="sticky left-0 z-10 min-w-[95px] bg-background" />
+            <th className="h-[86px] min-w-[74px] max-w-[74px] rounded-[4px] bg-vc-sky px-1 pb-3 text-center align-bottom text-[11.5px] font-semibold leading-[15px]">Calculated Grade</th>
             {list.map((a) => { const hidden = isHidden(a); return (
-              <th key={a.id} className={`group relative h-[86px] min-w-[92px] max-w-[92px] rounded-[4px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
-                <Link {...link(a)} className="block h-full px-2.5 pb-2 pt-2" aria-label={`Open assignment ${a.title}`}>
+              <th key={a.id} className={`group relative h-[86px] min-w-[110px] max-w-[110px] rounded-[4px] p-0 text-left align-top font-normal transition-none ${hidden ? warm : "bg-[#f4f4f4]"} hover:!bg-[#8e9aa8]`}>
+                <Link {...link(a)} className="block h-full px-[11px] pb-2 pt-[10px]" aria-label={`Open assignment ${a.title}`}>
                   <span style={chip(a.category)} className="inline-block rounded-[2px] px-1 text-[9px] font-bold uppercase leading-[13px] text-primary-foreground">{a.category}</span>
-                  <span className="mt-1 block overflow-hidden whitespace-nowrap text-[11.5px] font-semibold leading-[15px] text-foreground" title={a.title}>{a.title}</span>
-                  <span className="absolute bottom-2.5 left-2.5 text-[11px] text-vc-gray/80 group-hover:hidden">{format(a.due, "MMM dd")}</span>
-                  <span className="absolute bottom-2.5 left-2.5 hidden items-center gap-3 text-[11px] font-bold uppercase text-foreground group-hover:flex"><span className="font-normal normal-case text-foreground/80">{format(a.due, "MMM dd")}</span><span className="flex items-center gap-1"><Pencil className="size-3.5" fill="currentColor" />Edit</span></span>
+                  <span className="mt-1 block overflow-hidden whitespace-nowrap text-[12px] font-semibold leading-[15px] text-foreground" title={a.title}>{a.title}</span>
+                  <span className="absolute bottom-[14px] left-[11px] text-[11px] text-vc-gray/80 group-hover:hidden">{format(a.due, "MMM dd")}</span>
+                  <span className="absolute bottom-[14px] left-[11px] hidden items-center gap-3 text-[11px] font-bold uppercase text-foreground group-hover:flex"><span className="font-normal normal-case text-foreground/80">{format(a.due, "MMM dd")}</span><span className="flex items-center gap-1"><Pencil className="size-3.5" fill="currentColor" />Edit</span></span>
                 </Link>
                 <button type="button" onClick={() => togglePublished(a)} aria-label={hidden ? `Show ${a.title} to students` : `Hide ${a.title} from students`} title={hidden ? "Hidden from students. Click to publish scores." : "Visible to students. Click to hide scores."} className="absolute right-1.5 top-1.5 hidden size-6 place-items-center rounded-full text-foreground/70 hover:bg-background/60 group-hover:grid">{hidden ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}</button>
               </th>); })}
@@ -75,10 +87,10 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
           <tbody>
             {roster.map((s) => { const av = avgFor(s.id); return (
               <tr key={s.id}>
-                <td className="sticky left-0 z-10 bg-background pr-3"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-[27px] rounded-full" /><div className="leading-[14px]"><div className="text-[11.5px] font-semibold">{s.first}</div><div className="text-[11.5px] text-vc-gray/80">{s.last}</div></div></div></td>
-                <td className="group/g h-[30px] rounded-[4px] bg-vc-sky p-0 text-center text-[12px] text-foreground/80">
-                  <span className="relative inline-flex items-center justify-center px-5">{av !== null ? Number(av.toFixed(2)) : "—"}
-                    <a href={`/teacher/class/${encodeURIComponent(courseId)}?tab=gradedetail&sid=${encodeURIComponent(s.id)}`} target="_blank" rel="noopener" aria-label={`Open ${s.first} ${s.last}'s grade detail in a new tab`} title="Open grade detail in a new tab" className="absolute -right-0.5 hidden text-foreground group-hover/g:block"><FileText className="size-[18px]" fill="currentColor" strokeWidth={1} /></a></span>
+                <td className="sticky left-0 z-10 bg-background pr-3"><div className="flex items-center gap-2.5"><PersonPhoto personId={s.id} className="size-[27px] rounded-full" /><div className="leading-[14px]"><div className="text-[12px] font-semibold">{s.first}</div><div className="text-[12px] text-vc-gray/80">{s.last}</div></div></div></td>
+                <td className="group/g h-[31px] rounded-[4px] bg-vc-sky p-0 text-center text-[12px] text-foreground/80">
+                  <span className="relative inline-flex items-center justify-center px-0">{av !== null ? Number(av.toFixed(2)) : "—"}
+                    <a href={`/teacher/class/${encodeURIComponent(courseId)}?tab=gradedetail&sid=${encodeURIComponent(s.id)}`} target="_blank" rel="noopener" aria-label={`Open ${s.first} ${s.last}'s grade detail in a new tab`} title="Open grade detail in a new tab" className="absolute -right-[22px] top-1/2 hidden -translate-y-1/2 text-black group-hover/g:block"><PaperIcon /></a></span>
                 </td>
                 {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k] ?? "" : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; const hidden = isHidden(a); return (
                   <td key={a.id} className="p-0">
@@ -91,8 +103,8 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
             {stats.map(([label, fn]) => { const g = fn(avgList); return (
               <tr key={label}>
                 <td className="sticky left-0 z-10 bg-background pr-3 text-right text-[12px]">{label}</td>
-                <td className="h-[30px] rounded-[4px] bg-vc-sky text-center text-[12px]">{g !== null ? g.toFixed(2) : "—"}</td>
-                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={`h-[30px] rounded-[4px] text-center text-[12px] ${isHidden(a) ? "bg-vc-tile-warm" : "bg-[#f4f4f4]"}`}>{r !== null ? r.toFixed(2) : ""}</td>; })}
+                <td className="h-[31px] rounded-[4px] bg-vc-sky text-center text-[12px]">{g !== null ? g.toFixed(2) : "—"}</td>
+                {list.map((a) => { const r = fn(nums(a)); return <td key={a.id} className={`h-[31px] rounded-[4px] text-center text-[12px] ${isHidden(a) ? "bg-vc-tile-warm" : "bg-[#f4f4f4]"}`}>{r !== null ? r.toFixed(2) : ""}</td>; })}
               </tr>); })}
           </tbody>
         </table>
