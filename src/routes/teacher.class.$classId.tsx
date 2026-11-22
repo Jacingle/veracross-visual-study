@@ -87,7 +87,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</VcSelect></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[11.5px] ${active === id ? "bg-[#dbeafb] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[14px] text-foreground/50" strokeWidth={1.5} />{label}</Link>))}
+            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[10px] ${active === id ? "bg-[#dbeafb] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[14px] text-foreground/50" strokeWidth={1.5} />{label}</Link>))}
       </aside>
       <div className="min-w-0" >
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">

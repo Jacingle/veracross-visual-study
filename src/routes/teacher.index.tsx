@@ -4,6 +4,7 @@ import { addDays, format, isSameDay } from "date-fns";
 import { BookOpen, BookUser, CalendarDays, ChevronDown, ClipboardCheck, ClipboardList, FileText, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, Notebook, PanelTop, NotebookPen, Pencil, Plus, Repeat, Search, ShoppingCart, SquareUserRound, UserRound, Users, Link2 } from "lucide-react";
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
+import { Basketball as BasketballIcon, BookRibbon, CartSolid, DocSolid, GridSolid, SharpEnvelope, SquareDot, UserDisc } from "@/components/portal/icons";
 import { ALL_ASSIGNMENTS, today } from "@/lib/sis-data";
 import { isoDay, toAssignment, useMySections, useSchool } from "@/lib/school-store";
 import { meetingsOn } from "@/lib/scheduling";
@@ -18,10 +19,6 @@ export const Route = createFileRoute("/teacher/")({
 const TABS = ["My Classes", "Teams", "Programs", "Other Classes", "Future", "Completed"] as const;
 const h2 = "text-[20px] leading-[30px] text-[#2f2f2f]";
 const hov = "";
-/** Basketball glyph (solid disc with seams) for the Athletic Calendar tile. */
-function Basketball({ className }: { className?: string }) {
-  return <svg aria-hidden viewBox="0 0 24 24" className={className}><circle cx="12" cy="12" r="10" fill="#336d91" /><g fill="none" stroke="#ebf1f9" strokeWidth="1.5"><path d="M12 2v20M2 12h20" /><path d="M5 4.5c3 2.5 3 12.5 0 15M19 4.5c-3 2.5-3 12.5 0 15" /></g></svg>;
-}
 const shade = "shadow-[0_3px_0_#d6d9d8]";
 const btn = `flex h-[34px] items-center justify-center gap-2 bg-[#f0f0f0] text-[12.5px] font-semibold text-[#575757] ${shade}`;
 const blueBtn = `flex h-8 items-center justify-center gap-2 bg-[#eaf4fa] text-[12.5px] font-semibold text-[#5f8ba3] ${shade}`;
@@ -30,7 +27,7 @@ type Dest = "/resources" | "/messages" | "/calendar" | "/directories" | "/teache
 type TileIcon = ComponentType<{ className?: string }>;
 /** Same tile as the student home: a soft blue square with the icon above the label; it darkens on hover. */
 function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Record<string, string>; label: string; icon: TileIcon; solid?: boolean }) {
-  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#ebf1f9] text-[#84a3ba] [--cut:#ebf1f9]`}><Icon className={solid ? "size-6 fill-[#336d91] stroke-[#ebf1f9]" : "size-6 text-[#336d91]"} />{label}</Link>;
+  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-normal leading-[18px] bg-[#ebf1f9] text-[#7f9db3] [--cut:#ebf1f9]`}><Icon className={solid ? "size-6 fill-[#336d91] stroke-(--cut) text-[#336d91]" : "size-6 text-[#336d91]"} />{label}</Link>;
 }
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
@@ -107,17 +104,17 @@ function TeacherHome() {
         <aside>
           <h2 className={`mb-[11px] ${h2}`}>Faculty Portal</h2>
           <div className="grid grid-cols-2 gap-2">
-            <Tile to="/resources" label="My Library" icon={Library} solid />
-            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#ebf1f9] text-[#84a3ba] [--cut:#ebf1f9]`}><Notebook className="size-6 fill-[#336d91] stroke-[#ebf1f9] text-[#336d91]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><Notebook className="size-6 fill-[#336d91] stroke-[#ebf1f9] text-[#336d91]" />Lesson Planner</span>}
-            <Tile to="/messages" label="My Messages" icon={Mail} solid />
+            <Tile to="/resources" label="My Library" icon={GridSolid} />
+            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-normal leading-[18px] bg-[#ebf1f9] text-[#7f9db3] [--cut:#ebf1f9]`}><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</span>}
+            <Tile to="/messages" label="My Messages" icon={SharpEnvelope} />
             <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>
           <div className="mt-[17px] grid grid-cols-2 gap-2">
-            <Link to="/calendar" className={blueBtn}><SquareUserRound className="size-[15px] fill-[#3d7099] stroke-[#eaf4fa]" />Class Schedule</Link>
-            <Link to="/directories" search={{ type: "faculty" }} className={blueBtn}><UserRound className="size-[15px] text-[#3d7099]" />Update Profile</Link>
+            <Link to="/calendar" className={blueBtn}><SquareDot className="size-[15px] text-[#3d7099] [--cut:#eaf4fa]" />Class Schedule</Link>
+            <Link to="/directories" search={{ type: "faculty" }} className={blueBtn}><UserDisc className="size-[15px] text-[#3d7099] [--cut:#eaf4fa]" />Update Profile</Link>
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Reserve Resources</h2>
-          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><ShoppingCart className="size-[15px] fill-black" />My Resources</Link><Link to="/resources" className={btn}><FileText className="size-[15px] fill-black stroke-[#f0f0f0]" />Find Resources</Link></div>
+          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><CartSolid className="size-[15px] text-black" />My Resources</Link><Link to="/resources" className={btn}><DocSolid className="size-[15px] text-black [--cut:#f0f0f0]" />Find Resources</Link></div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Manage Students</h2>
           <form className="relative" onSubmit={(e) => { e.preventDefault(); }}>
             <Search strokeWidth={1.25} className="absolute left-3 top-1/2 size-[26px] -translate-y-1/2 text-[#555]" />
@@ -131,7 +128,7 @@ function TeacherHome() {
           <h2 className={`mb-[11px] mt-3 ${h2}`}>School Links</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/calendar" label="School Calendar" icon={CalendarDays} solid />
-            <Tile to="/calendar" label="Athletic Calendar" icon={Basketball} />
+            <Tile to="/calendar" label="Athletic Calendar" icon={BasketballIcon} />
             <Tile to="/directories" search={{ type: "students" }} label="Student Directory" icon={BookUser} solid />
             <Tile to="/directories" search={{ type: "faculty" }} label="Faculty/Staff Directory" icon={BookUser} solid />
           </div>
