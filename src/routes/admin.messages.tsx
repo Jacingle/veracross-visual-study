@@ -39,7 +39,7 @@ function Compose() {
           </form>
         </Panel>
         <Panel title={`Sent (${sent.length})`}>
-          {sent.length === 0 ? <p className="text-muted-foreground">Nothing sent yet.</p> : sent.map((m) => (
+          {sent.length === 0 ? <p className="text-muted-foreground">Nothing sent yet.</p> : sent.filter((m) => m.audience !== "direct").map((m) => (
             <div key={m.id} className="border-b border-vc-line py-1.5 last:border-0"><div className="flex justify-between"><b className="truncate font-semibold">{m.subject}</b><button onClick={() => update((s) => ({ ...s, sent: s.sent.filter((x) => x.id !== m.id) }))} className="text-[11px] text-destructive">Recall</button></div>
               <div className="text-[11px] text-muted-foreground">{format(parseISO(m.date), "MMM d, h:mm a")} · to {m.audience}</div></div>))}
         </Panel>

@@ -3,6 +3,7 @@ import { isOtherClass } from "@/lib/course-types";
 import { addDays, format, isSameDay } from "date-fns";
 import { BookOpen, BookUser, CalendarDays, ChevronDown, ClipboardCheck, ClipboardList, FileText, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, Notebook, PanelTop, NotebookPen, Pencil, Plus, Repeat, Search, ShoppingCart, SquareUserRound, UserRound, Users, Link2 } from "lucide-react";
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Basketball as BasketballIcon, BookRibbon, CartSolid, DocSolid, GridSolid, SharpEnvelope, SquareDot, UserDisc } from "@/components/portal/icons";
 import { ALL_ASSIGNMENTS, today } from "@/lib/sis-data";
@@ -27,7 +28,21 @@ type Dest = "/resources" | "/messages" | "/calendar" | "/directories" | "/teache
 type TileIcon = ComponentType<{ className?: string }>;
 /** Same tile as the student home: a soft blue square with the icon above the label; it darkens on hover. */
 function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Record<string, string>; label: string; icon: TileIcon; solid?: boolean }) {
-  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-semibold leading-[18px] bg-[#ebf1f9] text-vc-link [--cut:#ebf1f9]`}><Icon className={solid ? "size-6 fill-[#336d91] stroke-(--cut) text-[#336d91]" : "size-6 text-[#336d91]"} />{label}</Link>;
+  return (
+    <Link to={to} search={search as never} className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)]">
+      <Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}
+    </Link>
+  );
+}
+
+/** Quicklink with a small caret that opens a short list of light-blue choices. */
+function QuickMenu({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-1.5 outline-none">{icon}{label}<span className="text-[8px] text-[#b6b6b6]">▼</span></DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[116px] rounded-[3px] p-0 text-[12px] text-vc-link [&_a]:block [&_a]:w-full [&>*]:rounded-none [&>*]:px-2.5 [&>*]:py-2 [&>*:focus]:bg-vc-panel">{children}</DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
@@ -90,11 +105,22 @@ function TeacherHome() {
               <div key={c.id} className="border-b border-vc-line border-l-2 border-l-vc-link pb-3 pl-4 pt-3">
                 <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="text-[18px] leading-6 text-vc-link hover:underline"><b className="font-semibold">{c.id}</b><span className="font-light opacity-80">: {c.name}</span></Link>
                 <Attendance taken={attDone.includes(`${c.id}|${day}`)} classId={c.id} />
-                <div className="mt-2 flex flex-nowrap items-center gap-x-7 overflow-x-auto whitespace-nowrap text-[14px] text-vc-link-strong">
+                <div className="mt-2 flex flex-nowrap items-center gap-x-7 overflow-x-auto whitespace-nowrap text-[14px] text-vc-link">
                   <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="flex items-center gap-1.5 font-semibold"><Pencil className="size-4 fill-[#b1b1b1] text-[#b1b1b1]" />Gradebook</Link>
-                  <Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5"><PanelTop className="size-4 text-[#b1b1b1]" />Website<span className="text-[8px] text-[#b6b6b6]">▼</span></Link>
-                  <Link to="/messages" className="flex items-center gap-1.5"><Mail className="size-4 text-[#b1b1b1]" />Contact<span className="text-[8px] text-[#b6b6b6]">▼</span></Link>
-                  <Link to="/teacher/class/$classId" params={{ classId: c.id }} className="flex items-center gap-1.5"><Menu className="size-4 text-[#c4c4c4]" />More<span className="text-[8px] text-[#b6b6b6]">▼</span></Link>
+                  <QuickMenu icon={<PanelTop className="size-4 text-[#b1b1b1]" />} label="Website">
+                    <DropdownMenuItem asChild><Link to="/class/$classId" params={{ classId: c.id }} target="_blank" rel="noopener noreferrer">View Class Website</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "website" }}>Edit Website</Link></DropdownMenuItem>
+                  </QuickMenu>
+                  <QuickMenu icon={<Mail className="size-4 text-[#b1b1b1]" />} label="Contact">
+                    <DropdownMenuItem asChild><Link to="/messages" search={{ compose: "1", cls: c.id, aud: "parents" }}>Email Parents</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/messages" search={{ compose: "1", cls: c.id, aud: "all" }}>Email All</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/messages" search={{ compose: "1", cls: c.id, aud: "students" }}>Email Students</Link></DropdownMenuItem>
+                  </QuickMenu>
+                  <QuickMenu icon={<Menu className="size-4 text-[#c4c4c4]" />} label="More">
+                    <DropdownMenuItem asChild><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "attendance" }}>Attendance</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "calendar" }}>Class Calendar</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "settings" }}>Class Settings</Link></DropdownMenuItem>
+                  </QuickMenu>
                 </div>
               </div>))}
             {!shown.length && <p className="py-8 text-center text-[14px] text-vc-gray">No classes here.{tab === "My Classes" ? " Classes appear once the school office schedules and publishes them." : ""}</p>}
@@ -105,7 +131,7 @@ function TeacherHome() {
           <h2 className={`mb-[11px] ${h2}`}>Faculty Portal</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/resources" label="My Library" icon={GridSolid} />
-            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[13px] font-semibold leading-[18px] bg-[#ebf1f9] text-vc-link [--cut:#ebf1f9]`}><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</span>}
+            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)]"><BookRibbon className="size-6" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><BookRibbon className="size-6 text-[#336d91]" />Lesson Planner</span>}
             <Tile to="/messages" label="My Messages" icon={SharpEnvelope} />
             <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>

@@ -227,3 +227,13 @@ export function CartSolid(p: P) {
 export function DocSolid(p: P) {
   return <svg {...solid} {...p}><path d="M5 2h11l4 4v16H5z" /><path d="M8 11h9M8 15h9M8 19h6" style={cutStroke} strokeWidth="1.8" /><path d="M2 5h4v6H2z" /></svg>;
 }
+
+/** Rounded book with a bookmark notch (Gradebook, class sidebar). */
+export function GradebookIcon(p: P) {
+  return <svg {...solid} {...p}><rect x="4" y="2" width="16" height="20" rx="2.6" /><path d="M8.6 2v9.2l3.4-2.3 3.4 2.3V2z" style={cutFill} /></svg>;
+}
+
+/** Window with a left column (Website, class sidebar). */
+export function WebsiteIcon(p: P) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="1.2" /><path d="M3.5 8.2h17M8.7 8.2v12.3" /></svg>;
+}

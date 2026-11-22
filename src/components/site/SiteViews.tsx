@@ -70,7 +70,7 @@ export function InfoView({ c, sets, description }: { c: Section; sets: Schedulin
       <h2 className="text-[30px] font-semibold leading-9">Teacher</h2>
       {staffIds(c).map((id) => (
         <div key={id} className="mt-1.5 flex items-start gap-[14px]">
-          <PersonPhoto personId={id} full res={0.9} fit={{ w: 254, h: 380 }} squareIfMissing alt={NAME(id)} className="max-w-[45%]" />
+          <PersonPhoto personId={id} full plainBg res={0.8} fit={{ w: 254, h: 380 }} squareIfMissing alt={NAME(id)} className="max-w-[45%]" />
           <div className="pt-[18px]"><div className="text-[15px] font-semibold text-vc-gray-dark">{NAME(id)}</div>
             <a href={`mailto:${teacher(id).email}`} className={`text-[19px] ${BLUE}`}>{teacher(id).email}</a></div>
         </div>))}

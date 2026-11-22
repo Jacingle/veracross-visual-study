@@ -61,7 +61,7 @@ export type CustomAssignment = {
   /** Relative weight inside its category, and the original assignment this copy was made from ("Applies to All Sections"). */
   weight?: number; linkId?: string;
 };
-export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" };
+export type SentMessage = { id: string; from: string; list: string; subject: string; body: string; date: string; audience: "students" | "faculty" | "everyone" | "direct"; /** Direct (internal) mail: people who receive it in their portal inbox. */ to?: string[]; /** Students whose parents/guardians were addressed (shown to the sender; there are no parent logins). */ parentsOf?: string[]; fromId?: string; html?: boolean };
 export type Purchase = { id: string; item: string; vendor: string; amount: number; reason: string; status: "Pending" | "Approved" | "Denied"; date: string; by: string };
 export type { Weight } from "./grading";
 /** An assignment type, set up once by the administrator; its color is used for that type everywhere in the app. */
@@ -252,7 +252,10 @@ export function useInbox() {
   const { sent, user } = useSchool();
   return useMemo(() => {
     const aud = user?.role === "student" ? "students" : "faculty";
-    const extra = sent.filter((m) => m.audience === "everyone" || m.audience === aud).map((m) => ({ id: m.id, from: m.from, list: m.list, subject: m.subject, body: m.body, date: parseISO(m.date) }));
-    return [...extra, ...MESSAGES].sort((a, b) => +b.date - +a.date);
+    const me = user?.personId ?? "";
+    const extra = sent
+      .filter((m) => (m.audience === "direct" ? (m.to ?? []).includes(me) || m.fromId === me : m.audience === "everyone" || m.audience === aud))
+      .map((m) => ({ id: m.id, from: m.from, fromId: m.fromId ?? "", list: m.list, subject: m.subject, body: m.body, html: Boolean(m.html), date: parseISO(m.date) }));
+    return [...extra, ...MESSAGES.map((m) => ({ ...m, fromId: "", html: false }))].sort((a, b) => +b.date - +a.date);
   }, [sent, user]);
 }

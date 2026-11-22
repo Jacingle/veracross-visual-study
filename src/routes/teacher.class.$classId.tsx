@@ -4,6 +4,7 @@ import { VcSelect } from '@/components/teacher/VcSelect';
 import { Bell, Book, Calendar, ChevronLeft, ChevronRight, Image, Library, MessageSquareText, PanelsTopLeft, Pencil, Settings, UsersRound } from "lucide-react";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { z } from "zod";
+import { GradebookIcon, WebsiteIcon } from "@/components/portal/icons";
 import { ErrorPage } from "@/components/common/ErrorPage";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Detail } from "@/components/portal/GradeDetail";
@@ -21,9 +22,9 @@ import { pageHead } from "@/lib/head";
 
 const TABS = [
   { id: "overview", label: "Students", icon: UsersRound }, { id: "attendance", label: "Attendance", icon: Pencil },
-  { id: "gradebook", label: "Gradebook", icon: Book }, { id: "grades", label: "Grades & Comments", icon: MessageSquareText },
+  { id: "gradebook", label: "Gradebook", icon: GradebookIcon }, { id: "grades", label: "Grades & Comments", icon: MessageSquareText },
   { id: "notifications", label: "Notifications", icon: Bell }, { id: "calendar", label: "Calendar", icon: Calendar },
-  { id: "website", label: "Website", icon: PanelsTopLeft }, { id: "photos", label: "Photos", icon: Image }, { id: "settings", label: "Settings", icon: Settings },
+  { id: "website", label: "Website", icon: WebsiteIcon }, { id: "photos", label: "Photos", icon: Image }, { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 /** Pages reached from inside the gradebook; the Gradebook item stays selected while on them. */
 const UNDER_GRADEBOOK = ["assignments", "weights", "reports"];
@@ -88,7 +89,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
               <option value={c.id} disabled>change class</option>{mine.map((x) => <option key={x.id} value={x.id}>{courseTitle(x)}</option>)}</VcSelect></div></div>
         {TABS.map(({ id, label, icon: Icon }) => (
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
-            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[10.5px] ${active === id ? "bg-[#cfe8f8] text-[#4f6579]" : "text-[#8c8e90] hover:bg-background"}`}><Icon className={`size-[14px] ${active === id ? "fill-[#465c6c]/15 text-[#465c6c]" : "text-[#9a9ba1]"}`} strokeWidth={1.4} />{label}</Link>))}
+            className={`mx-[9px] mb-[8px] flex h-[30px] items-center gap-[9.5px] rounded-[5px] pl-[6px] text-[10.5px] ${active === id ? "bg-[#cfe8f8] text-[#4f6579]" : "text-[#8c8e90] hover:bg-background"}`}><Icon className={`size-[14px] ${active === id ? "text-[#465c6c] [--cut:#cfe8f8]" : "text-[#9a9ba1] [--cut:#f3f6f7]"}`} strokeWidth={1.4} />{label}</Link>))}
       </aside>
       <div className="min-w-0" >
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
