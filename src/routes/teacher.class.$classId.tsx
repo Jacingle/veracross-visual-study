@@ -89,7 +89,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
           <Link key={id} to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: id }} aria-current={active === id ? "page" : undefined}
             className={`mx-[10px] mb-[9px] flex h-[34px] items-center gap-[10px] rounded-[6px] pl-[9px] text-[12px] ${active === id ? "bg-[#d6e8fa] text-foreground" : "text-foreground/70 hover:bg-background"}`}><Icon className="size-[17px] text-foreground/55" strokeWidth={1.4} />{label}</Link>))}
       </aside>
-      <div className="min-w-0" style={{ zoom: 1.08 }}>
+      <div className="min-w-0" style={{ zoom: 1.2 }}>
       {tab === "weights" && <div className="flex flex-wrap items-center gap-3 border-b border-vc-line px-5 pb-0 pl-[15px] pt-[6px]">
         <Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="mb-[6px] flex h-[26px] shrink-0 items-center gap-[8px] whitespace-nowrap rounded-[4px] bg-[#4d4d4d] px-[12px] text-[12px] font-medium text-primary-foreground hover:brightness-110"><span className="grid size-4 place-items-center rounded-full bg-primary-foreground text-[#4a4a4a]"><ChevronLeft className="size-3" strokeWidth={3} /></span>Back to Scores</Link>
         <span className="ml-[8px] border-b-2 border-[#4fb3e6] px-[17px] pb-[9px] pt-[8px] text-[11.5px] text-[#4fb3e6]">Weights</span>

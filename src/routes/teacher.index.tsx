@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { isOtherClass } from "@/lib/course-types";
 import { addDays, format, isSameDay } from "date-fns";
-import { BookOpen, CalendarDays, ChevronDown, ClipboardCheck, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, NotebookPen, Pencil, Plus, Search, UserRound, Users, Link2 } from "lucide-react";
+import { BookOpen, BookUser, CalendarDays, ChevronDown, ClipboardCheck, ClipboardList, FileText, Globe, LayoutGrid, Library, Mail, Menu, MessageSquarePlus, Notebook, NotebookPen, Pencil, Plus, Repeat, Search, ShoppingCart, SquareUserRound, UserRound, Users, Link2 } from "lucide-react";
 import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ALL_ASSIGNMENTS, today } from "@/lib/sis-data";
@@ -17,14 +17,20 @@ export const Route = createFileRoute("/teacher/")({
 
 const TABS = ["My Classes", "Teams", "Programs", "Other Classes", "Future", "Completed"] as const;
 const h2 = "text-[20px] leading-[30px]";
-const hov = "hover:bg-vc-tile-hover hover:[--cut:var(--vc-tile-hover)]";
-const btn = `flex h-9 items-center justify-center gap-2 bg-vc-tile text-[14px] font-semibold text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`;
-const addBtn = "flex h-9 items-center justify-center gap-2 bg-vc-success-soft text-[14px] font-semibold text-vc-success [--cut:var(--vc-success-soft)] hover:bg-vc-success-soft-hover";
+const hov = "";
+/** Basketball glyph (solid disc with seams) for the Athletic Calendar tile. */
+function Basketball({ className }: { className?: string }) {
+  return <svg aria-hidden viewBox="0 0 24 24" className={className}><circle cx="12" cy="12" r="10" fill="#3b77b0" /><g fill="none" stroke="#e9f2fa" strokeWidth="1.5"><path d="M12 2v20M2 12h20" /><path d="M5 4.5c3 2.5 3 12.5 0 15M19 4.5c-3 2.5-3 12.5 0 15" /></g></svg>;
+}
+const shade = "shadow-[0_2px_0_rgba(0,0,0,.13)]";
+const btn = `flex h-[34px] items-center justify-center gap-2 bg-[#f0f0f0] text-[12.5px] font-semibold text-[#545454] ${shade}`;
+const blueBtn = `flex h-8 items-center justify-center gap-2 bg-[#ebf2fc] text-[12.5px] font-semibold text-[#3e6e94] ${shade}`;
+const addBtn = `flex h-[34px] items-center justify-center gap-2 bg-[#ecf2f0] text-[12.5px] font-semibold text-[#4f9a68] ${shade}`;
 type Dest = "/resources" | "/messages" | "/calendar" | "/directories" | "/teacher/news" | "/teacher/purchases";
 type TileIcon = ComponentType<{ className?: string }>;
 /** Same tile as the student home: a soft blue square with the icon above the label; it darkens on hover. */
 function Tile({ to, search, label, icon: Icon, solid }: { to: Dest; search?: Record<string, string>; label: string; icon: TileIcon; solid?: boolean }) {
-  return <Link to={to} search={search as never} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`}><Icon className={solid ? "size-6 fill-current stroke-(--cut)" : "size-6"} />{label}</Link>;
+  return <Link to={to} search={search as never} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#e9f2fa] text-[#6b9bc5] [--cut:#e9f2fa]`}><Icon className={solid ? "size-6 fill-[#3b77b0] stroke-[#e9f2fa]" : "size-6 text-[#3b77b0]"} />{label}</Link>;
 }
 
 function Attendance({ taken, classId }: { taken: boolean; classId: string }) {
@@ -102,35 +108,35 @@ function TeacherHome() {
           <h2 className={`mb-[11px] ${h2}`}>Faculty Portal</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/resources" label="My Library" icon={Library} solid />
-            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg [--cut:var(--vc-tile)] ${hov}`}><NotebookPen className="size-6" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><NotebookPen className="size-6" />Lesson Planner</span>}
+            {first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "assignments" }} className={`flex h-[69px] flex-col items-center justify-between pb-[6px] pt-[10px] text-[12.5px] leading-[18px] bg-[#e9f2fa] text-[#6b9bc5] [--cut:#e9f2fa]`}><Notebook className="size-6 fill-[#3b77b0] stroke-[#e9f2fa] text-[#3b77b0]" />Lesson Planner</Link> : <span className="flex h-[74px] flex-col items-center justify-between pb-1 pt-2.5 text-[14px] leading-[22px] bg-vc-tile text-vc-tile-fg"><Notebook className="size-6 fill-[#3b77b0] stroke-[#e9f2fa] text-[#3b77b0]" />Lesson Planner</span>}
             <Tile to="/messages" label="My Messages" icon={Mail} solid />
             <Tile to="/calendar" label="My Calendar" icon={CalendarDays} solid />
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Link to="/calendar" className={btn}><CalendarDays className="size-[16px]" />Class Schedule</Link>
-            <Link to="/directories" search={{ type: "faculty" }} className={btn}><UserRound className="size-[16px]" />Update Profile</Link>
+          <div className="mt-[17px] grid grid-cols-2 gap-2">
+            <Link to="/calendar" className={blueBtn}><SquareUserRound className="size-[15px] fill-[#3e6e94] stroke-[#ebf2fc]" />Class Schedule</Link>
+            <Link to="/directories" search={{ type: "faculty" }} className={blueBtn}><UserRound className="size-[15px]" />Update Profile</Link>
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Reserve Resources</h2>
-          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><LayoutGrid className="size-[18px]" />My Resources</Link><Link to="/resources" className={btn}><Search className="size-[18px]" />Find Resources</Link></div>
+          <div className="grid grid-cols-2 gap-2"><Link to="/resources" className={btn}><ShoppingCart className="size-[15px] fill-[#333]" />My Resources</Link><Link to="/resources" className={btn}><FileText className="size-[15px] fill-[#333] stroke-[#f0f0f0]" />Find Resources</Link></div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Manage Students</h2>
           <form className="relative" onSubmit={(e) => { e.preventDefault(); }}>
-            <Search className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-foreground/70" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find students" aria-label="Find students" className="h-[44px] w-full border-2 border-vc-line bg-background pl-11 pr-3 text-[17px] outline-none focus:border-vc-link" />
+            <Search strokeWidth={1.25} className="absolute left-3 top-1/2 size-[26px] -translate-y-1/2 text-[#555]" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find students" aria-label="Find students" className="h-[48px] w-full border border-[#d0d0d0] bg-background pl-12 pr-3 text-[17px] text-foreground outline-none placeholder:text-[#8c8c8c] focus:border-vc-link" />
           </form>
           {q.trim() && <Link to="/directories" search={{ type: "students", last: q.trim() }} className="mt-1 block text-[13px] text-vc-link-strong">Search the student directory for “{q.trim()}” →</Link>}
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {toolLink("Add Behavior", <Plus className="size-[18px]" />, "grades", addBtn)}
-            {toolLink("Add Comment", <Plus className="size-[18px]" />, "grades", addBtn)}
+            {toolLink("Add Behavior", <Plus className="size-[16px]" strokeWidth={3} />, "grades", addBtn)}
+            {toolLink("Add Comment", <Plus className="size-[16px]" strokeWidth={3} />, "grades", addBtn)}
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>School Links</h2>
           <div className="grid grid-cols-2 gap-2">
             <Tile to="/calendar" label="School Calendar" icon={CalendarDays} solid />
-            <Tile to="/calendar" label="Athletic Calendar" icon={Globe} />
-            <Tile to="/directories" search={{ type: "students" }} label="Student Directory" icon={Users} solid />
-            <Tile to="/directories" search={{ type: "faculty" }} label="Faculty/Staff Directory" icon={Users} solid />
+            <Tile to="/calendar" label="Athletic Calendar" icon={Basketball} />
+            <Tile to="/directories" search={{ type: "students" }} label="Student Directory" icon={BookUser} solid />
+            <Tile to="/directories" search={{ type: "faculty" }} label="Faculty/Staff Directory" icon={BookUser} solid />
           </div>
           <h2 className={`mb-[11px] mt-3 ${h2}`}>Faculty Links</h2>
-          <div className="grid grid-cols-2 gap-2"><Link to="/calendar" className={btn}><CalendarDays className="size-[16px]" />Exam Calendar</Link>{first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "settings" }} className={btn}><Menu className="size-[16px]" />Setup Classes</Link> : <span className={btn}>Setup Classes</span>}</div>
+          <div className="grid grid-cols-2 gap-2"><Link to="/calendar" className={btn}><ClipboardList className="size-[15px]" />Exam Calendar</Link>{first ? <Link to="/teacher/class/$classId" params={{ classId: first }} search={{ tab: "settings" }} className={btn}><Repeat className="size-[15px]" />Setup Classes</Link> : <span className={btn}>Setup Classes</span>}</div>
           <div className="mt-3 text-center text-[12px] text-vc-link-strong"><Link2 className="mx-auto mb-1 size-4" />No links to display</div>
         </aside>
       </div>
