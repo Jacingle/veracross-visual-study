@@ -21,6 +21,7 @@ import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as ScheduleReportRouteImport } from './routes/schedule-report'
 import { Route as StudentRouteImport } from './routes/student'
+import { Route as SubmitRouteImport } from './routes/submit'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAssignmentTypesRouteImport } from './routes/admin.assignment-types'
@@ -31,6 +32,7 @@ import { Route as AdminQueriesRouteImport } from './routes/admin.queries'
 import { Route as AdminReportLayoutsRouteImport } from './routes/admin.report-layouts'
 import { Route as AdminSchedulingRouteImport } from './routes/admin.scheduling'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminStudentSchedulesRouteImport } from './routes/admin.student-schedules'
 import { Route as AdminTermsRouteImport } from './routes/admin.terms'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as ClassClassIdRouteImport } from './routes/class.$classId'
@@ -109,6 +111,11 @@ const StudentRoute = StudentRouteImport.update({
   path: '/student',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubmitRoute = SubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UpdatesRoute = UpdatesRouteImport.update({
   id: '/updates',
   path: '/updates',
@@ -157,6 +164,11 @@ const AdminSchedulingRoute = AdminSchedulingRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminStudentSchedulesRoute = AdminStudentSchedulesRouteImport.update({
+  id: '/admin/student-schedules',
+  path: '/admin/student-schedules',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminTermsRoute = AdminTermsRouteImport.update({
@@ -259,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof ScheduleRoute
   '/schedule-report': typeof ScheduleReportRoute
   '/student': typeof StudentRoute
+  '/submit': typeof SubmitRoute
   '/updates': typeof UpdatesRoute
   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
   '/admin/classes': typeof AdminClassesRoute
@@ -268,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/admin/report-layouts': typeof AdminReportLayoutsRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/student-schedules': typeof AdminStudentSchedulesRoute
   '/admin/terms': typeof AdminTermsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
@@ -300,6 +314,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof ScheduleRoute
   '/schedule-report': typeof ScheduleReportRoute
   '/student': typeof StudentRoute
+  '/submit': typeof SubmitRoute
   '/updates': typeof UpdatesRoute
   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
   '/admin/classes': typeof AdminClassesRoute
@@ -309,6 +324,7 @@ export interface FileRoutesByTo {
   '/admin/report-layouts': typeof AdminReportLayoutsRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/student-schedules': typeof AdminStudentSchedulesRoute
   '/admin/terms': typeof AdminTermsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
@@ -342,6 +358,7 @@ export interface FileRoutesById {
   '/schedule': typeof ScheduleRoute
   '/schedule-report': typeof ScheduleReportRoute
   '/student': typeof StudentRoute
+  '/submit': typeof SubmitRoute
   '/updates': typeof UpdatesRoute
   '/admin/assignment-types': typeof AdminAssignmentTypesRoute
   '/admin/classes': typeof AdminClassesRoute
@@ -351,6 +368,7 @@ export interface FileRoutesById {
   '/admin/report-layouts': typeof AdminReportLayoutsRoute
   '/admin/scheduling': typeof AdminSchedulingRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/student-schedules': typeof AdminStudentSchedulesRoute
   '/admin/terms': typeof AdminTermsRoute
   '/admin/users': typeof AdminUsersRoute
   '/class/$classId': typeof ClassClassIdRoute
@@ -385,6 +403,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/schedule-report'
     | '/student'
+    | '/submit'
     | '/updates'
     | '/admin/assignment-types'
     | '/admin/classes'
@@ -394,6 +413,7 @@ export interface FileRouteTypes {
     | '/admin/report-layouts'
     | '/admin/scheduling'
     | '/admin/settings'
+    | '/admin/student-schedules'
     | '/admin/terms'
     | '/admin/users'
     | '/class/$classId'
@@ -426,6 +446,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/schedule-report'
     | '/student'
+    | '/submit'
     | '/updates'
     | '/admin/assignment-types'
     | '/admin/classes'
@@ -435,6 +456,7 @@ export interface FileRouteTypes {
     | '/admin/report-layouts'
     | '/admin/scheduling'
     | '/admin/settings'
+    | '/admin/student-schedules'
     | '/admin/terms'
     | '/admin/users'
     | '/class/$classId'
@@ -467,6 +489,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/schedule-report'
     | '/student'
+    | '/submit'
     | '/updates'
     | '/admin/assignment-types'
     | '/admin/classes'
@@ -476,6 +499,7 @@ export interface FileRouteTypes {
     | '/admin/report-layouts'
     | '/admin/scheduling'
     | '/admin/settings'
+    | '/admin/student-schedules'
     | '/admin/terms'
     | '/admin/users'
     | '/class/$classId'
@@ -509,6 +533,7 @@ export interface RootRouteChildren {
   ScheduleRoute: typeof ScheduleRoute
   ScheduleReportRoute: typeof ScheduleReportRoute
   StudentRoute: typeof StudentRoute
+  SubmitRoute: typeof SubmitRoute
   UpdatesRoute: typeof UpdatesRoute
   AdminAssignmentTypesRoute: typeof AdminAssignmentTypesRoute
   AdminClassesRoute: typeof AdminClassesRoute
@@ -518,6 +543,7 @@ export interface RootRouteChildren {
   AdminReportLayoutsRoute: typeof AdminReportLayoutsRoute
   AdminSchedulingRoute: typeof AdminSchedulingRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminStudentSchedulesRoute: typeof AdminStudentSchedulesRoute
   AdminTermsRoute: typeof AdminTermsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   ClassClassIdRoute: typeof ClassClassIdRoute
@@ -624,6 +650,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/submit': {
+      id: '/submit'
+      path: '/submit'
+      fullPath: '/submit'
+      preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/updates': {
       id: '/updates'
       path: '/updates'
@@ -692,6 +725,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/student-schedules': {
+      id: '/admin/student-schedules'
+      path: '/admin/student-schedules'
+      fullPath: '/admin/student-schedules'
+      preLoaderRoute: typeof AdminStudentSchedulesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/terms': {
@@ -829,6 +869,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleRoute: ScheduleRoute,
   ScheduleReportRoute: ScheduleReportRoute,
   StudentRoute: StudentRoute,
+  SubmitRoute: SubmitRoute,
   UpdatesRoute: UpdatesRoute,
   AdminAssignmentTypesRoute: AdminAssignmentTypesRoute,
   AdminClassesRoute: AdminClassesRoute,
@@ -838,6 +879,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminReportLayoutsRoute: AdminReportLayoutsRoute,
   AdminSchedulingRoute: AdminSchedulingRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminStudentSchedulesRoute: AdminStudentSchedulesRoute,
   AdminTermsRoute: AdminTermsRoute,
   AdminUsersRoute: AdminUsersRoute,
   ClassClassIdRoute: ClassClassIdRoute,

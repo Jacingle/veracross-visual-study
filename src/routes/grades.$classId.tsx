@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { addDays, format, startOfWeek } from 'date-fns';
+import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import { useState } from 'react';
 import { usePortal } from '@/lib/portal-store';
 import { updateKey } from '@/components/portal/ClassRow';
 import { ArrowRight, Printer } from 'lucide-react';
-import { CommentsSolid } from '@/components/portal/icons';
+import { CommentsSolid, PlayDisc } from '@/components/portal/icons';
+import { canSubmit, completionOf, dropboxOf } from '@/lib/dropbox';
+import { scoreKey } from '@/lib/gradebook';
 import { ErrorPage } from '@/components/common/ErrorPage';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { Button } from '@/components/ui/button';
@@ -44,12 +46,16 @@ function Grades() {
     {tab ? <Detail list={list} c={c} /> : <AllAssignments list={list} teacherName={faculty} fresh={fresh} startFilter={startFilter ?? 'all'} />}</> : <ErrorPage fullPage={false} title="Access Restricted" message="You do not have access to this class." detail="You are not enrolled in this class." />}</PortalShell>;
 }
 function AllAssignments({ list, teacherName, fresh, startFilter }: { list: Assignment[]; teacherName: string; fresh: Set<string>; startFilter: string }) {
-  const { comments, aStatus, user, weights } = useSchool();
+  const { comments, aStatus, submissions, user, weights } = useSchool();
   const { read, markRead } = usePortal();
   const [filter, setFilter] = useState(startFilter); const [sort, setSort] = useState('date'); const [expanded, setExpanded] = useState<string | null>(null);
-  const feedback = (a: Assignment) => comments[`a|${a.id}|${user?.personId}`] ?? '';
-  const status = (a: Assignment) => aStatus[`${a.id}|${user?.personId}`] ?? '';
-  const shown = list.filter((a) => filter === 'all' || (filter === 'updates' ? fresh.has(a.id) : filter === 'feedback' ? Boolean(feedback(a)) : filter === 'problems' ? ['Missing', 'Incomplete', 'Late'].includes(status(a)) : a.score === undefined && a.due >= today()));
+  const sid = user?.personId || 'me';
+  const key = (a: Assignment) => scoreKey(a.id, sid);
+  const feedback = (a: Assignment) => comments[`a|${key(a)}`] ?? '';
+  /** Pending until the teacher or student says otherwise; a grade makes it Complete. */
+  const status = (a: Assignment) => completionOf(aStatus, key(a), a.score !== undefined);
+  const drop = (a: Assignment) => dropboxOf(comments, key(a));
+  const shown = list.filter((a) => filter === 'all' || (filter === 'updates' ? fresh.has(a.id) : filter === 'feedback' ? Boolean(feedback(a)) : filter === 'problems' ? ['Missing', 'Incomplete', 'Late'].includes(status(a)) : drop(a) === 'Expecting'));
   const groups: { key: string; label: string; items: Assignment[] }[] = [];
   for (const a of shown) { const start = startOfWeek(a.due); const key = sort === 'type' ? a.category : String(+start); let group = groups.find((g) => g.key === key); if (!group) { group = { key, label: sort === 'type' ? category(a.category) : `${format(start, 'MMMM d')} - ${format(addDays(start, 6), 'MMMM d')}`, items: [] }; groups.push(group); } group.items.push(a); }
   const FILTERS: [string, string, string][] = [['all', 'All Assignments', ''], ['updates', 'New Updates', 'bg-vc-hint text-foreground/70'], ['notifications', 'Notifications', 'text-vc-notify'], ['feedback', 'Feedback', 'text-vc-comment'], ['problems', 'Problems', 'text-destructive']];
@@ -62,20 +68,25 @@ function AllAssignments({ list, teacherName, fresh, startFilter }: { list: Assig
     {groups.map((g) => <section key={g.key}>
       <h2 className="border-b border-vc-line px-7 pb-[7px] pt-6 text-[20px] leading-7">{g.label} <span className="text-[14px] font-medium text-vc-gray-dark">({g.items.length} assignments)</span></h2>
       {g.items.map((a) => {
-        const color = categoryColor(weights[a.courseId], a.category); const open = expanded === a.id; const fb = feedback(a); const flag = status(a);
+        const color = categoryColor(weights[a.courseId], a.category); const open = expanded === a.id; const fb = feedback(a); const st = status(a); const sendable = canSubmit(drop(a));
+        const subs = submissions[key(a)] ?? []; const last = subs[subs.length - 1];
         const isNew = a.score !== undefined && !read.includes(updateKey(a.id, a.score));
         const hasNotes = a.notes.trim() !== '';
         return <div key={a.id} className={`border-b border-vc-line ${isNew ? 'bg-vc-note' : ''}`}>
+          <div className="relative">
           <button type="button" aria-expanded={open} onClick={() => { setExpanded(open ? null : a.id); if (a.score !== undefined) markRead(updateKey(a.id, a.score)); }} className={`flex min-h-[46px] w-full cursor-pointer items-center pl-7 pr-7 text-left text-[14px] ${open && !isNew ? 'bg-vc-bar' : ''}`}>
             {fb && <CommentsSolid aria-label="Has feedback" className="mr-[13px] h-[16px] w-[17px] shrink-0 text-vc-comment" />}
             <b className="w-[52px] shrink-0 font-semibold">{format(a.due, 'MMM dd')}</b><b className="w-[44px] shrink-0 font-semibold">{format(a.due, 'EEE')}</b>
-            <span className="flex min-w-0 flex-1 items-center gap-2.5 py-2"><span className="flex shrink-0 items-stretch"><span className="w-[3px] shrink-0" style={{ background: color }} /><span className="bg-vc-bar px-1.5 text-[14.5px] font-semibold leading-[26px]" style={{ color }}>{category(a.category)}</span></span><span className="min-w-0 break-words text-[15px]">{a.title}</span></span>
-            {a.score === undefined ? <span className={`shrink-0 pl-3 text-[14px] ${flag || a.due >= today() ? 'italic text-vc-gray-dark' : ''}`}>{flag || (a.due >= today() ? 'Pending' : 'Complete')}</span> : <span className="flex shrink-0 items-stretch pl-3 text-[17px] leading-[21px]"><strong className="bg-background px-[6px] font-bold">{a.score}</strong><span className="min-w-[27px] bg-vc-bar px-[5px] text-center font-light text-vc-gray-dark">{a.points}</span></span>}
+            <span className={`flex min-w-0 flex-1 items-center gap-2.5 py-2 ${sendable ? 'mr-[132px]' : ''}`}><span className="flex shrink-0 items-stretch"><span className="w-[3px] shrink-0" style={{ background: color }} /><span className="bg-vc-bar px-1.5 text-[14.5px] font-semibold leading-[26px]" style={{ color }}>{category(a.category)}</span></span><span className="min-w-0 break-words text-[15px]">{a.title}</span></span>
+            <span className="flex w-[88px] shrink-0 justify-end pl-3">{a.score === undefined ? <span className={`text-[14px] ${st === 'Complete' ? 'font-medium text-foreground' : ['Late', 'Missing', 'Incomplete'].includes(st) ? 'italic text-destructive' : 'italic text-vc-gray-dark'}`}>{st}</span> : <span className="flex items-stretch text-[17px] leading-[21px]"><strong className="bg-background px-[6px] font-bold">{a.score}</strong><span className="min-w-[27px] bg-vc-bar px-[5px] text-center font-light text-vc-gray-dark">{a.points}</span></span>}</span>
           </button>
+          {sendable && <Link to="/submit" search={{ aid: a.id }} className="absolute right-[124px] top-1/2 flex h-[34px] -translate-y-1/2 items-center gap-2 rounded-[3px] border border-[#3c5f93] bg-[#46689f] px-3.5 text-[14px] font-bold uppercase text-primary-foreground shadow-[0_1px_2px_rgba(0,0,0,.25)] [--cut:#46689f] hover:brightness-110"><PlayDisc className="size-[22px]" />Submit</Link>}
+          </div>
           {open && <div className={`grid gap-8 px-7 pb-6 pt-5 text-[14px] ${isNew ? '' : 'bg-background'} ${fb ? 'md:grid-cols-[54fr_46fr]' : ''}`}>
             <div>
               <div className="flex gap-[34px]">{[['DATE ASSIGNED', a.assigned], ['DUE DATE', a.due]].map(([label, d]) => <div key={String(label)}><div className="text-[12px] font-light uppercase leading-5 text-vc-gray-dark">{String(label)}</div><div className="text-[16px] font-semibold leading-5">{format(d as Date, 'EEE, MMM dd')}</div></div>)}</div>
               {hasNotes && <p className="mt-[18px] whitespace-pre-wrap text-[14px] leading-[17px]">{a.notes}</p>}
+              {last && <p className="mt-[18px] text-[13px] text-vc-gray-dark">Submitted {format(parseISO(last.at), "MMM d 'at' h:mm a")}{subs.length > 1 ? ` (${subs.length} submissions)` : ''} · <Link to="/submit" search={{ aid: a.id }} className="text-vc-link-strong hover:underline">View submission</Link></p>}
             </div>
             {fb && <div>
               <h3 className="text-[13px] font-bold uppercase leading-5">Assignment Feedback</h3>

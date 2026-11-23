@@ -1,3 +1,4 @@
+import { dropboxOf } from "@/lib/dropbox";
 import { ATT_STATUSES } from "@/lib/attendance";
 import { fmtGrade } from "@/lib/fmt-grade";
 import { VcSelect } from '@/components/teacher/VcSelect';
@@ -177,10 +178,10 @@ export function Weights({ c, list, termId }: { c: Course; list: Assignment[]; te
 }
 
 export function Reports({ list, roster }: { list: Assignment[]; roster: Student[] }) {
-  const { scores, aStatus } = useSchool();
+  const { scores, aStatus, comments } = useSchool();
   const rows = list.filter((a) => a.assigned <= new Date()).map((a) => {
     const v = roster.map((s) => scoreOf(scores, a, s.id)).filter((x): x is number => x !== undefined);
-    const submitted = roster.filter((s) => scoreOf(scores, a, s.id) !== undefined || ["Turned In", "Late"].includes(aStatus[`${a.id}|${s.id}`] ?? "")).length;
+    const submitted = roster.filter((s) => scoreOf(scores, a, s.id) !== undefined || ["Turned In", "Complete", "Late"].includes(aStatus[`${a.id}|${s.id}`] ?? "") || dropboxOf(comments, `${a.id}|${s.id}`) === "Received").length;
     const pct = (n: number) => a.points > 0 ? (n / a.points) * 100 : 0;
     return { a, submitted, graded: v.length, avg: v.length ? pct(v.reduce((x, y) => x + y, 0) / v.length) : null, hi: v.length ? pct(Math.max(...v)) : null, lo: v.length ? pct(Math.min(...v)) : null };
   });

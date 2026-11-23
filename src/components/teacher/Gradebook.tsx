@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { useCategoryStyle } from "@/lib/category-colors";
+import { dropboxOf, onScoreEntered } from "@/lib/dropbox";
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
 import { weightedAverage } from "@/lib/grading";
 import { isoDay, useSchool } from "@/lib/school-store";
@@ -28,7 +29,7 @@ function PaperIcon() {
 
 /** Faculty gradebook: one card per assignment, one row per student. Unpublished columns are yellow. */
 export function Gradebook({ courseId, terms, list: all, roster }: { courseId: string; terms: string[]; list: Assignment[]; roster: Student[] }) {
-  const { scores, weights, update, custom } = useSchool();
+  const { scores, weights, update, custom, comments } = useSchool();
   const w = weights[courseId] ?? [];
   const chip = useCategoryStyle(courseId);
   const [type, setType] = useState("all");
@@ -39,7 +40,7 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
   const types = [...new Set(inTerm.map((a) => a.category))];
   const list = inTerm.filter((a) => w.find((x) => x.cat === a.category)?.show !== false && (type === "all" || a.category === type)).sort((a, b) => (desc ? +b.due - +a.due : +a.due - +b.due));
   const isHidden = (a: Assignment) => custom.find((x) => x.id === a.id)?.published === false;
-  const set = (aid: string, sid: string, v: string) => update((s) => ({ ...s, scores: { ...s.scores, [scoreKey(aid, sid)]: v } }));
+  const set = (aid: string, sid: string, v: string) => update((s) => ({ ...s, scores: { ...s.scores, [scoreKey(aid, sid)]: v }, aStatus: onScoreEntered(s.aStatus, scoreKey(aid, sid), v) }));
   const avgFor = (sid: string) => weightedAverage(inTerm.filter((a) => custom.find((x) => x.id === a.id)?.inCalc !== false).map((a) => ({ category: a.category, points: a.points, score: scoreOf(scores, a, sid) })), w);
   const togglePublished = (a: Assignment) => {
     const hidden = isHidden(a);
@@ -93,11 +94,12 @@ export function Gradebook({ courseId, terms, list: all, roster }: { courseId: st
                   <span className="relative inline-flex items-center justify-center px-0">{av !== null ? fmtGrade(av) : "—"}
                     <Link to="/teacher/class/$classId" params={{ classId: courseId }} search={{ tab: "gradedetail", sid: s.id }} aria-label={`Open ${s.first} ${s.last}'s grade detail`} title="Grade detail" className="absolute -right-[22px] top-1/2 hidden -translate-y-1/2 text-black group-hover/g:block"><PaperIcon /></Link></span>
                 </td>
-                {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k] ?? "" : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; const hidden = isHidden(a); return (
-                  <td key={a.id} className="p-0">
+                {list.map((a) => { const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k] ?? "" : String(scoreOf(scores, a, s.id) ?? ""); const low = v !== "" && Number(v) / a.points < 0.7; const hidden = isHidden(a); const drop = dropboxOf(comments, k); return (
+                  <td key={a.id} className="relative p-0">
                     <input aria-label={`${s.first} ${s.last} – ${a.title}`} value={v === "" ? "" : v} placeholder="-" inputMode="decimal"
                       onChange={(e) => { if (isScoreInput(e.target.value)) set(a.id, s.id, e.target.value); else toast.error("Scores must be numbers"); }}
                       className={`${cell} ${hidden ? warm : ""} outline-none placeholder:text-foreground/60 focus:bg-vc-select ${low ? "text-destructive" : ""}`} />
+                    {drop !== "Closed" && <span aria-hidden title={`Dropbox: ${drop}`} className="pointer-events-none absolute bottom-[3px] left-[3px] size-0 border-b-[9px] border-r-[9px] border-r-transparent" style={{ borderBottomColor: drop === "Received" ? "#4caf7a" : "#f2a33a" }} />}
                   </td>); })}
               </tr>); })}
             <tr><td colSpan={list.length + 2}><div className="h-1.5 bg-vc-line/50" /></td></tr>

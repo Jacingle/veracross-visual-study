@@ -1,8 +1,9 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { VcSelect } from '@/components/teacher/VcSelect';
 import { Link, useNavigate } from "@tanstack/react-router";
+import { COMPLETION_STATUSES, completionOf, dropboxOf, onScoreEntered } from "@/lib/dropbox";
 import { format } from "date-fns";
-import { AlignLeft, Bold, CalendarDays, ChevronLeft, IndentDecrease, IndentIncrease, Italic, List, ListOrdered, Underline, ChevronRight, Check, Lock, Mail, MessageCircleMore, Paperclip, Plus, X } from "lucide-react";
+import { AlignLeft, Bold, CalendarDays, ChevronLeft, IndentDecrease, IndentIncrease, Italic, List, ListOrdered, Underline, ChevronRight, Check, FileText, Lock, Mail, MessageCircleMore, Paperclip, Plus, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEffect, useRef, useState } from "react";
@@ -14,7 +15,6 @@ import { today, type Assignment, type Category, type Student } from "@/lib/sis-d
 import { isScoreInput, scoreKey, scoreOf } from "@/lib/gradebook";
 import { isoDay, useSchool, useMySections, type CustomAssignment } from "@/lib/school-store";
 
-const STATUSES = ["", "Turned In", "Late", "Missing", "Excused", "Incomplete"];
 const inp = "h-8 w-full border border-vc-line px-2 text-[13px] outline-none focus:border-vc-link";
 const schema = z.object({ title: z.string().trim().min(1, "Description is required").max(120), points: z.number().int().min(0).max(1000, "Max score is 1000"), assigned: z.string().min(1), due: z.string().min(1) })
   .refine((v) => v.due >= v.assigned, "Due date can't be before the assignment date");
@@ -186,8 +186,9 @@ const sel = "h-[28px] w-[136px] cursor-pointer rounded-[3px] border border-[#dcd
 const grey = "text-[#b9b9b9]";
 
 function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
-  const { scores, aStatus, pub, comments, user, update } = useSchool();
-  const set = (field: "scores" | "aStatus" | "comments", k: string, v: string) => update((s) => ({ ...s, [field]: { ...s[field], [k]: v } }));
+  const { scores, aStatus, pub, comments, submissions, user, update } = useSchool();
+  // Entering a grade moves a Pending assignment to Complete.
+  const set = (field: "scores" | "aStatus" | "comments", k: string, v: string) => update((s) => { const next = { ...s, [field]: { ...s[field], [k]: v } }; return field === "scores" ? { ...next, aStatus: onScoreEntered(next.aStatus, k, v) } : next; });
   const [picked, setPicked] = useState<string[]>([]);
   const [fb, setFb] = useState<{ sid: string; text: string } | null>(null);
   const [bulk, setBulk] = useState<{ open: boolean; grade?: string | undefined; status?: string | undefined; dropbox?: string | undefined }>({ open: false });
@@ -197,13 +198,14 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
     const who = picked.length ? picked : rows.map((s) => s.id);
     update((x) => {
       const n = { ...x, scores: { ...x.scores }, aStatus: { ...x.aStatus }, comments: { ...x.comments } };
-      for (const sid of who) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined && bulk.grade !== "") n.scores[k] = bulk.grade; if (bulk.status !== undefined) n.aStatus[k] = bulk.status; if (bulk.dropbox !== undefined) n.comments[`d|${k}`] = bulk.dropbox; }
+      for (const sid of who) { const k = scoreKey(a.id, sid); if (bulk.grade !== undefined && bulk.grade !== "") { n.scores[k] = bulk.grade; n.aStatus = onScoreEntered(n.aStatus, k, bulk.grade); } if (bulk.status !== undefined) n.aStatus[k] = bulk.status; if (bulk.dropbox !== undefined) n.comments[`d|${k}`] = bulk.dropbox; }
       return n;
     });
     toast.success(`Updated ${who.length} student${who.length === 1 ? "" : "s"}`); setBulk({ open: false });
   };
   const fbStudent = fb ? roster.find((s) => s.id === fb.sid) : undefined;
   const fbKey = fb ? scoreKey(a.id, fb.sid) : "";
+  const removeFile = (subId: string, name: string) => update((x) => ({ ...x, submissions: { ...x.submissions, [fbKey]: (x.submissions[fbKey] ?? []).map((m) => (m.id === subId ? { ...m, files: m.files.filter((f) => f.name !== name) } : m)).filter((m) => m.text || m.files.length) } }));
   const cb = (on: boolean, f: (v: boolean) => void) => <button type="button" role="checkbox" aria-checked={on} onClick={() => f(!on)} className={`mt-[14px] grid size-[22px] shrink-0 place-items-center rounded-[4px] border ${on ? "border-[#4a9be0] bg-[#4a9be0] text-primary-foreground" : "border-[#d9d9d9] bg-background"}`}>{on && <Check className="size-3.5" strokeWidth={3.5} />}</button>;
   const lbl = "mb-[3px] text-[9.5px] uppercase text-[#b0b0b0]";
   const cols = "flex items-center";
@@ -212,7 +214,7 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
       <div className="absolute right-[22px] top-[-34px] z-30"><button type="button" onClick={() => setBulk({ ...bulk, open: !bulk.open })} className="h-[23px] w-[62px] rounded-[4px] border border-[#555] bg-background text-[11px] font-bold">Bulk Edit</button></div>
       {bulk.open && <div className="absolute right-[22px] top-[-6px] z-30 w-[198px] rounded-[4px] bg-background px-[14px] pb-[14px] pt-[6px] shadow-[0_2px_14px_rgba(0,0,0,.18)]">
         <div className="flex gap-3"><div>{cb(bulk.grade !== undefined, (v) => setBulk({ ...bulk, grade: v ? "" : undefined }))}</div><div className="flex-1"><div className={lbl + " mt-[2px]"}>Grade</div><input aria-label="Bulk grade" disabled={bulk.grade === undefined} className="h-[28px] w-[40px] rounded-[3px] border border-[#e1e4e8] bg-[#f6f6f6] text-center text-[11px] outline-none disabled:opacity-60" value={bulk.grade ?? ""} onChange={(e) => setBulk({ ...bulk, grade: e.target.value })} /></div></div>
-        <div className="flex gap-3"><div>{cb(bulk.status !== undefined, (v) => setBulk({ ...bulk, status: v ? "" : undefined }))}</div><div className="flex-1"><div className={lbl + " mt-[8px]"}>Completion Status</div><VcSelect aria-label="Bulk completion status" disabled={bulk.status === undefined} className={`${sel} !w-full disabled:bg-[#f2f2f2] disabled:text-[#bbb]`} value={bulk.status ?? ""} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{STATUSES.map((x) => <option key={x} value={x}>{x || "Pending"}</option>)}</VcSelect></div></div>
+        <div className="flex gap-3"><div>{cb(bulk.status !== undefined, (v) => setBulk({ ...bulk, status: v ? "Pending" : undefined }))}</div><div className="flex-1"><div className={lbl + " mt-[8px]"}>Completion Status</div><VcSelect aria-label="Bulk completion status" disabled={bulk.status === undefined} className={`${sel} !w-full disabled:bg-[#f2f2f2] disabled:text-[#bbb]`} value={bulk.status ?? "Pending"} onChange={(e) => setBulk({ ...bulk, status: e.target.value })}>{COMPLETION_STATUSES.map((x) => <option key={x} value={x}>{x}</option>)}</VcSelect></div></div>
         <div className="flex gap-3"><div>{cb(bulk.dropbox !== undefined, (v) => setBulk({ ...bulk, dropbox: v ? "Closed" : undefined }))}</div><div className="flex-1"><div className={lbl + " mt-[8px]"}>Dropbox Status</div><VcSelect aria-label="Bulk dropbox status" disabled={bulk.dropbox === undefined} className={`${sel} !w-full disabled:bg-[#f2f2f2] disabled:text-[#bbb]`} value={bulk.dropbox ?? "Closed"} onChange={(e) => setBulk({ ...bulk, dropbox: e.target.value })}>{DROPBOX.map((x) => <option key={x}>{x}</option>)}</VcSelect></div></div>
         <button type="button" onClick={applyBulk} className="mt-[16px] h-[30px] w-full rounded-[4px] bg-[#5cb360] text-[11px] font-medium text-primary-foreground">Update Students</button>
       </div>}
@@ -221,14 +223,14 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
       <div className="max-h-[calc(100vh-290px)] min-h-[280px] overflow-y-auto">
       {rows.map((s) => {
         const k = scoreKey(a.id, s.id); const v = k in scores ? scores[k]! : String(scoreOf(scores, a, s.id) ?? "");
-        const locked = comments[`l|${k}`] === "1"; const email = ""; const has = !!comments[`a|${k}`]; const drop = comments[`d|${k}`] ?? "Closed"; void email;
+        const locked = comments[`l|${k}`] === "1"; const email = ""; const has = !!comments[`a|${k}`] || (submissions[k]?.length ?? 0) > 0; const drop = dropboxOf(comments, k); const done = completionOf(aStatus, k, v.trim() !== "" && !Number.isNaN(Number(v))); void email;
         return (
           <div key={s.id} className={`${cols} h-[62px] border-b border-[#f0f0f0] pl-[37px]`}>
             <div className="flex w-[130px] shrink-0 items-center gap-[9px]"><PersonPhoto personId={s.id} className="size-[38px] shrink-0 rounded-full" /><div className="min-w-0 leading-[15px]"><div className="truncate text-[13px] font-bold">{s.first}</div><div className="truncate text-[13px] text-[#8c8c8c]">{s.last}</div></div></div>
             <div className="flex w-[87px] shrink-0 items-center gap-[5px]"><input aria-label={`Score for ${s.first}`} disabled={locked} className="h-[27px] w-[38px] rounded-[3px] border border-[#e1e4e8] bg-background text-center text-[11px] outline-none focus:border-[#4fb3e6] disabled:bg-[#f2f2f2]" value={v} onChange={(e) => isScoreInput(e.target.value) && set("scores", k, e.target.value)} /><span className="text-[10.5px] text-[#a5a5a5]">/{a.points}</span></div>
-            <div className="w-[160px] shrink-0"><VcSelect aria-label={`Assignment status for ${s.first}`} className={sel} value={aStatus[k] ?? ""} onChange={(e) => set("aStatus", k, e.target.value)}>{STATUSES.map((x) => <option key={x} value={x}>{x || "Pending"}</option>)}</VcSelect></div>
+            <div className="w-[160px] shrink-0"><VcSelect aria-label={`Assignment status for ${s.first}`} className={sel} value={done} onChange={(e) => set("aStatus", k, e.target.value)}>{COMPLETION_STATUSES.map((x) => <option key={x} value={x}>{x}</option>)}</VcSelect></div>
             <div className="relative w-[160px] shrink-0">{dot[drop] && <span className="pointer-events-none absolute left-[9px] top-[11px] size-[6px] rounded-full" style={{ background: dot[drop] }} />}<VcSelect aria-label={`Dropbox status for ${s.first}`} className={`${sel} ${dot[drop] ? "pl-[19px]" : ""}`} value={drop} onChange={(e) => set("comments", `d|${k}`, e.target.value)}>{DROPBOX.map((x) => <option key={x}>{x}</option>)}</VcSelect></div>
-            <button type="button" title="Feedback" aria-label={`Feedback for ${s.first}`} onClick={() => setFb({ sid: s.id, text: "" })} className={`grid w-[51px] shrink-0 place-items-start ${fb?.sid === s.id ? "text-[#444]" : grey}`}><MessageCircleMore className="size-[23px]" fill="currentColor" strokeWidth={0} /></button>
+            <button type="button" title="Feedback" aria-label={`Feedback for ${s.first}`} onClick={() => setFb({ sid: s.id, text: "" })} className={`grid w-[51px] shrink-0 place-items-start ${fb?.sid === s.id || has ? "text-[#444]" : grey}`}><MessageCircleMore className="size-[23px]" fill="currentColor" strokeWidth={0} /></button>
             <button type="button" title={locked ? "Unlock grade" : "Lock grade"} aria-pressed={locked} onClick={() => set("comments", `l|${k}`, locked ? "" : "1")} className={`grid w-[47px] shrink-0 place-items-start ${locked ? "text-[#555]" : grey}`}><span className={`grid size-[19px] place-items-center rounded-[3px] bg-current`}><Lock className="size-[11px] text-background" strokeWidth={3} /></span></button>
             <span className={`grid w-[51px] shrink-0 place-items-start ${grey}`}><Mail className="size-[24px]" fill="currentColor" stroke="white" strokeWidth={1.5} /></span>
             <Toggle bare label={`Published for ${s.first}`} on={pub[k] !== false} set={(on) => update((x) => ({ ...x, pub: { ...x.pub, [k]: on } }))} />
@@ -238,11 +240,12 @@ function StudentList({ a, roster }: { a: Assignment; roster: Student[] }) {
         <div className="flex h-[36px] items-center justify-between bg-[#5d5d5d] px-[8px] text-primary-foreground"><span className="text-[13px] font-medium">{fbStudent.first} {fbStudent.last}</span><button type="button" aria-label="Close feedback" onClick={() => setFb(null)}><X className="size-4" strokeWidth={3} /></button></div>
         <div className="grid h-[36px] grid-cols-3 text-center text-[11px]"><span className="relative grid place-items-center text-[#4fb3e6]">Feedback<i className="absolute bottom-0 h-[2px] w-[52px] bg-[#4fb3e6]" /></span></div>
         <div className="flex-1 overflow-y-auto px-[24px] pt-[14px]">
+          {(submissions[fbKey] ?? []).map((m) => <div key={m.id} className="mb-4 flex gap-2.5"><PersonPhoto personId={fbStudent.id} className="size-[26px] shrink-0 rounded-full" /><div className="min-w-0"><div className="text-[12px] font-bold">{fbStudent.first} {fbStudent.last}</div><div className="mb-2 text-[10px] text-[#b0b0b0]">Commented {format(parseISO(m.at), "MMMM d, yyyy 'at' HH:mm")}</div>{m.text && <div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{m.text}</div>}{m.files.map((f) => <div key={f.name} className="ml-3 mt-2 flex w-fit max-w-full items-center gap-2 rounded-[3px] bg-[#eaf3fc] px-2.5 py-1.5 text-[11.5px] text-[#2f6fc4]"><FileText className="size-3.5 shrink-0" /><a href={f.data} download={f.name} className="truncate hover:underline">{f.name}</a><button type="button" aria-label={`Remove ${f.name}`} onClick={() => removeFile(m.id, f.name)} className="text-[#d9453d]"><X className="size-3.5" strokeWidth={3} /></button></div>)}</div></div>)}
           {comments[`s|${fbKey}`] && <div className="flex gap-2.5"><PersonPhoto personId={fbStudent.id} className="size-[26px] rounded-full" /><div><div className="text-[12px] font-bold">{fbStudent.first} {fbStudent.last}</div><div className="mb-3 text-[10px] text-[#b0b0b0]">Commented</div><div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{comments[`s|${fbKey}`]}</div></div></div>}
-          {comments[`a|${fbKey}`] && <div className="mt-3 flex gap-2.5"><PersonPhoto personId={user?.personId} className="size-[26px] rounded-full" /><div><div className="text-[12px] font-bold">{user?.first} {user?.last}</div><div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{comments[`a|${fbKey}`]}</div><div className="mt-1 flex gap-3 pl-3 text-[10.5px] text-[#8a8a8a]"><button type="button" className="hover:underline" onClick={() => setFb({ ...fb, text: comments[`a|${fbKey}`] ?? "" })}>Edit</button><button type="button" className="hover:underline" onClick={() => { set("comments", `a|${fbKey}`, ""); setFb({ ...fb, text: "" }); toast.success("Feedback deleted"); }}>Delete</button></div></div></div>}
-          {!comments[`s|${fbKey}`] && !comments[`a|${fbKey}`] && <p className="pt-10 text-center text-[11px] text-[#b0b0b0]">No feedback yet.</p>}
+          {comments[`a|${fbKey}`] && <div className="mt-3 flex gap-2.5"><PersonPhoto personId={user?.personId} className="size-[26px] rounded-full" /><div><div className="text-[12px] font-bold">{user?.first} {user?.last}</div>{comments[`at|${fbKey}`] && <div className="mb-2 text-[10px] text-[#b0b0b0]">Commented {format(parseISO(comments[`at|${fbKey}`] ?? ""), "MMMM d, yyyy 'at' HH:mm")}</div>}<div className="border-l border-[#e6e6e6] pl-3 text-[11.5px]">{comments[`a|${fbKey}`]}</div><div className="mt-1 flex gap-3 pl-3 text-[10.5px] text-[#8a8a8a]"><button type="button" className="hover:underline" onClick={() => setFb({ ...fb, text: comments[`a|${fbKey}`] ?? "" })}>Edit</button><button type="button" className="hover:underline" onClick={() => { set("comments", `a|${fbKey}`, ""); setFb({ ...fb, text: "" }); toast.success("Feedback deleted"); }}>Delete</button></div></div></div>}
+          {!comments[`s|${fbKey}`] && !comments[`a|${fbKey}`] && !(submissions[fbKey]?.length) && <p className="pt-10 text-center text-[11px] text-[#b0b0b0]">No feedback yet.</p>}
         </div>
-        <form className="flex gap-2.5 px-[18px] pb-[14px]" onSubmit={(e) => { e.preventDefault(); if (!fb.text.trim()) return; set("comments", `a|${fbKey}`, fb.text.trim()); setFb({ ...fb, text: "" }); toast.success("Feedback posted"); }}>
+        <form className="flex gap-2.5 px-[18px] pb-[14px]" onSubmit={(e) => { e.preventDefault(); if (!fb.text.trim()) return; update((x) => ({ ...x, comments: { ...x.comments, [`a|${fbKey}`]: fb.text.trim(), [`at|${fbKey}`]: new Date().toISOString() } })); setFb({ ...fb, text: "" }); toast.success("Feedback posted"); }}>
           <PersonPhoto personId={user?.personId} className="mt-1 size-[26px] shrink-0 rounded-full" />
           <div className="flex-1 rounded-[3px] border border-[#ececec]"><input aria-label="Give Feedback" placeholder="Give Feedback…" maxLength={300} className="h-[34px] w-full px-3 text-[11.5px] outline-none placeholder:text-[#b0b0b0]" value={fb.text} onChange={(e) => setFb({ ...fb, text: e.target.value })} />
             <div className="flex items-center justify-between border-t border-[#f3f3f3] px-2 py-1.5"><Paperclip className="size-3.5 text-[#b0b0b0]" /><button className={`h-[22px] rounded-[3px] px-3 text-[10.5px] font-medium text-primary-foreground ${fb.text.trim() ? "bg-[#4a9be0]" : "bg-[#bcdaf6]"}`}>Post</button></div></div>

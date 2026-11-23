@@ -14,6 +14,7 @@ import painting from "@/assets/class-bg.jpg";
 import { setTypeColors } from "./type-colors";
 import { isOtherClass, normalizeCourseType } from "./course-types";
 import { readSchool, saveSchool, savesSettled } from "./browser-save";
+import type { Submission } from "./dropbox";
 import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { ResourceTopic, SitePost } from "./class-site";
@@ -85,6 +86,8 @@ type State = {
   scores: Record<string, string>; aStatus: Record<string, string>; pub: Record<string, boolean>;
   attendance: Record<string, string>; attNotes: Record<string, string>; attDone: string[];
   comments: Record<string, string>; termGrades: Record<string, string>;
+  /** Work students hand in to the assignment dropbox, keyed like scores (assignment|student), oldest first. */
+  submissions: Record<string, Submission[]>;
   weights: Record<string, Weight[]>; sent: SentMessage[]; purchases: Purchase[];
   courseFlags: Record<string, Record<string, boolean>>;
   courses: CourseDef[]; sections: Section[]; photos: Record<string, string>; fullPhotos: Record<string, string>;
@@ -98,7 +101,7 @@ type State = {
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
-  scores: {}, aStatus: {}, pub: {}, attendance: {}, attNotes: {}, attDone: [], comments: {}, termGrades: {},
+  scores: {}, aStatus: {}, pub: {}, attendance: {}, attNotes: {}, attDone: [], comments: {}, termGrades: {}, submissions: {},
   weights: {}, sent: [], purchases: [], courseFlags: {}, courses: SEED_COURSES, sections: SEED_SECTIONS, photos: {}, fullPhotos: {}, schedulingSets: [], portals: defaultPortals(), docLayout: DEFAULT_DOC_LAYOUT, assignmentTypes: SEED_TYPES,
 };
 const KEY = "cra-school-v2";
