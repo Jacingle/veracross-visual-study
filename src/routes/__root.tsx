@@ -16,6 +16,7 @@ import { PortalStoreProvider } from "../lib/portal-store";
 import { SchoolStoreProvider } from "../lib/school-store";
 import { ErrorPage } from "../components/common/ErrorPage";
 import { Toaster } from "../components/ui/sonner";
+import { PortalTitle } from "../components/common/PortalTitle";
 
 function NotFoundComponent() {
   return <ErrorPage title="Page Not Found" message="There is no page for the URL specified." />;
@@ -87,6 +88,7 @@ function RootComponent() {
         <PortalStoreProvider>
           
           <Outlet />
+          <PortalTitle />
           <Toaster />
         </PortalStoreProvider>
       </SchoolStoreProvider>

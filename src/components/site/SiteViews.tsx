@@ -50,11 +50,10 @@ export function ClassPicker({ current, options, onPick }: { current: string; opt
 export function HomeView({ c, upcoming, onOpen }: { c: Section; upcoming: Assignment[]; onOpen: (a: Assignment) => void }) {
   return (
     <div className="px-[19px] pb-10 pt-[26px]">
-      <div className="w-[420px] max-w-full border-b-2 border-vc-gray-light pb-px text-[17px] font-semibold text-vc-gray-dark">Assignments</div>
-      <div className="mt-2 space-y-1">{upcoming.length ? upcoming.map((a) => (
+      {upcoming.length > 0 && <div className="w-[420px] max-w-full border-b-2 border-vc-gray-light pb-px text-[17px] font-semibold text-vc-gray-dark">Assignments</div>}
+      {upcoming.length > 0 && <div className="mt-2 space-y-1">{upcoming.map((a) => (
         <button key={a.id} onClick={() => onOpen(a)} className={`flex gap-4 text-left text-[18px] leading-[30px] hover:underline ${BLUE}`}>
-          <span className="w-9">{format(a.due, "EEE").toUpperCase()}</span><span className="w-[70px]">{format(a.due, "MMM dd")}</span><span>{a.title.length > 30 ? categoryLabel(a.category) : a.title}</span></button>))
-        : <p className="text-[14px] text-muted-foreground">No upcoming assignments.</p>}</div>
+          <span className="w-9">{format(a.due, "EEE").toUpperCase()}</span><span className="w-[70px]">{format(a.due, "MMM dd")}</span><span>{a.title.length > 30 ? categoryLabel(a.category) : a.title}</span></button>))}</div>}
       {c.website.sections.map((sec, i) => (
         <section key={i} className="mx-auto mt-[22px] w-[89%] font-[Arial,sans-serif]">
           <h3 className="bg-[#37465f] px-[38px] py-[17px] text-[28px] font-bold leading-[1.1] text-[#ee4b2b]">{sec.title}</h3>
