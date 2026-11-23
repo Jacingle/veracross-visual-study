@@ -38,11 +38,11 @@ describe("submitting", () => {
   it("is refused while the dropbox is Closed", () => {
     expect(addSubmission(maps(), K, sub)).toBeNull();
   });
-  it("records the submission, marks the dropbox Received and the assignment Complete", () => {
+  it("records the submission, marks the dropbox Received but leaves completion to the student", () => {
     const r = addSubmission(maps({ comments: { [`d|${K}`]: "Expecting" } }), K, sub)!;
     expect(r.submissions[K]).toEqual([sub]);
     expect(dropboxOf(r.comments, K)).toBe("Received");
-    expect(completionOf(r.aStatus, K, false)).toBe("Complete");
+    expect(completionOf(r.aStatus, K, false)).toBe("Pending");
   });
   it("keeps every submission and stays Received when a student submits again", () => {
     const first = addSubmission(maps({ comments: { [`d|${K}`]: "Expecting" } }), K, sub)!;

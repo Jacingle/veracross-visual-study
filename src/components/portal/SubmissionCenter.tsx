@@ -47,7 +47,7 @@ export function SubmissionCenter({ aid, onPick }: { aid: string | undefined; onP
   const waiting = rows.find((a) => dropboxOf(comments, keyOf(a)) === "Expecting");
   const sel = rows.find((a) => a.id === aid) ?? waiting ?? rows[0];
   return (
-    <div>
+    <div style={{ zoom: 0.88 }}>
       <div className="bg-vc-panel px-[35px] pb-3.5 pt-[22px]">
         <h1 className="text-[32px] font-semibold leading-10 text-foreground/80">Assignment Submission</h1>
         <p className="text-[16px] font-light text-vc-gray-dark">{rows.length ? "Select an Assignment Below" : "Nothing is open for submission right now."}</p>
@@ -127,7 +127,7 @@ function Detail({ a, sid }: { a: Assignment; sid: string }) {
       <p className="mt-5 whitespace-pre-wrap text-[17px] leading-6">{a.notes.trim() || "See assignment for details."}</p>
       <h2 className="mt-9 text-[34px] font-semibold leading-10 text-foreground/80">Submissions</h2>
       {entries.length === 0 ? (
-        <div className="py-14 text-center"><Paperclip className="mx-auto size-8" strokeWidth={1.6} /><p className="mt-6 text-[17px]">Add a submission below. After adding a submission, mark the assignment as complete.</p></div>
+        <div className="py-14 text-center"><Paperclip className="mx-auto size-8" strokeWidth={1.6} /><p className="mt-6 text-[17px]">Add a submission below. After adding a submission, mark the assignment as complete yourself with the switch below.</p></div>
       ) : (
         <ul className="mt-6 space-y-7">
           {entries.map((e) => (

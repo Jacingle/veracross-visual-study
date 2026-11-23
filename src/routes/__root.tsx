@@ -4,11 +4,12 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { savesSettled } from "../lib/browser-save";
 
 import appCss from "../styles.css?url";
@@ -39,6 +40,17 @@ function HardNav() {
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
+  return null;
+}
+
+/** Page changes made in code (not link clicks) also reload the browser so every new page is a real load. */
+function ReloadOnPage() {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const first = useRef(path);
+  useEffect(() => {
+    if (path === first.current) return;
+    void savesSettled().then(() => window.location.reload());
+  }, [path]);
   return null;
 }
 
@@ -106,7 +118,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <SchoolStoreProvider>
         <PortalStoreProvider>
-          <HardNav />
+          <HardNav /><ReloadOnPage />
           <Outlet />
           <Toaster />
         </PortalStoreProvider>

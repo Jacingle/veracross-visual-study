@@ -54,15 +54,14 @@ export function validateFiles(alreadyAttached: number, incoming: { name: string;
 }
 
 /**
- * A student's submission: it is added to the conversation, the dropbox becomes Received, and the assignment is
- * marked Complete unless the teacher chose Late, Missing or Excused. Null when the dropbox is Closed.
+ * A student's submission: it is added to the conversation, the dropbox becomes Received. Completion is left
+ * alone: the student (or teacher) sets it on purpose. Null when the dropbox is Closed.
  */
 export function addSubmission(m: SubmissionMaps, key: string, sub: Submission): SubmissionMaps | null {
   if (!canSubmit(dropboxOf(m.comments, key))) return null;
-  const kept = TEACHER_DECIDES.includes(m.aStatus[key] ?? "");
   return {
     comments: { ...m.comments, [dropboxKey(key)]: "Received" },
-    aStatus: kept ? m.aStatus : { ...m.aStatus, [key]: "Complete" },
+    aStatus: m.aStatus,
     submissions: { ...m.submissions, [key]: [...(m.submissions[key] ?? []), sub] },
   };
 }

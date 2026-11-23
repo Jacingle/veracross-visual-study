@@ -82,9 +82,9 @@ describe("assignment dropbox, student side", () => {
     fireEvent.click(send);
     expect(await screen.findByText("Here is my assignment!")).toBeInTheDocument();
     expect(screen.getByText("Abbott, Ann")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Is this assignment complete?" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: "Is this assignment complete?" })).toHaveAttribute("aria-checked", "false");
     await waitFor(() => expect(saved().comments["d|c-open|s-ann"]).toBe("Received"));
-    expect(saved().aStatus["c-open|s-ann"]).toBe("Complete");
+    expect(saved().aStatus["c-open|s-ann"]).toBeUndefined();
     expect(saved().submissions["c-open|s-ann"]?.[0]?.text).toBe("Here is my assignment!");
   });
 
