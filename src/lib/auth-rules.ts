@@ -1,7 +1,7 @@
 // Pure sign-in and access rules for the demo accounts (no storage, no React) so they can be tested.
 export type Role = "admin" | "teacher" | "student";
 export type Area = "admin" | "teacher" | "student" | "shared";
-export type User = { id: string; email: string; password: string; role: Role; first: string; last: string; personId: string; active: boolean; prefix?: string; suffix?: string; middle?: string; preferred?: string; loginDisabled?: boolean; welcomeSent?: boolean; address?: string; city?: string; state?: string; postal?: string; phone?: string; grade?: number };
+export type User = { id: string; email: string; password: string; role: Role; first: string; last: string; personId: string; active: boolean; prefix?: string; suffix?: string; middle?: string; preferred?: string; loginDisabled?: boolean; welcomeSent?: boolean; address?: string; city?: string; state?: string; postal?: string; phone?: string; grade?: number; mobile?: string; address2?: string; gender?: string; pronouns?: string; birthday?: string; household?: string; email1?: string; parents?: string[] };
 
 export const canImpersonate = (actor: User | null, target: User) => actor?.role === "admin" && target.role !== "admin" && target.active;
 

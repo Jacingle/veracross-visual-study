@@ -6,11 +6,10 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AxiomShell } from "@/components/admin/AxiomShell";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PersonRecord } from "@/components/admin/PersonRecord";
 import { Switch } from "@/components/ui/switch";
 import { canImpersonate, homeFor, ROLE_LABEL, validateUser, type Role, type User } from "@/lib/auth-rules";
 import { Button } from "@/components/ui/button";
-import { TEACHERS, studentById, teacher } from "@/lib/sis-data";
 import { useSchool } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
 
@@ -20,7 +19,6 @@ export const Route = createFileRoute("/admin/users")({
   component: UsersPage,
 });
 
-const inp = "h-8 w-full border border-vc-line px-2 text-[13px] outline-none focus:border-vc-link";
 type Draft = Omit<User, "id">;
 const blank: Draft = { email: "", password: "", role: "student", first: "", last: "", personId: "new", active: true };
 
@@ -30,18 +28,32 @@ function UsersPage() {
   const { users, user: me, update, photos, impersonate } = useSchool();
   const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ id?: string; d: Draft } | null>(null);
+  const [pending, setPending] = useState<{ url: string; full: string } | null>(null);
+  const [cropNew, setCropNew] = useState(false);
   useEffect(() => { if (add === "user") { setEdit({ d: { ...blank } }); nav({ search: (p) => ({ ...p, add: undefined }), replace: true }); } }, [add, nav]);
   const shown = users.filter((u) => (!role || u.role === role) && `${u.first} ${u.last} ${u.email}`.toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
-  const save = (e: React.FormEvent) => {
-    e.preventDefault();
+  const save = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!edit) return;
     const d = { ...edit.d, personId: edit.d.personId === "new" ? `p-${crypto.randomUUID().slice(0, 8)}` : edit.d.personId, email: edit.d.email.trim().toLowerCase(), first: edit.d.first.trim(), last: edit.d.last.trim() };
     const err = validateUser(users, d, edit.id);
     if (err) { toast.error(err); return; }
     if (edit.id === me?.id && d.role !== "admin") { toast.error("You can't remove your own administrator role."); return; }
-    update((s) => ({ ...s, users: edit.id ? s.users.map((u) => (u.id === edit.id ? { ...u, ...d } : u)) : [...s.users, { id: `u-${crypto.randomUUID().slice(0, 8)}`, ...d }] }));
-    toast.success(edit.id ? "User updated" : `Account created for ${d.email}`); setEdit(null);
+    update((s) => ({ ...s, users: edit.id ? s.users.map((u) => (u.id === edit.id ? { ...u, ...d } : u)) : [...s.users, { id: `u-${crypto.randomUUID().slice(0, 8)}`, ...d }], ...(pending && d.personId ? { photos: { ...s.photos, [d.personId]: pending.url }, fullPhotos: { ...s.fullPhotos, [d.personId]: pending.full } } : {}) }));
+    toast.success(edit.id ? "User updated" : `Account created for ${d.email}`); setEdit(null); setPending(null);
   };
+  if (edit) {
+    const nm = `${edit.d.last.trim() || "New"}${edit.d.first.trim() ? `, ${edit.d.first.trim()}` : ""}`;
+    const kind = ROLE_LABEL[edit.d.role];
+    const title = edit.id ? `${kind} ${edit.d.personId.replace(/\D/g, "").slice(0, 5) || ""}: ${nm} - ${kind}${edit.d.role === "student" ? ` (${edit.d.grade ?? 9})` : ""}`.replace(" :", ":") : `New ${kind}: ${nm}`;
+    return (
+      <AxiomShell title={title} crumbs={[{ label: "Users & Security", to: "/admin/users" }]} onUpdate={() => save()} actions={<button type="button" onClick={() => { setEdit(null); setPending(null); }} className="h-[30px] border border-white/60 px-4 text-[13px] font-bold text-white">CANCEL</button>}>
+        <PersonRecord d={edit.d} set={(p) => setEdit({ ...edit, d: { ...edit.d, ...p } })} photoUrl={pending?.url} onReplacePhoto={() => (edit.id && edit.d.personId && edit.d.personId !== "new" ? setPhotoFor(edit.d.personId) : setCropNew(true))} />
+        <ImageCropper open={cropNew} onClose={() => setCropNew(false)} aspect={1} outWidth={300} title="Person Photo" onSave={(url, full) => { setPending({ url, full }); toast.success("Photo ready — it is saved with the record"); }} />
+        <ImageCropper open={!!photoFor} onClose={() => setPhotoFor(null)} aspect={1} outWidth={300} title="Person Photo"
+          onSave={(url, fullPhoto) => { if (!photoFor) return; update((s) => ({ ...s, photos: { ...s.photos, [photoFor]: url }, fullPhotos: { ...s.fullPhotos, [photoFor]: fullPhoto } })); toast.success("Photo saved"); }} />
+      </AxiomShell>);
+  }
   return (
     <AxiomShell title="Users & Security" actions={<button onClick={() => setEdit({ d: { ...blank } })} className="flex h-7 items-center gap-1 bg-ax-go px-3 font-semibold text-primary-foreground"><Plus className="size-4" />Add User</button>}>
       <div className="border border-vc-line bg-background">
@@ -70,30 +82,6 @@ function UsersPage() {
             </tr>))}</tbody>
         </table></div>
       </div>
-      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
-        <DialogContent className="max-h-[90vh] max-w-[680px] overflow-y-auto text-[13px]">
-          <DialogHeader><DialogTitle className="text-[17px]">{edit?.id ? "Edit User" : "Add User"}</DialogTitle></DialogHeader>
-          {edit && <form onSubmit={save} className="space-y-2.5 text-[12px] text-muted-foreground">
-            <fieldset className="border-b border-vc-line pb-3"><legend className="mb-2 font-semibold text-foreground">Person Details</legend><div className="grid grid-cols-2 gap-3">
-              <label>FIRST NAME<input className={inp} value={edit.d.first} maxLength={40} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, first: e.target.value } })} /></label>
-              <label>LAST NAME<input className={inp} value={edit.d.last} maxLength={40} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, last: e.target.value } })} /></label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {([['prefix', 'PREFIX'], ['suffix', 'SUFFIX'], ['middle', 'MIDDLE NAME'], ['preferred', 'PREFERRED NAME'], ['address', 'STREET ADDRESS'], ['city', 'CITY'], ['state', 'STATE / PROVINCE'], ['postal', 'POSTAL CODE'], ['phone', 'PHONE']] as const).map(([key, label]) => <label key={key}>{label}<input className={inp} value={edit.d[key] ?? ''} maxLength={160} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, [key]: e.target.value } })} /></label>)}
-              {edit.d.role === 'student' && <label>GRADE LEVEL<select className={inp} value={edit.d.grade ?? 9} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, grade: Number(e.target.value) } })}>{Array.from({ length: 13 }, (_, grade) => <option key={grade} value={grade}>{grade === 0 ? 'Kindergarten' : grade}</option>)}</select></label>}
-            </div>
-            </fieldset><fieldset><legend className="mb-2 font-semibold text-foreground">Account & Portal Access</legend><label className="block">USERNAME (EMAIL)<input className={inp} value={edit.d.email} maxLength={120} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, email: e.target.value } })} /></label>
-            <label className="block">PASSWORD<div className="flex gap-2"><input className={inp} value={edit.d.password} maxLength={120} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, password: e.target.value } })} />
-              <button type="button" onClick={() => setEdit({ ...edit, d: { ...edit.d, password: edit.d.email.trim().toLowerCase() } })} className="shrink-0 border border-vc-line px-2 text-foreground">Same as username</button></div></label>
-            <div className="grid grid-cols-2 gap-3">
-              <label>ROLE<select className={inp} value={edit.d.role} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, role: e.target.value as Role, personId: "new" } })}>{(["student", "teacher", "admin"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select></label>
-              {edit.d.role === "teacher" && <label>FACULTY RECORD<select className={inp} value={edit.d.personId} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, personId: e.target.value } })}><option value="new">+ New faculty record</option><option value="">— none —</option>{TEACHERS.map((t) => <option key={t.id} value={t.id}>{t.prefix} {t.first} {t.last}</option>)}{edit.d.personId.startsWith("p-") && <option value={edit.d.personId}>{edit.d.first} {edit.d.last} (own record)</option>}</select></label>}
-              {edit.d.role === "student" && <label>STUDENT RECORD<select className={inp} value={edit.d.personId} onChange={(e) => setEdit({ ...edit, d: { ...edit.d, personId: e.target.value } })}><option value="new">+ New student record</option><option value="">— none —</option>{edit.d.personId.startsWith("p-") && <option value={edit.d.personId}>{edit.d.first} {edit.d.last} (own record)</option>}</select></label>}
-            </div>
-            </fieldset><div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setEdit(null)} className="h-8 border border-vc-line px-3 text-foreground">Cancel</button><button className="h-8 bg-ax-go px-4 font-semibold text-primary-foreground">Save</button></div>
-          </form>}
-        </DialogContent>
-      </Dialog>
       <ImageCropper open={!!photoFor} onClose={() => setPhotoFor(null)} aspect={1} outWidth={300} title="Directory Photo"
         onSave={(url, fullPhoto) => { if (!photoFor) return; update((s) => ({ ...s, photos: { ...s.photos, [photoFor]: url }, fullPhotos: { ...s.fullPhotos, [photoFor]: fullPhoto } })); toast.success("Photo saved"); }} />
     </AxiomShell>
