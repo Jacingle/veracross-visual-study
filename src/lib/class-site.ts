@@ -7,7 +7,7 @@ import type { Assignment } from "./sis-data";
 export const SITE_BLUE = "#007DDE";
 
 export type SiteLink = { label: string; url: string };
-export type SitePost = { id: string; title: string; date: string; body: string; links: SiteLink[]; published: boolean };
+export type SitePost = { id: string; title: string; date: string; body: string; links: SiteLink[]; published: boolean; kind?: "quick" | "full" | "lesson" | undefined; by?: string | undefined; html?: boolean | undefined };
 export type ResourceTopic = { id: string; title: string; links: SiteLink[] };
 
 /** Background colors a teacher can pick for the class website (plus any custom color). */
@@ -100,3 +100,19 @@ export function dayChips(date: Date, section: ScheduledSection & { block: string
 
 /** "Quiz" for QUIZ, "Classwork/homework" for CLASSWORK/HOMEWORK: how the home list names an assignment. */
 export const categoryLabel = (cat: string) => cat.charAt(0) + cat.slice(1).toLowerCase();
+
+/** One section block on a class website page (Veracross page editor: Header, Text, Button, Divider, Text + Image, Images, File, Embed). */
+type BlockBase = { id: string; bg?: string };
+export type PageBlock =
+  | (BlockBase & { type: "header"; text: string; align: "left" | "center" | "right"; size: "S" | "M" | "L" | "XL"; bold: boolean; color: string; link?: string })
+  | (BlockBase & { type: "text"; cols: 1 | 2 | 3; columns: { title: string; titleColor: string; html: string; align: "left" | "center" | "right" }[] })
+  | (BlockBase & { type: "button"; align: "left" | "center" | "right" | "full"; buttons: { text: string; url: string; color: string }[] })
+  | (BlockBase & { type: "divider" })
+  | (BlockBase & { type: "textimage"; layout: "left" | "right"; image: string; size: "S" | "M" | "L"; html: string })
+  | (BlockBase & { type: "images"; images: string[] })
+  | (BlockBase & { type: "file"; text: string; mode: "upload" | "url"; url: string; name: string })
+  | (BlockBase & { type: "embed"; code: string });
+export type BlockType = PageBlock["type"];
+
+export type DiscussionComment = { id: string; by: string; byId: string; date: string; text: string; parent?: string | undefined };
+export type Discussion = { id: string; title: string; body: string; status: "open" | "draft" | "closed"; opens?: string | undefined; closes?: string | undefined; comments: DiscussionComment[] };

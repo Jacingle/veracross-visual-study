@@ -13,7 +13,7 @@ import { AssignmentsTab } from "@/components/teacher/AssignmentsTab";
 import { Attendance, GradesComments, Reports, Weights } from "@/components/teacher/ClassTools";
 import { courseTitle, teacherFull, today } from "@/lib/sis-data";
 import { ClassCalendar, ClassNotifications, ClassPhotos, ClassSettings } from "@/components/teacher/ClassExtras";
-import { WebsiteSettings } from "@/components/teacher/WebsiteSettings";
+import { WebsiteManager } from "@/components/teacher/WebsiteManager";
 import { termLabel } from "@/lib/terms";
 import { defaultWeights, letterFor, weightedAverage } from "@/lib/grading";
 import { scoreOf } from "@/lib/gradebook";
@@ -118,7 +118,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
         {tab === "grades" && <GradesComments c={c} roster={roster} list={list} sid={sid} />}
         {tab === "weights" && <Weights key={c.id} c={c} list={list} termId={wterm} />}
         {tab === "reports" && <Reports list={list} roster={roster} />}
-        {tab === "website" && <WebsiteSettings c={c} />}
+        {tab === "website" && <WebsiteManager c={c} />}
         {tab === "notifications" && <ClassNotifications c={c} list={list} roster={roster} />}
         {tab === "calendar" && <ClassCalendar c={c} list={list} />}
         {tab === "photos" && <ClassPhotos roster={roster} />}

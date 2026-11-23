@@ -6,8 +6,10 @@ const SIZES: [string, string][] = [["Small", "2"], ["Normal", "3"], ["Large", "5
 const FONTS = ["Source Sans 3", "Arial", "Georgia", "Times New Roman", "Courier New", "Verdana"];
 
 /** Rich-text writing area for school mail: fonts, sizes, colours, lists, alignment, links. Reports its HTML on every edit. */
-export function MailEditor({ onChange, minHeight = 260, label = "Message" }: { onChange: (html: string, text: string) => void; minHeight?: number; label?: string }) {
+export function MailEditor({ onChange, minHeight = 260, label = "Message", initial = "" }: { onChange: (html: string, text: string) => void; minHeight?: number; label?: string; initial?: string }) {
   const area = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (area.current && initial) area.current.innerHTML = initial; // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => { try { document.execCommand("styleWithCSS", false, "false"); } catch { /* older browsers */ } }, []);
   const run = (cmd: string, arg?: string) => { area.current?.focus(); try { document.execCommand(cmd, false, arg); } catch { /* ignore */ } emit(); };
   const emit = () => { const el = area.current; if (el) onChange(el.innerHTML, el.innerText); };

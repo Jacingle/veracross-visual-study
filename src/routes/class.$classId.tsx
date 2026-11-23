@@ -1,3 +1,4 @@
+import { BlocksView } from "@/components/site/PageBlocks";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { isAfter } from "date-fns";
@@ -57,7 +58,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
   if (pageName) body = <PageView name={pageName} ws={ws} />;
   else if (tab === "info") body = <InfoView c={c} sets={schedulingSets} description={description} />;
   else if (tab === "pages") body = <PageListView c={c} student={student} />;
-  else if (tab === "home") body = <HomeView c={c} upcoming={upcoming} onOpen={setSelected} />;
+  else if (tab === "home") body = <><HomeView c={c} upcoming={upcoming} onOpen={setSelected} />{ws.homepage && ws.pageContent?.[ws.homepage]?.published && ws.pageContent[ws.homepage]?.blocks?.length ? <BlocksView blocks={ws.pageContent[ws.homepage]!.blocks!} /> : null}</>;
   else if (tab === "posts") body = <PostsView ws={ws} student={student} />;
   else if (tab === "timeline") body = <TimelineView list={all} onOpen={setSelected} />;
   else if (tab === "calendar") body = <CalendarView c={c} sets={schedulingSets} list={all} onOpen={setSelected} />;

@@ -1,3 +1,5 @@
+import { BlocksView } from "@/components/site/PageBlocks";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 import { Link } from "@tanstack/react-router";
 import { addMonths, format, parseISO } from "date-fns";
 import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, Link2 } from "lucide-react";
@@ -98,7 +100,7 @@ export function PostsView({ ws, student }: { ws: Website; student: boolean }) {
             <div><div className="text-[24px] font-semibold">{format(d, "EEE")}</div><div className="text-[15px] font-semibold">{format(d, "MMM d")}</div></div></div>
           <h3 className="min-w-0 text-[26px] leading-8">{p.title}{student || p.published ? "" : " (draft)"}</h3>
         </div>
-        {p.body && <p className="mt-4 whitespace-pre-wrap px-[18px] text-[16px] leading-6">{p.body}</p>}
+        {p.body && (p.html ? <div className="mt-4 px-[18px] text-[16px] leading-6 [&_a]:text-vc-site-blue [&_a]:underline [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.body) }} /> : <p className="mt-4 whitespace-pre-wrap px-[18px] text-[16px] leading-6">{p.body}</p>)}
         <div className="mt-3 px-[34px]">{p.links.map((l, i) => <AttachLink key={i} l={l} />)}</div>
       </article>); })}</div>
   );
@@ -205,6 +207,7 @@ export function PageView({ name, ws }: { name: string; ws: Website }) {
     <div className="px-[19px] pb-10 pt-[26px]">
       {p?.date && <div className="text-[16px] font-semibold text-vc-gray-dark">Published: {format(parseISO(p.date), "EEE, MMM dd")}</div>}
       <h2 className="text-[33px] leading-10">{name}</h2>
+      {p?.blocks?.length ? <div className="mt-4 -mx-[19px]"><BlocksView blocks={p.blocks} /></div> : null}
       {p?.button?.url && <a href={p.button.url} target="_blank" rel="noreferrer" className="mx-auto mt-[22px] block w-[82%] bg-vc-site-blue py-[18px] text-center font-[Arial,sans-serif] text-[20px] text-primary-foreground shadow-sm">{p.button.label || name}</a>}
       {p?.body && <p className="mt-6 whitespace-pre-wrap text-[17px] leading-[27px]">{p.body}</p>}
     </div>
