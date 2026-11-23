@@ -100,30 +100,30 @@ function Editor({ c }: { c: Section }) {
   };
   return (
     <AxiomShell compactRail title={`Class: ${c.code}: ${c.name}`} crumbs={[{ label: "System", to: "/admin/courses" }]}
-      actions={<div className="flex gap-2"><button onClick={remove} className="h-[34px] border border-primary-foreground/60 px-3 text-[13px] uppercase text-primary-foreground hover:bg-primary-foreground/10">Delete</button><AxAction onClick={save}>Update</AxAction></div>}>
+      actions={<div className="flex gap-2"><button onClick={remove} className="h-[34px] border border-primary-foreground/60 px-3 text-[13px] uppercase text-primary-foreground hover:bg-primary-foreground/10">Delete</button><AxAction data-ax-update onClick={save}>Update</AxAction></div>}>
       <AxDetail groups={groups} active={tab} onSelect={setTab} title={TITLES[tab] ?? "General"} banner={tab === "general" ? <AxBanner /> : undefined}>
         {(tab === "general" || tab === "registrations") && <>
           {tab === "general" && <div className="grid grid-cols-1 gap-x-8 gap-y-1 px-6 py-4 md:grid-cols-2 xl:grid-cols-4 [&>div]:border-l [&>div]:border-vc-line [&>div]:pl-5">
             <div>
               <AxField label="Course" required><div className={`${axInput} flex items-center bg-vc-panel`}>{courseRecord?.name ?? c.name}</div></AxField>
-              <AxField label="Class ID" required><input aria-label="Class identifier" className={axInput} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></AxField>
-              <AxField label="Description" required><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
+              <AxField label="Class ID" required dirty={d.code !== c.code}><input aria-label="Class identifier" className={axInput} value={d.code} onChange={(e) => setD({ ...d, code: e.target.value })} /></AxField>
+              <AxField label="Description" required dirty={d.name !== c.name}><input aria-label="Class name" className={axInput} value={d.name} maxLength={80} onChange={(e) => setD({ ...d, name: e.target.value })} /></AxField>
             </div>
             <div>
-              <AxField label="Teacher"><PersonField label="Teacher" ids={d.teacherIds.slice(0, 1)} onChange={(ids) => setD({ ...d, teacherIds: ids.slice(0, 1) })} nameOf={personName} onSearch={() => setPicking("teacher")} onOpen={openPerson} /></AxField>
-              <AxField label="Teacher's Aide"><PersonField label="Teacher's Aide" multi ids={aides} onChange={(ids) => setD({ ...d, aideIds: ids })} nameOf={personName} onSearch={() => setPicking("aide")} onOpen={openPerson} /></AxField>
-              <AxField label="Room"><input aria-label="Room" className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
+              <AxField label="Teacher" dirty={d.teacherIds.join() !== c.teacherIds.join()}><PersonField label="Teacher" ids={d.teacherIds.slice(0, 1)} onChange={(ids) => setD({ ...d, teacherIds: ids.slice(0, 1) })} nameOf={personName} onSearch={() => setPicking("teacher")} onOpen={openPerson} /></AxField>
+              <AxField label="Teacher's Aide" dirty={aides.join() !== (c.aideIds ?? []).join()}><PersonField label="Teacher's Aide" multi ids={aides} onChange={(ids) => setD({ ...d, aideIds: ids })} nameOf={personName} onSearch={() => setPicking("aide")} onOpen={openPerson} /></AxField>
+              <AxField label="Room" dirty={d.room !== c.room}><input aria-label="Room" className={axInput} value={d.room} maxLength={12} placeholder="<None Specified>" onChange={(e) => setD({ ...d, room: e.target.value })} /></AxField>
               <AxField label="Schedule"><div className={`${axInput} flex items-center bg-vc-panel`}>{scheduleText}</div></AxField>
             </div>
             <div>
-              <AxField label="School Year" required><select aria-label="School year" className={axInput} value={year} onChange={(e) => setTerms(e.target.value, termMode)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></AxField>
-              <AxField label="Terms"><select aria-label="Terms" className={axInput} value={termMode} onChange={(e) => setTerms(year, e.target.value)}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></AxField>
-              <AxField label="Section"><input aria-label="Section identifier" className={axInput} value={d.section} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
+              <AxField label="School Year" required dirty={d.terms.join() !== c.terms.join()}><select aria-label="School year" className={axInput} value={year} onChange={(e) => setTerms(e.target.value, termMode)}>{years.map((y) => <option key={y.id} value={y.id}>{y.label}</option>)}</select></AxField>
+              <AxField label="Terms" dirty={d.terms.join() !== c.terms.join()}><select aria-label="Terms" className={axInput} value={termMode} onChange={(e) => setTerms(year, e.target.value)}><option value="FY">Full Year (S1 + S2)</option><option value="S1">Semester 1 only</option><option value="S2">Semester 2 only</option></select></AxField>
+              <AxField label="Section" dirty={d.section !== c.section}><input aria-label="Section identifier" className={axInput} value={d.section} onChange={(e) => setD({ ...d, section: e.target.value })} /></AxField>
             </div>
             <div>
               <AxField label="Status" required><div className={`${axInput} flex items-center bg-vc-panel capitalize`}>{status}</div></AxField>
               <AxField label="Counts"><div className={`${axInput} flex items-center bg-vc-panel`}>{roster.length}</div></AxField>
-              <AxField label="Published"><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
+              <AxField label="Published" dirty={d.published !== c.published}><AxToggle label="Published to portals" on={d.published} onChange={(on) => setD({ ...d, published: on })} /></AxField>
             </div>
           </div>}
           <div className="flex flex-wrap items-center gap-3 border-y border-vc-line bg-vc-panel px-4 py-2"><AxAdd onClick={() => setPending(true)}>Add Record...</AxAdd><span className="text-[13px] text-vc-gray">Enrolls a student: use the search icon on the new row.</span></div>

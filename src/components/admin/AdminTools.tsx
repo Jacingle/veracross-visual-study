@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Plus, Zap } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +12,7 @@ import { SCHOOL } from "@/lib/sis-data";
 import { useRecordWindow } from "@/lib/record-window";
 import { useAdminWorkspace } from "@/lib/admin-workspace";
 
-const iconBtn = "grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20";
+export const iconBtn = "grid h-[34px] w-[46px] place-items-center border-l border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20";
 const act = "block w-full px-0 py-1 text-left text-[16px] text-vc-link-strong hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline";
 
 /** The + button in the Axiom toolbar: add a record from anywhere. Courses and classes open in their own window. */
@@ -29,6 +29,30 @@ export function AddMenu() {
         <DropdownMenuItem asChild><Link to="/admin/assignment-types">Assignment Type</Link></DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** A button that lists its links while the pointer is over it (or it has focus), like the Add button on Veracross homepages. */
+export function HoverMenu({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <div className={`group relative ${className}`}>
+      <button type="button" aria-haspopup="menu" className="flex h-7 items-center gap-1 border border-ax-go/70 bg-ax-go px-3 text-[13px] font-semibold text-primary-foreground hover:brightness-95"><Plus className="size-4" strokeWidth={3} />{label}</button>
+      <ul role="menu" className="invisible absolute right-0 top-full z-30 min-w-[220px] border border-vc-line bg-background py-1 text-[14px] shadow-lg group-focus-within:visible group-hover:visible">{children}</ul>
+    </div>
+  );
+}
+const hoverItem = "block w-full px-3 py-1.5 text-left text-vc-link-strong hover:bg-vc-panel";
+/** "Add" on every page: hover to see the records that can be added. */
+export function AddHoverMenu() {
+  const openRecord = useRecordWindow();
+  return (
+    <HoverMenu label="Add">
+      <li role="none"><button role="menuitem" type="button" onClick={() => openRecord("/admin/course/new")} className={hoverItem}>Course</button></li>
+      <li role="none"><button role="menuitem" type="button" onClick={() => openRecord("/admin/class/new")} className={hoverItem}>Class</button></li>
+      <li role="none"><Link role="menuitem" to="/admin/users" search={{ add: "user" }} className={hoverItem}>Person / User Account</Link></li>
+      <li role="none"><Link role="menuitem" to="/admin/scheduling" className={hoverItem}>Scheduling Set</Link></li>
+      <li role="none"><Link role="menuitem" to="/admin/assignment-types" className={hoverItem}>Assignment Type</Link></li>
+    </HoverMenu>
   );
 }
 

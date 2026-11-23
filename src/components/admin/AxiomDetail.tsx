@@ -42,12 +42,15 @@ export const AxBanner = ({ children = "Fields in bold are required" }: { childre
 
 export const axInput = "h-[30px] w-full border border-vc-gray-light/80 bg-background px-2.5 text-[13px] outline-none focus:border-vc-link disabled:bg-vc-panel";
 
-/** One labelled field: bold for required fields, a light dotted-underline label for optional ones. */
-export function AxField({ label, required = false, children }: { label: string; required?: boolean; children: ReactNode }) {
+/** One labelled field: bold for required fields, a light dotted-underline label for optional ones. A changed field turns orange with a corner triangle until Update saves it, as on Veracross detail screens. */
+export function AxField({ label, required = false, dirty = false, children }: { label: string; required?: boolean; dirty?: boolean; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[minmax(0,115px)_minmax(0,1fr)] items-center gap-x-3 py-[4px]">
       <span className={`text-[13px] uppercase leading-4 ${required ? "font-bold text-foreground" : "border-b border-dotted border-vc-gray-light text-vc-gray-dark"} w-fit`}>{label}</span>
-      <div className="min-w-0">{children}</div>
+      <div data-changed={dirty ? "true" : undefined} className={`relative min-w-0 ${dirty ? "[&_input:not([type=checkbox])]:bg-ax-unpub [&_select]:bg-ax-unpub [&_div[class*=bg-vc-panel]]:bg-ax-unpub" : ""}`}>
+        {dirty && <span aria-hidden className="pointer-events-none absolute left-0 top-0 z-10 border-r-[9px] border-t-[9px] border-r-transparent border-t-vc-tile-warm-fg" />}
+        {children}
+      </div>
     </div>
   );
 }

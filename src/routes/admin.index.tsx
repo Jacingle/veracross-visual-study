@@ -1,15 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { ChevronDown, BookOpen, ClipboardList, Image, Clock, Search, Mail, Palette, Receipt, UserPlus, Users } from "lucide-react";
-import { AxiomShell, Panel } from "@/components/admin/AxiomShell";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { STUDENTS, TEACHERS } from "@/lib/sis-data";
-import { ROLE_LABEL } from "@/lib/auth-rules";
+import { AxiomShell } from "@/components/admin/AxiomShell";
+import { HomepageView } from "@/components/admin/HomepageView";
+import { SYSTEM_PAGE } from "@/lib/admin-homepages";
 import { useSchool } from "@/lib/school-store";
-import { HOMEPAGES } from "@/lib/admin-homepages";
 import { pageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/")({
@@ -17,48 +11,14 @@ export const Route = createFileRoute("/admin/")({
   component: AdminHome,
 });
 
-const TILES = [
-  { group: "Users & Security", items: [{ to: "/admin/users", label: "Users", icon: Users }, { to: "/admin/queries", label: "Find People", icon: Search }] },
-  { group: "Scheduling", items: [{ to: "/admin/terms", label: "School Years & Terms", icon: Clock }, { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock }, { to: "/admin/queries", label: "Find Classes", icon: Search }] },
-  { group: "Academics", items: [{ to: "/admin/courses", label: "Course Setup", icon: BookOpen }, { to: "/admin/classes", label: "Classes", icon: ClipboardList }, { to: "/admin/assignment-types", label: "Assignment Types", icon: Palette }] },
-  { group: "Portals", items: [{ to: "/admin/settings", label: "Portal Settings", icon: Palette }, { to: "/admin/settings", label: "Backgrounds", icon: Image }] },
-  { group: "Communications & Business", items: [{ to: "/admin/messages", label: "Send a Message", icon: Mail }, { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt }] },
-] as const;
-
+/** The Main homepage everyone lands on: counters, every area's links, and a Query Tile of the latest messages. */
 function AdminHome() {
-  const { users, purchases, sent, sections } = useSchool();
-  const [filter, setFilter] = useState("");
-  const pending = purchases.filter((p) => p.status === "Pending").length;
-  return (
-    <AxiomShell title="System Administrator Homepage">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Input aria-label="Find a task" placeholder="Find a task…" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-8 max-w-80 bg-background text-[13px]" /><Button asChild size="sm" className="h-8 bg-ax-go text-primary-foreground"><Link to="/admin/queries">Find Records</Link></Button></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[["Portal Accounts", users.length], ["Students", users.filter((u) => u.role === "student").length], ["Faculty & Staff", users.filter((u) => u.role === "teacher").length], ["Class Sections", sections.length]].map(([l, n]) => (
-          <div key={l} className="border border-vc-line bg-background px-3 py-2.5"><div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div><div className="text-[26px] font-light text-ax-top">{n}</div></div>))}
-      </div>
-      <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {TILES.filter((g) => `${g.group} ${g.items.map((i) => i.label).join(" ")}`.toLowerCase().includes(filter.toLowerCase())).map((g) => (
-            <Panel key={g.group} title={g.group}>
-              <div className="space-y-0.5">{g.items.map(({ to, label, icon: Icon }) => (
-                <Link key={label} to={to} className="flex min-h-8 items-center gap-2 border-b border-vc-line px-1 py-1 text-vc-link-strong last:border-0 hover:bg-vc-panel"><Icon className="size-4" />{label}</Link>))}</div>
-            </Panel>))}
-        </div>
-        <div className="space-y-3">
-          <Panel title="Homepages" right={<span />}>
-            {HOMEPAGES.map((h) => <Link key={h.id} to="/admin/home/$pageId" params={{ pageId: h.id }} className="flex min-h-8 items-center border-b border-vc-line px-1 py-1 text-vc-link-strong last:border-0 hover:bg-vc-panel">{h.title}</Link>)}
-          </Panel>
-          <Panel title="Accounts by Role" right={<Link to="/admin/users" className="font-normal text-vc-link-strong">View all</Link>}>
-            {(["admin", "teacher", "student"] as const).map((r) => <div key={r} className="flex justify-between border-b border-vc-line py-1 last:border-0"><span>{ROLE_LABEL[r]}</span><b>{users.filter((u) => u.role === r).length}</b></div>)}
-          </Panel>
-          <Panel title="Needs Attention">
-            <Link to="/admin/purchases" className="flex justify-between py-1 hover:underline"><span>Pending purchase requests</span><b className={pending ? "text-destructive" : ""}>{pending}</b></Link>
-            <Link to="/admin/queries" search={{ source: "people", status: "inactive" }} className="flex justify-between py-1 hover:underline"><span>Inactive accounts</span><b>{users.filter((u) => !u.active).length}</b></Link><Link to="/admin/queries" search={{ source: "classes", status: "draft" }} className="flex justify-between py-1 hover:underline"><span>Unpublished classes</span><b>{sections.filter((c) => !c.published).length}</b></Link>
-          </Panel>
-          <Panel title="Recent Messages Sent" right={<Link to="/admin/messages" className="font-normal text-vc-link-strong">Compose</Link>}>
-            {sent.length === 0 ? <p className="text-muted-foreground">No messages sent yet.</p> : sent.slice(0, 4).map((m) => <div key={m.id} className="border-b border-vc-line py-1 last:border-0"><div className="truncate">{m.subject}</div><div className="text-[11px] text-muted-foreground">{format(parseISO(m.date), "MMM d")} · to {m.audience}</div></div>)}
-          </Panel>
-        </div>
-      </div>
-    </AxiomShell>
+  const { sent } = useSchool();
+  const recent = (
+    <section aria-label="Recent Messages Sent" className="min-h-[200px] border border-vc-line border-t-2 border-t-ax-panel bg-background">
+      <h3 className="flex items-center justify-between bg-vc-panel px-4 py-2 text-[17px] font-light">Recent Messages Sent<Link to="/admin/messages" className="text-[13px] text-vc-link-strong hover:underline">Compose</Link></h3>
+      <div className="px-4 py-3">{sent.length === 0 ? <p className="text-muted-foreground">No messages sent yet.</p> : sent.slice(0, 4).map((m) => <div key={m.id} className="border-b border-vc-line py-1 last:border-0"><div className="truncate">{m.subject}</div><div className="text-[11px] text-muted-foreground">{format(parseISO(m.date), "MMM d")} · to {m.audience}</div></div>)}</div>
+    </section>
   );
+  return <AxiomShell title="System Administrator Homepage"><HomepageView page={SYSTEM_PAGE} extra={recent} /></AxiomShell>;
 }

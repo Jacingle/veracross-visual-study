@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import type { Discussion, PageBlock, ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
 import type { ReviewSettings } from './schedule-review';
+import type { Workspace } from './workspaces';
 import { DEFAULT_DOC_LAYOUT, defaultPortals, type DocLayout, type PortalRec } from './axiom';
 
 export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
@@ -98,6 +99,8 @@ type State = {
   assignmentTypes: AssignmentType[];
   /** Student Schedules review: blocks that need a class and the minimum classes per term. */
   scheduleReview?: ReviewSettings;
+  /** Axiom workspaces: personal and shared folders of bookmarks and reports. */
+  workspaces?: Workspace[];
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
