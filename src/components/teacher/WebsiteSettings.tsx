@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -8,7 +8,9 @@ import { ImageCropper } from "@/components/common/ImageCropper";
 import { SITE_BLUE, SITE_COLORS, type ResourceTopic, type SiteLink, type SitePost } from "@/lib/class-site";
 import { useSchool, type Section, type Website } from "@/lib/school-store";
 
+const TABS = [["look", "Look"], ["home", "Home Sections"], ["pages", "Pages"], ["posts", "Posts"], ["resources", "Resources"]] as const;
 const FIELD = "h-8 border border-vc-line bg-background px-2";
+const move = <T,>(list: T[], i: number, by: number): T[] => { const j = i + by; if (j < 0 || j >= list.length) return list; const n = [...list]; [n[i], n[j]] = [n[j]!, n[i]!]; return n; };
 const newId = () => Math.random().toString(36).slice(2, 10);
 const isoToday = () => format(new Date(), "yyyy-MM-dd");
 
@@ -25,6 +27,7 @@ export function WebsiteSettings({ c }: { c: Section }) {
   const { update } = useSchool();
   const [w, setW] = useState<Website>(c.website);
   const [crop, setCrop] = useState(false);
+  const [tab, setTab] = useState<(typeof TABS)[number][0]>("look");
   useEffect(() => { setW(c.website); }, [c.website]);
   const change = (next: Website) => { setW(next); update((s) => ({ ...s, sections: s.sections.map((x) => x.id === c.id ? { ...x, website: next } : x) })); };
   const save = (next = w) => { update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...x, website: next } : x)) })); toast.success("Class website saved"); };
@@ -52,6 +55,8 @@ export function WebsiteSettings({ c }: { c: Section }) {
           <button onClick={() => save()} className="h-8 bg-vc-link-strong px-4 font-semibold text-primary-foreground">Save</button></div>
       </div>
 
+      <div role="tablist" className="mt-3 flex border-b border-vc-line">{TABS.map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k} type="button" onClick={() => setTab(k)} className={`-mb-px border border-b-0 px-4 py-2 text-[13px] ${tab === k ? "border-vc-line bg-background font-semibold text-vc-site-blue" : "border-transparent text-foreground/70 hover:text-foreground"}`}>{label}{k === "pages" ? ` (${w.pages.length})` : k === "posts" ? ` (${posts.length})` : k === "resources" ? ` (${topics.length})` : ""}</button>)}</div>
+      {tab === "look" && <>
       <H hint="Choose a blank gray page, a color or a photo. Color and photo backgrounds get a soft shadow across the top and a white class title.">Background</H>
       <div className="mt-2 flex gap-2"><Opt v="none" label="Blank" /><Opt v="color" label="Color" /><Opt v="photo" label="Photo" /></div>
       {w.bg === "color" && <div className="mt-3">
@@ -67,7 +72,9 @@ export function WebsiteSettings({ c }: { c: Section }) {
         {w.bg !== "none" && <><div className="absolute inset-0" style={{ background: "linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,0))" }} /><span className="relative m-2 block text-[15px] text-primary-foreground [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">{c.code}: {c.name}</span></>}</div>
       <div className="mt-3 flex flex-wrap gap-4">{([['barColor', 'Top bar & heading color', "#37465f"], ['linkColor', 'Link color', SITE_BLUE]] as const).map(([key, label, fallback]) => <label key={key} className="flex items-center gap-2">{label}<input type="color" aria-label={label} value={w[key] || fallback} onChange={(e) => change({ ...w, [key]: e.target.value })} />
         {w[key] && <button type="button" onClick={() => change({ ...w, [key]: undefined })} className="text-vc-site-blue">Reset</button>}</label>)}</div>
+      </>}
 
+      {tab === "home" && <>
       <H hint="Shown under the assignment list on Home (for example Course Description, Honors Placement).">Home Page Sections</H>
       <div className="mt-2 space-y-3">{w.sections.map((sec, i) => (
         <div key={i} className="border border-vc-line p-2">
@@ -76,10 +83,15 @@ export function WebsiteSettings({ c }: { c: Section }) {
           <textarea aria-label="Section text" className="mt-2 h-24 w-full border border-vc-line p-2" maxLength={4000} value={sec.body} onChange={(e) => change({ ...w, sections: w.sections.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)) })} />
         </div>))}</div>
       <button onClick={() => change({ ...w, sections: [...w.sections, { title: "Course Description", body: "" }] })} className="mt-2 flex items-center gap-1 text-vc-site-blue"><Plus className="size-4" />Add section</button>
+      </>}
 
+      {tab === "pages" && <>
       <H hint="Pages appear under All Pages. Students only see published pages, with the publish date, title, text and an optional button.">Pages</H>
       <div className="mt-1 space-y-1">{w.pages.map((pg, i) => { const p = page(pg); return (
         <div key={pg} className="border-b border-vc-line py-2"><div className="flex gap-2"><input aria-label="Page name" className={`${FIELD} w-72`} maxLength={60} defaultValue={pg} onBlur={(e) => { renamePage(i, e.target.value); e.target.value = w.pages[i] ?? pg; }} />
+          <Button variant="ghost" size="icon" aria-label="Move page up" disabled={i === 0} onClick={() => change({ ...w, pages: move(w.pages, i, -1) })}><ChevronUp className="size-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Move page down" disabled={i === w.pages.length - 1} onClick={() => change({ ...w, pages: move(w.pages, i, 1) })}><ChevronDown className="size-4" /></Button>
+          <span className={`self-center px-2 text-[11px] font-semibold uppercase ${p.published ? "bg-[#d4ecd4] text-[#2f2f2f]" : "bg-vc-panel text-muted-foreground"}`}>{p.published ? "Published" : "Draft"}</span>
           <Button variant="ghost" size="icon" aria-label="Remove page" onClick={() => dropPage(i)}><Trash2 className="size-4" /></Button></div>
           <textarea aria-label={`Content for ${pg}`} className="mt-2 h-24 w-full border border-vc-line p-2" value={p.body} onChange={(e) => setPage(pg, { body: e.target.value })} />
           <div className="mt-2 flex flex-wrap items-center gap-2">Button
@@ -88,7 +100,9 @@ export function WebsiteSettings({ c }: { c: Section }) {
           <div className="mt-2 flex flex-wrap items-center gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={p.published} onChange={(e) => publishPage(pg, e.target.checked)} />Published</label>
             <label className="flex items-center gap-2">Publish date<input type="date" aria-label={`Publish date for ${pg}`} className={FIELD} value={p.date ?? ""} onChange={(e) => setPage(pg, { date: e.target.value || undefined })} /></label></div></div>); })}</div>
       <Button variant="ghost" size="sm" onClick={() => { let n = w.pages.length + 1; while (w.pages.includes(`New Page ${n}`)) n += 1; const name = `New Page ${n}`; change({ ...w, pages: [...w.pages, name], pageContent: { ...w.pageContent, [name]: { body: "", published: false } } }); }} className="mt-2 text-vc-site-blue"><Plus className="size-4" />Add page</Button>
+      </>}
 
+      {tab === "posts" && <>
       <H hint="Dated announcements with attachments, listed on the Posts tab (newest first).">Posts</H>
       <div className="mt-2 space-y-3">{posts.map((p, i) => (
         <div key={p.id} className="border border-vc-line p-2">
@@ -100,7 +114,9 @@ export function WebsiteSettings({ c }: { c: Section }) {
           <label className="mt-2 flex items-center gap-2"><input type="checkbox" checked={p.published} onChange={(e) => setPost(i, { published: e.target.checked })} />Published</label>
         </div>))}</div>
       <button onClick={() => change({ ...w, posts: [{ id: newId(), title: "", date: isoToday(), body: "", links: [], published: true }, ...posts] })} className="mt-2 flex items-center gap-1 text-vc-site-blue"><Plus className="size-4" />Add post</button>
+      </>}
 
+      {tab === "resources" && <>
       <H hint="Group links under topics (for example Module 10). Topics appear in two columns on the Resources tab.">Resources</H>
       <div className="mt-2 space-y-3">{topics.map((t, i) => (
         <div key={t.id} className="border border-vc-line p-2">
@@ -109,6 +125,7 @@ export function WebsiteSettings({ c }: { c: Section }) {
           <Links links={t.links} onChange={(links) => setTopic(i, { links })} add="Add resource link" />
         </div>))}</div>
       <button onClick={() => change({ ...w, resources: [...topics, { id: newId(), title: "General Information", links: [] }] })} className="mt-2 flex items-center gap-1 text-vc-site-blue"><Plus className="size-4" />Add topic</button>
+      </>}
 
       <ImageCropper open={crop} onClose={() => setCrop(false)} aspect={16 / 9} outWidth={1600} uncropped title="Website Background"
         onSave={(url) => { const next = { ...w, bg: "photo" as const, photo: url }; setW(next); save(next); }} />
