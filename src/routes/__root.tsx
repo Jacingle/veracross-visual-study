@@ -35,7 +35,7 @@ function HardNav() {
       if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download") || a.origin !== window.location.origin) return;
       if (a.pathname === window.location.pathname && a.search === window.location.search) return;
       e.preventDefault();
-      void savesSettled().then(() => window.location.assign(a.href));
+      void Promise.race([savesSettled(), new Promise((r) => setTimeout(r, 300))]).then(() => window.location.assign(a.href));
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -49,7 +49,7 @@ function ReloadOnPage() {
   const first = useRef(path);
   useEffect(() => {
     if (path === first.current) return;
-    void savesSettled().then(() => window.location.reload());
+    void Promise.race([savesSettled(), new Promise((r) => setTimeout(r, 300))]).then(() => window.location.reload());
   }, [path]);
   return null;
 }

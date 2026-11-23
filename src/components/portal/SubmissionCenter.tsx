@@ -47,7 +47,7 @@ export function SubmissionCenter({ aid, onPick }: { aid: string | undefined; onP
   const waiting = rows.find((a) => dropboxOf(comments, keyOf(a)) === "Expecting");
   const sel = rows.find((a) => a.id === aid) ?? waiting ?? rows[0];
   return (
-    <div style={{ zoom: 0.88 }}>
+    <div style={{ zoom: 0.8 }}>
       <div className="bg-vc-panel px-[35px] pb-3.5 pt-[22px]">
         <h1 className="text-[32px] font-semibold leading-10 text-foreground/80">Assignment Submission</h1>
         <p className="text-[16px] font-light text-vc-gray-dark">{rows.length ? "Select an Assignment Below" : "Nothing is open for submission right now."}</p>
@@ -55,15 +55,15 @@ export function SubmissionCenter({ aid, onPick }: { aid: string | undefined; onP
       {rows.length === 0 ? (
         <p className="border-t border-vc-line px-[35px] py-10 text-[15px] text-vc-gray-dark">Your teachers open an assignment for submissions by setting its dropbox to Expecting. When one is open for you, it will be listed here and a Submit button will appear next to it on your All Assignments page.</p>
       ) : (
-        <div className="grid border-t border-vc-line md:grid-cols-[minmax(0,330px)_minmax(0,1fr)]">
-          <ul className="bg-vc-panel">
+        <div className="grid border-t border-vc-line md:grid-cols-[minmax(0,410px)_minmax(0,1fr)]">
+          <ul className="bg-background">
             {rows.map((a) => {
               const c = sections.find((x) => x.id === a.courseId);
               const done = completionOf(aStatus, keyOf(a), a.score !== undefined) === "Complete";
               const on = sel?.id === a.id;
               return (
-                <li key={a.id} className={`border-b border-vc-line ${on ? "bg-background" : ""}`}>
-                  <button type="button" aria-current={on} onClick={() => onPick(a.id)} className="block w-full px-[35px] py-[18px] text-left">
+                <li key={a.id} className={`border-b border-vc-line ${on ? "border-t bg-[#f4f4f4]" : ""}`}>
+                  <button type="button" aria-current={on} onClick={() => onPick(a.id)} className="block w-full px-[26px] py-[18px] text-left">
                     <div className="text-[18px] leading-6"><strong className="font-semibold">{c?.code ?? a.courseId}:</strong> <span className="font-light">{c ? courseTitle(c) : ""}</span></div>
                     <div className="text-[15px] font-light text-vc-gray-dark">Due Date: {format(a.due, "EEE, MMM dd")}</div>
                     {done && <span className="mt-1.5 inline-block bg-[#d4ecd4] px-3.5 py-1 text-[14px] uppercase text-[#2f2f2f]">Complete</span>}
@@ -122,7 +122,7 @@ function Detail({ a, sid }: { a: Assignment; sid: string }) {
   };
 
   return (
-    <div className="min-w-0 bg-background px-[52px] pb-12 pt-[40px]">
+    <div className="min-w-0 bg-background px-[38px] pb-12 pt-[40px]">
       <h2 className="text-[34px] font-semibold leading-10 text-foreground/80">Details</h2>
       <p className="mt-5 whitespace-pre-wrap text-[17px] leading-6">{a.notes.trim() || "See assignment for details."}</p>
       <h2 className="mt-9 text-[34px] font-semibold leading-10 text-foreground/80">Submissions</h2>
