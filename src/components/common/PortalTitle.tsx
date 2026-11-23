@@ -22,6 +22,7 @@ export function PortalTitle() {
       return "";
     },
   });
+  useEffect(() => { if (ready) document.documentElement.dataset.ready = "1"; }, [ready]);
   const role = user?.role;
   const abbr = user ? portalAbbr(user.email, SCHOOL.short) : "";
 

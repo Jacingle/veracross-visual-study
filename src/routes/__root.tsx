@@ -69,6 +69,8 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/* Until the saved school data has loaded (PortalTitle sets data-ready) the page background is the soft panel gray, so a refresh never flashes white. */}
+        <style dangerouslySetInnerHTML={{ __html: "html:not([data-ready]) body{background-color:oklch(0.965 0.002 250)}" }} />
       </head>
       <body>
         {children}

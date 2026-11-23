@@ -4,8 +4,8 @@ import { savesSettled } from "./lib/browser-save";
 import { identityFor, noteAddress, toInternalPath, toPublicPath } from "./lib/portal-url";
 import { routeTree } from "./routeTree.gen";
 
-/** Every move to another page is a real, quick page load, like an ordinary website. Set to false to go back to in-app transitions. */
-const FULL_PAGE_LOADS = true;
+/** true: every move to another page is a full document reload (it flashes between pages). false: instant in-app transitions; the address and tab title still change on every page. */
+const FULL_PAGE_LOADS = false;
 
 export const getRouter = () => {
   // One client per request: a module-level QueryClient leaks cached data between SSR requests.
