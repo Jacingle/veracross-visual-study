@@ -1,6 +1,6 @@
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen, ChevronRight, ClipboardList, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarDays, ChevronRight, ClipboardList, FileText, History, Plus, ChevronDown, Clock, Rocket, Home, LayoutGrid, LogOut, Mail, Palette, Receipt, Search, Star, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -28,6 +28,7 @@ export const AXIOM_LINKS = [
   { to: "/admin/report-layouts", label: "Report Card Layouts", icon: FileText },
   { to: "/admin/terms", label: "School Years & Terms", icon: Clock },
   { to: "/admin/scheduling", label: "Scheduling Sets", icon: Clock },
+  { to: "/admin/student-schedules", label: "Student Schedules", icon: CalendarDays },
   { to: "/admin/messages", label: "Communications", icon: Mail },
   { to: "/admin/purchases", label: "Purchase Approvals", icon: Receipt },
 ] as const;
@@ -135,7 +136,7 @@ function Frame({ title, crumbs, actions, compactRail, recordMenu, children }: { 
           <div className="px-2 py-2">{mode === 'homepages' && <div><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">Homepages</h3>
             <Link to="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Home className="size-4 text-ax-top" />{SYSTEM_HOME.title}</Link>
             {HOMEPAGES.map((h) => <Link key={h.id} to="/admin/home/$pageId" params={{ pageId: h.id }} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><LayoutGrid className="size-4 text-ax-top" />{h.title}</Link>)}</div>}
-          {mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group === 'System' ? 'System pages' : group === 'Academics' ? 'Academics pages' : 'People & Communications pages'}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/classes', '/admin/terms', '/admin/scheduling', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
+          {mode === 'homepages' ? ['System', 'Academics', 'People & Communications'].map((group) => <div key={group}><h3 className="bg-ax-head px-2 py-1.5 text-[11px] font-semibold uppercase">{group === 'System' ? 'System pages' : group === 'Academics' ? 'Academics pages' : 'People & Communications pages'}</h3>{AXIOM_LINKS.filter((l) => (['/admin/courses', '/admin/classes', '/admin/terms', '/admin/scheduling', '/admin/student-schedules', '/admin/assignment-types', '/admin/report-layouts'] as readonly string[]).includes(l.to) ? group === 'Academics' : (['/admin/users', '/admin/messages', '/admin/purchases'] as readonly string[]).includes(l.to) ? group === 'People & Communications' : group === 'System').map(({ to, label, icon: Icon }) => <Link key={to} to={to} onClick={() => setOpen(false)} className="flex items-center gap-2.5 border-b border-vc-line px-2 py-2 hover:bg-vc-panel"><Icon className="size-4 text-ax-top" />{label}</Link>)}</div>) : <>{(mode === 'favorites' ? workspace.favorites : workspace.history).map((entry) => <a key={entry.path} href={entry.path} className="block border-b border-vc-line px-2 py-3 text-vc-link-strong hover:bg-vc-panel">{entry.title}</a>)}{!(mode === 'favorites' ? workspace.favorites : workspace.history).length && <p className="p-3 text-muted-foreground">No {mode === 'favorites' ? 'favorites' : 'recent pages'}.</p>}</>}</div>
         </SheetContent>
       </Sheet>
     </div>

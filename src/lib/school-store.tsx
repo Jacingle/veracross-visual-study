@@ -18,6 +18,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { ResourceTopic, SitePost } from "./class-site";
 import type { SchedulingSet } from './scheduling';
+import type { ReviewSettings } from './schedule-review';
 import { DEFAULT_DOC_LAYOUT, defaultPortals, type DocLayout, type PortalRec } from './axiom';
 
 export const BACKGROUNDS: { key: string; label: string; src: string }[] = [
@@ -92,6 +93,8 @@ type State = {
   schedulingSets: SchedulingSet[];
   portals: PortalRec[]; docLayout: DocLayout;
   assignmentTypes: AssignmentType[];
+  /** Student Schedules review: blocks that need a class and the minimum classes per term. */
+  scheduleReview?: ReviewSettings;
 };
 const INITIAL: State = {
   users: SEED_USERS.map((u) => ({ ...u })), sessionId: null, settings: DEFAULT_SETTINGS, custom: [],
