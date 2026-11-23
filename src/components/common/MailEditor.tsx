@@ -1,13 +1,15 @@
-import { useEffect, useRef } from "react";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Eraser, Indent, Italic, Link2, List, ListOrdered, Outdent, Redo2, Strikethrough, Underline, Undo2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Eraser, Indent, Maximize2, Minimize2, Type, Italic, Link2, List, ListOrdered, Outdent, Redo2, Strikethrough, Underline, Undo2 } from "lucide-react";
 
 const COLORS = ["#000000", "#555555", "#c0392b", "#e67e22", "#27ae60", "#2980b9", "#8e44ad"];
 const SIZES: [string, string][] = [["Small", "2"], ["Normal", "3"], ["Large", "5"], ["Huge", "6"]];
 const FONTS = ["Source Sans 3", "Arial", "Georgia", "Times New Roman", "Courier New", "Verdana"];
 
 /** Rich-text writing area for school mail: fonts, sizes, colours, lists, alignment, links. Reports its HTML on every edit. */
-export function MailEditor({ onChange, minHeight = 260, label = "Message", initial = "" }: { onChange: (html: string, text: string) => void; minHeight?: number; label?: string; initial?: string }) {
+export function MailEditor({ onChange, minHeight = 260, label = "Message", initial = "", compact = false }: { onChange: (html: string, text: string) => void; minHeight?: number; label?: string; initial?: string; /** Slim Veracross page-editor toolbar with a pop-out writing window. */ compact?: boolean }) {
   const area = useRef<HTMLDivElement>(null);
+  const [big, setBig] = useState(false);
+  const [ink, setInk] = useState("#000000");
   useEffect(() => { if (area.current && initial) area.current.innerHTML = initial; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { try { document.execCommand("styleWithCSS", false, "false"); } catch { /* older browsers */ } }, []);
@@ -19,8 +21,20 @@ export function MailEditor({ onChange, minHeight = 260, label = "Message", initi
   const sel = "h-[26px] rounded-[3px] border border-[#d6d6d6] bg-white px-1 text-[12px] text-[#444]";
   const sep = <span aria-hidden className="mx-1 h-[18px] w-px bg-[#d6d6d6]" />;
   return (
-    <div className="border border-[#d6d6d6] bg-white">
-      <div role="toolbar" aria-label="Writing tools" className="flex flex-wrap items-center gap-0.5 border-b border-[#d6d6d6] bg-[#f7f7f7] px-1.5 py-1">
+    <div className={big ? "fixed left-[29%] top-[26%] z-[80] flex h-[44vh] w-[42%] flex-col border border-[#b9c6dc] bg-white shadow-[0_2px_8px_rgba(0,0,0,.25)]" : "border border-[#d6d6d6] bg-white"}>
+      {compact && (
+        <div role="toolbar" aria-label="Writing tools" className={`flex items-center gap-1 border-b border-[#e3e3e3] bg-white ${big ? "h-[60px] px-2" : "h-[48px] px-3"}`}>
+          <Btn title="Bold" onClick={() => run("bold")}><Bold className="size-3.5" /></Btn>
+          <Btn title="Italic" onClick={() => run("italic")}><Italic className="size-3.5" /></Btn>
+          <Btn title="Underline" onClick={() => run("underline")}><Underline className="size-3.5" /></Btn>
+          <label title="Text size" className="relative grid h-[26px] w-[26px] place-items-center text-[#555] hover:bg-[#e8eef4]"><Type className="size-3.5" /><select aria-label="Text size" defaultValue="" onChange={(e) => { if (e.target.value) run("fontSize", e.target.value); e.target.value = ""; }} className="absolute inset-0 cursor-pointer opacity-0"><option value="">Size</option>{SIZES.map(([l, v]) => <option key={v} value={v}>{l}</option>)}</select></label>
+          <Btn title="Insert link" onClick={() => { const u = window.prompt("Link address (https://…)"); if (u && /^(https?:|mailto:)/i.test(u.trim())) run("createLink", u.trim()); }}><Link2 className="size-3.5" /></Btn>
+          <Btn title="Bulleted list" onClick={() => run("insertUnorderedList")}><List className="size-3.5" /></Btn>
+          <Btn title="Numbered list" onClick={() => run("insertOrderedList")}><ListOrdered className="size-3.5" /></Btn>
+          <span className={big ? "bg-[#e3e3e3]" : ""}><Btn title={big ? "Close full screen" : "Full screen"} onClick={() => setBig(!big)}>{big ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}</Btn></span>
+          {!big && <input type="color" aria-label="Text color" value={ink} onChange={(e) => { setInk(e.target.value); run("foreColor", e.target.value); }} className="ml-auto h-[30px] w-[34px] cursor-pointer border border-[#d6d6d6] bg-white p-0.5" />}
+        </div>)}
+      {!compact && <div role="toolbar" aria-label="Writing tools" className="flex flex-wrap items-center gap-0.5 border-b border-[#d6d6d6] bg-[#f7f7f7] px-1.5 py-1">
         <Btn title="Undo" onClick={() => run("undo")}><Undo2 className="size-3.5" /></Btn>
         <Btn title="Redo" onClick={() => run("redo")}><Redo2 className="size-3.5" /></Btn>{sep}
         <select aria-label="Font" className={sel} defaultValue="" onChange={(e) => { if (e.target.value) run("fontName", e.target.value); e.target.value = ""; }}><option value="">Font</option>{FONTS.map((f) => <option key={f} value={f}>{f}</option>)}</select>
@@ -39,8 +53,8 @@ export function MailEditor({ onChange, minHeight = 260, label = "Message", initi
         <Btn title="Align right" onClick={() => run("justifyRight")}><AlignRight className="size-3.5" /></Btn>{sep}
         <Btn title="Insert link" onClick={() => { const u = window.prompt("Link address (https://…)"); if (u && /^(https?:|mailto:)/i.test(u.trim())) run("createLink", u.trim()); }}><Link2 className="size-3.5" /></Btn>
         <Btn title="Clear formatting" onClick={() => run("removeFormat")}><Eraser className="size-3.5" /></Btn>
-      </div>
-      <div ref={area} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={emit} style={{ minHeight }} className="px-3 py-2.5 text-[13px] leading-[18px] text-black outline-none [&_a]:text-vc-link [&_a]:underline [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" />
+      </div>}
+      <div ref={area} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={emit} style={big ? undefined : { minHeight }} className={`${big ? "min-h-0 flex-1 overflow-y-auto " : ""}px-3 py-2.5 text-[13px] leading-[18px] text-black outline-none [&_a]:text-vc-link [&_a]:underline [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc`} />
     </div>
   );
 }

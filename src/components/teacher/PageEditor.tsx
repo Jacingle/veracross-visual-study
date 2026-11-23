@@ -92,7 +92,7 @@ export function PageEditor({ c, name, onBack }: { c: Section; name: string; onBa
         {b.columns.slice(0, b.cols).map((col, i) => { const set = (p: Partial<typeof col>) => patch(b.id, { columns: b.columns.map((x, j) => (j === i ? { ...x, ...p } : x)) }); return (
           <div key={`${b.id}-${i}`}><Band>{`Column ${i + 1}`}</Band><Label>Alignment</Label><Seg3 value={col.align} opts={AL} set={(v) => set({ align: v })} />
             <Label>Column Title</Label><div className="flex gap-2"><input aria-label={`Column ${i + 1} title`} placeholder="optional" className={Field} value={col.title} onChange={(e) => set({ title: e.target.value })} /><Swatch value={col.titleColor} onChange={(v) => set({ titleColor: v })} label="Title color" /></div>
-            <Label>Text</Label><MailEditor label={`Column ${i + 1} text`} minHeight={90} initial={col.html} onChange={(h) => set({ html: sanitizeHtml(h) })} /></div>); })}</>;
+            <Label>Text</Label><MailEditor compact label={`Column ${i + 1} text`} minHeight={90} initial={col.html} onChange={(h) => set({ html: sanitizeHtml(h) })} /></div>); })}</>;
       case "button": return <>{bg}<Label>Alignment</Label><Seg3 value={b.align} opts={[...AL, ["full", "Full", <AlignJustify key="f" className="size-5" />] as ["full", string, ReactNode]]} set={(v) => patch(b.id, { align: v })} />
         <Label>Number of Buttons</Label><Seg3 value={String(b.buttons.length)} opts={[["1", "Button", <b key="1" className="font-serif text-[20px] font-normal">1</b>], ["2", "Buttons", <b key="2" className="font-serif text-[20px] font-normal">2</b>], ["3", "Buttons", <b key="3" className="font-serif text-[20px] font-normal">3</b>]]}
           set={(v) => { const n = Number(v); const list = b.buttons.slice(0, n); while (list.length < n) list.push({ text: "Click Me", url: "", color: "#4a90d9" }); patch(b.id, { buttons: list }); }} />
@@ -105,7 +105,7 @@ export function PageEditor({ c, name, onBack }: { c: Section; name: string; onBa
         <Band>Image</Band><Label>Image</Label><div className="flex items-center gap-4">{b.image ? <img src={b.image} alt="" className="h-[80px] w-[120px] object-cover" /> : <div className="grid h-[80px] w-[120px] place-items-center bg-[#e3e3e3] text-[11px] text-[#999]">No image</div>}
           <button type="button" onClick={() => { fileRef.current!.onchange = () => void upload(fileRef.current!.files, (u) => patch(b.id, { image: u[0] ?? "" })); fileRef.current!.accept = "image/*"; fileRef.current!.multiple = false; fileRef.current!.click(); }} className="h-[34px] border border-[#d4d4d4] bg-[#f3f3f3] px-4 text-[14px] text-[#666] shadow-[0_1px_1px_rgba(0,0,0,.15)]">Choose File</button></div>
         <Label>Image Size</Label><Seg3 value={b.size} opts={[["S", "Small", <ImageIcon key="s" className="size-3.5" />], ["M", "Medium", <ImageIcon key="m" className="size-[18px]" />], ["L", "Large", <ImageIcon key="l" className="size-[22px]" />]]} set={(v) => patch(b.id, { size: v })} />
-        <Band>Text</Band><Label>Text</Label><MailEditor label="Text" minHeight={90} initial={b.html} onChange={(h) => patch(b.id, { html: sanitizeHtml(h) })} /></>;
+        <Band>Text</Band><Label>Text</Label><MailEditor compact label="Text" minHeight={90} initial={b.html} onChange={(h) => patch(b.id, { html: sanitizeHtml(h) })} /></>;
       case "images": return <>{bg}<Label>Images</Label><div className="flex flex-wrap gap-2.5">{b.images.map((s, i) => <div key={i} className="relative"><img src={s} alt="" className="h-[70px] w-[100px] object-cover" /><button type="button" aria-label="Remove image" onClick={() => patch(b.id, { images: b.images.filter((_, j) => j !== i) })} className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full bg-[#333] text-white"><X className="size-3" /></button></div>)}</div>
         <button type="button" onClick={() => { fileRef.current!.onchange = () => void upload(fileRef.current!.files, (u) => patch(b.id, { images: [...b.images, ...u] })); fileRef.current!.accept = "image/*"; fileRef.current!.multiple = true; fileRef.current!.click(); }} className="mt-3 h-[34px] border border-[#d4d4d4] bg-[#f3f3f3] px-4 text-[14px] text-[#666] shadow-[0_1px_1px_rgba(0,0,0,.15)]">Choose Files</button></>;
       case "file": return <>{bg}<Band>Text</Band><Label>File Text</Label><input aria-label="File text" className={Field} value={b.text} onChange={(e) => patch(b.id, { text: e.target.value })} />
@@ -119,7 +119,7 @@ export function PageEditor({ c, name, onBack }: { c: Section; name: string; onBa
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-white text-[14px]">
+    <div className="fixed inset-0 z-40 overflow-hidden bg-white"><div className="flex flex-col bg-white text-[14px]" style={{ zoom: 0.82, width: `${100 / 0.82}%`, height: `${100 / 0.82}%` }}>
       <input ref={fileRef} type="file" hidden aria-label="Choose file" />
       <div className="flex h-[58px] shrink-0 items-center gap-3 border-b border-[#e3e3e3] border-t-2 border-t-[#4a64a0] px-3">
         <button type="button" onClick={onBack} className="flex h-[30px] items-center gap-1 border border-[#d4d4d4] bg-white px-3 text-[11px] font-bold uppercase text-[#444] shadow-[0_1px_1px_rgba(0,0,0,.15)]"><ArrowLeft className="size-3" strokeWidth={3} />Pages</button>
@@ -163,6 +163,6 @@ export function PageEditor({ c, name, onBack }: { c: Section; name: string; onBa
             <div className="flex items-center gap-3 border-t border-[#e6e6e6] bg-[#fafafa] px-3 py-3"><button type="button" onClick={publish} className="h-[32px] border border-[#d4d4d4] bg-white px-4 text-[13px] font-bold shadow-[0_1px_1px_rgba(0,0,0,.15)]">Publish</button><span className="text-[#555]">or</span><button type="button" onClick={() => setPub(false)} className="text-[#888] underline">Cancel</button></div>
           </div>
         </div>)}
-    </div>
+    </div></div>
   );
 }
