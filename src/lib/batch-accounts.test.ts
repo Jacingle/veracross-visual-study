@@ -11,6 +11,8 @@ describe("batch accounts", () => {
     let n = 0;
     const made = buildAccounts(parseBatch("Ada Lovelace\nAda Lovelace", "student"), "student", "x.org", [], () => String(++n));
     expect(made.map((m) => m.email)).toEqual(["ada.lovelace@x.org", "ada.lovelace2@x.org"]);
-    expect(made[0]).toMatchObject({ password: "ada.lovelace@x.org", role: "student", active: true });
+    expect(made.map((m) => m.username)).toEqual(["ada.lovelace", "ada.lovelace2"]);
+    expect(made[0]).toMatchObject({ password: "ada.lovelace", role: "student", active: true });
+    expect(made[0]?.username).not.toBe(made[0]?.email);
   });
 });

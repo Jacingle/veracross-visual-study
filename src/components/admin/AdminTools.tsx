@@ -91,7 +91,7 @@ export function ActionsMenu() {
     const to = unsent(r);
     if (!to.length) { toast("Everyone already has a welcome email."); return; }
     const ids = new Set(to.map((u) => u.id));
-    update((s) => ({ ...s, users: s.users.map((u) => (ids.has(u.id) ? { ...u, welcomeSent: true } : u)), sent: [{ id: `m-${crypto.randomUUID().slice(0, 8)}`, from: me?.email ?? "administrator", list: r === "student" ? "Student accounts" : "Faculty accounts", subject: "Welcome to the portal", body: `Your portal account is ready. Your username is your school email address. For safety, passwords are never sent by email; ask the school office if you need one. Sent to: ${to.map((u) => u.email).join(", ")}`, date: new Date().toISOString(), audience: r === "student" ? "students" : "faculty" }, ...s.sent] }));
+    update((s) => ({ ...s, users: s.users.map((u) => (ids.has(u.id) ? { ...u, welcomeSent: true } : u)), sent: [{ id: `m-${crypto.randomUUID().slice(0, 8)}`, from: me?.email ?? "administrator", list: r === "student" ? "Student accounts" : "Faculty accounts", subject: "Welcome to the portal", body: `Your portal account is ready. Your username is on your account record (it is separate from your email address). For safety, passwords are never sent by email; ask the school office if you need one. Sent to: ${to.map((u) => u.email).join(", ")}`, date: new Date().toISOString(), audience: r === "student" ? "students" : "faculty" }, ...s.sent] }));
     toast.success(`Welcome email sent to ${to.length} ${r === "student" ? "student" : "faculty"} ${to.length === 1 ? "account" : "accounts"}`);
   };
   const toggleStudents = () => {

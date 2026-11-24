@@ -23,16 +23,17 @@ export function parseBatch(text: string, role: Role): BatchRow[] {
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-/** Turns rows into accounts: username first.last@domain (numbered when taken), password = username. */
+/** Turns rows into accounts: username first.last and email first.last@domain (numbered when the username is taken), password = username. */
 export function buildAccounts(rows: BatchRow[], role: Role, domain: string, existing: User[], newId: () => string): Omit<User, "id">[] {
   const taken = [...existing];
   const made: Omit<User, "id">[] = [];
   for (const r of rows) {
     const base = `${slug(r.first)}.${slug(r.last)}`;
     if (base === ".") continue;
-    let email = `${base}@${domain}`; let n = 1;
-    while (userExists(taken as User[], email)) email = `${base}${++n}@${domain}`;
-    const acct: Omit<User, "id"> = { email, password: email, role, first: r.first, last: r.last, personId: `p-${newId()}`, active: true, ...(r.prefix ? { prefix: r.prefix } : {}), ...(r.grade !== undefined ? { grade: r.grade } : {}) };
+    let username = base; let n = 1;
+    while (userExists(taken as User[], username)) username = `${base}${++n}`;
+    const email = `${username}@${domain}`;
+    const acct: Omit<User, "id"> = { email, username, password: username, role, first: r.first, last: r.last, personId: `p-${newId()}`, active: true, ...(r.prefix ? { prefix: r.prefix } : {}), ...(r.grade !== undefined ? { grade: r.grade } : {}) };
     made.push(acct);
     taken.push({ id: "", ...acct } as User);
   }

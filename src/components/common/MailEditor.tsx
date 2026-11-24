@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eraser, Indent, Maximize2, Minimize2, Type, Italic, Link2, List, ListOrdered, Outdent, Redo2, Strikethrough, Underline, Undo2 } from "lucide-react";
 
 const COLORS = ["#000000", "#555555", "#c0392b", "#e67e22", "#27ae60", "#2980b9", "#8e44ad"];
@@ -10,18 +12,20 @@ export function MailEditor({ onChange, minHeight = 260, label = "Message", initi
   const area = useRef<HTMLDivElement>(null);
   const [big, setBig] = useState(false);
   const [ink, setInk] = useState("#000000");
-  useEffect(() => { if (area.current && initial) area.current.innerHTML = initial; // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const html = useRef(initial);
+  // The writing area is rebuilt when it moves into or out of the pop-out window, so put the text back.
+  useLayoutEffect(() => { const el = area.current; if (!el) return; if (html.current) el.innerHTML = html.current; if (big) { el.focus(); const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const sel = window.getSelection(); sel?.removeAllRanges(); sel?.addRange(r); } // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [big]);
   useEffect(() => { try { document.execCommand("styleWithCSS", false, "false"); } catch { /* older browsers */ } }, []);
   const run = (cmd: string, arg?: string) => { area.current?.focus(); try { document.execCommand(cmd, false, arg); } catch { /* ignore */ } emit(); };
-  const emit = () => { const el = area.current; if (el) onChange(el.innerHTML, el.innerText); };
+  const emit = () => { const el = area.current; if (el) { html.current = el.innerHTML; onChange(el.innerHTML, el.innerText); } };
   const Btn = ({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) => (
     <button type="button" title={title} aria-label={title} onMouseDown={(e) => e.preventDefault()} onClick={onClick} className="grid h-[26px] w-[26px] place-items-center rounded-[3px] text-[#555] hover:bg-[#e8eef4]">{children}</button>
   );
   const sel = "h-[26px] rounded-[3px] border border-[#d6d6d6] bg-white px-1 text-[12px] text-[#444]";
   const sep = <span aria-hidden className="mx-1 h-[18px] w-px bg-[#d6d6d6]" />;
-  return (
-    <div className={big ? "fixed left-[29%] top-[26%] z-[80] flex h-[44vh] w-[42%] flex-col border border-[#b9c6dc] bg-white shadow-[0_2px_8px_rgba(0,0,0,.25)]" : "border border-[#d6d6d6] bg-white"}>
+  const editor = (
+    <div data-testid={big ? "editor-popup" : undefined} onKeyDown={(e) => { if (big && e.key === "Escape") { e.stopPropagation(); setBig(false); } }} className={big ? "fixed left-[29%] top-[26%] z-[80] flex h-[44vh] w-[42%] flex-col border border-[#b9c6dc] bg-white shadow-[0_2px_8px_rgba(0,0,0,.25)]" : "border border-[#d6d6d6] bg-white"}>
       {compact && (
         <div role="toolbar" aria-label="Writing tools" className={`flex items-center gap-1 border-b border-[#e3e3e3] bg-white ${big ? "h-[60px] px-2" : "h-[48px] px-3"}`}>
           <Btn title="Bold" onClick={() => run("bold")}><Bold className="size-3.5" /></Btn>
@@ -57,4 +61,9 @@ export function MailEditor({ onChange, minHeight = 260, label = "Message", initi
       <div ref={area} role="textbox" aria-multiline aria-label={label} contentEditable suppressContentEditableWarning onInput={emit} style={big ? undefined : { minHeight }} className={`${big ? "min-h-0 flex-1 overflow-y-auto " : ""}px-3 py-2.5 text-[13px] leading-[18px] text-black outline-none [&_a]:text-vc-link [&_a]:underline [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc`} />
     </div>
   );
+  // The pop-out window is drawn on the page itself (not inside a zoomed editor) so it sits where it should: over the
+  // page canvas, beside the settings panel. The small box keeps showing the text underneath.
+  if (!big) return editor;
+  const preview = <div aria-hidden style={{ minHeight }} className="border border-[#d6d6d6] bg-white px-3 py-2.5 text-[13px] leading-[18px] text-black [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html.current) }} />;
+  return <>{preview}{createPortal(editor, document.body)}</>;
 }

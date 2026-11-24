@@ -8,7 +8,7 @@ import { z } from "zod";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
 import { CalendarIcon, DirectoryIcon, DiscussionsIcon, FolderIcon, HomeIcon, PhotosIcon, PostsIcon, TimelineIcon } from "@/components/site/SiteIcons";
-import { CalendarView, ClassPicker, DirectoryView, HomeView, InfoView, PageListView, PagesPlaceholder, PageView, PostsView, ResourcesView, TimelineView } from "@/components/site/SiteViews";
+import { CalendarView, ClassPicker, DirectoryView, DiscussionsView, HomeView, InfoView, PageListView, PagesPlaceholder, PageView, PhotosView, PostsView, ResourcesView, TimelineView } from "@/components/site/SiteViews";
 import { courseTitle, teacher, today, type Assignment } from "@/lib/sis-data";
 import { staffIds, useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -64,6 +64,8 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
   else if (tab === "calendar") body = <CalendarView c={c} sets={schedulingSets} list={all} onOpen={setSelected} />;
   else if (tab === "resources") body = <ResourcesView ws={ws} />;
   else if (tab === "directory") body = <DirectoryView c={c} />;
+  else if (tab === "photos") body = <PhotosView c={c} />;
+  else if (tab === "discussions") body = <DiscussionsView c={c} canManage={!student} />;
   else body = <PagesPlaceholder what={TABS.find((x) => x.id === tab)?.label ?? "this page"} />;
 
   return (
