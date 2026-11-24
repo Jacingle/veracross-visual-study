@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, ClipboardList, Clock, FileText, Home, LayoutGrid, Mail, Palette, Receipt, Search, Users } from "lucide-react";
+import { BookOpen, CalendarDays, ClipboardList, Clock, FileText, Home, LayoutGrid, Mail, Palette, Receipt, School, Search, Users } from "lucide-react";
 
 /** Every Axiom screen, listed under "Common Links" on the Launchpad's Rocket Ship. */
 export const AXIOM_LINKS = [
@@ -7,6 +7,7 @@ export const AXIOM_LINKS = [
   { to: "/admin/users", label: "Users & Security", icon: Users },
   { to: "/admin/courses", label: "Courses & Enrollment", icon: BookOpen },
   { to: "/admin/classes", label: "Classes", icon: ClipboardList },
+  { to: "/admin/school", label: "School Information", icon: School },
   { to: "/admin/settings", label: "Portal Settings", icon: Palette },
   { to: "/admin/assignment-types", label: "Class Assignment Types", icon: Palette },
   { to: "/admin/portals", label: "Portals", icon: LayoutGrid },

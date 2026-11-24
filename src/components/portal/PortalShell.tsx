@@ -67,7 +67,7 @@ function Frame({ children, portal, wide, bare, maxWidth, fullWidth }: { children
     <div className={`min-h-screen bg-vc-panel ${p === "teacher" ? "portal-faculty" : ""}`} style={style}>
       <header className="sticky top-0 z-30">
         <div className="relative flex h-[34px] items-center bg-vc-topbar px-3 text-[14px] text-primary-foreground">
-          <span className="hidden truncate lg:inline">{SCHOOL.name}</span>
+          <span className="hidden min-w-0 items-center gap-2 lg:flex">{SCHOOL.logo && <img src={SCHOOL.logo} alt="" className="h-[24px] w-auto max-w-[90px] object-contain" />}<span className="truncate">{SCHOOL.name}</span></span>
           <div className="flex h-[34px] min-w-0 items-stretch sm:absolute sm:left-1/2 sm:top-0 sm:-translate-x-1/2">
             <Link to={p === "student" ? "/student" : "/teacher"} className="portal-title flex items-center gap-2 whitespace-nowrap bg-vc-navbar px-7 [--cut:var(--vc-navbar)] text-[16px] font-semibold">
               <HomeSolid className="size-[17px]" /> {p === "student" ? "Student Portal" : "Faculty Portal"}

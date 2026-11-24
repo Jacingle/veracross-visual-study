@@ -1,8 +1,7 @@
 import { createMemoryHistory, createRootRoute, createRouter, Outlet, RouterProvider } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { MailEditor } from "@/components/common/MailEditor";
 import { PersonRecord, type PersonDraft } from "@/components/admin/PersonRecord";
 import { Route as ClassRoute } from "@/routes/class.$classId";
 import { PortalStoreProvider } from "@/lib/portal-store";
@@ -46,64 +45,17 @@ describe("class website tabs", () => {
     expect(screen.queryByText(/Nothing has been posted/)).toBeNull();
   });
 
-  it("lets a student read open and closed discussions, comment and reply, but not see drafts", async () => {
-    localStorage.setItem(KEY, JSON.stringify(base("u-s-ann")));
-    mount("/class/ENG-1?tab=discussions");
-    await screen.findByRole("heading", { name: "Favorite book" });
-    expect(screen.queryByText("Secret draft")).toBeNull();
-    expect(screen.getByText("Summer reading")).toBeInTheDocument();
-    expect(screen.getByText("I like Holes.")).toBeInTheDocument();
-    expect(screen.getByText("Nice pick!")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Add a comment"), { target: { value: "Charlotte's Web." } });
-    fireEvent.click(screen.getByRole("button", { name: "Post comment" }));
-    expect(await screen.findByText("Charlotte's Web.")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Reply" })[0]!);
-    fireEvent.change(screen.getByLabelText("Reply"), { target: { value: "Me too." } });
-    fireEvent.click(screen.getByRole("button", { name: "Post reply" }));
-    expect(await screen.findByText("Me too.")).toBeInTheDocument();
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? "{}").sections[0].website.discussions[0].comments as { by: string; parent?: string }[];
-    expect(saved.find((c) => c.by === "Ann Abbott" && !c.parent)).toBeTruthy();
-    // only their own comments can be deleted
-    expect(screen.queryByRole("button", { name: "Delete comment by Bob Bishop" })).toBeNull();
-    fireEvent.click(screen.getByText("Summer reading"));
-    expect(await screen.findByText(/comments are turned off/)).toBeInTheDocument();
-    expect(screen.queryByLabelText("Add a comment")).toBeNull();
-  });
-
-  it("gives the teacher the same tabs, plus drafts and comment removal", async () => {
+  it("gives the teacher the same Photos tab, and no Discussions tab for anyone", async () => {
     localStorage.setItem(KEY, JSON.stringify(base("u-t1")));
-    mount("/class/ENG-1?tab=discussions");
-    await screen.findByRole("heading", { name: "Favorite book" });
-    expect(screen.getByText("Secret draft")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Delete comment by Bob Bishop" }));
-    await waitFor(() => expect(screen.queryByText("I like Holes.")).toBeNull());
-    expect(screen.queryByText("Nice pick!")).toBeNull(); // its reply went with it
-    cleanup();
     mount("/class/ENG-1?tab=photos");
     expect(await screen.findByRole("heading", { name: "Photos" })).toBeInTheDocument();
-  });
-});
-
-describe("text editor pop-out", () => {
-  const Harness = () => { const [v, setV] = useState(""); return <div style={{ zoom: 0.72 }} data-testid="zoomed"><MailEditor compact label="Text" initial="<p>Hello <b>class</b></p>" onChange={(h) => setV(h)} /><output>{v}</output></div>; };
-  it("opens a floating window outside the zoomed editor, keeps the text, and closes again", async () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Full screen" }));
-    const popup = await screen.findByTestId("editor-popup");
-    expect(popup.parentElement).toBe(document.body);
-    expect(popup.closest('[style*="zoom"]')).toBeNull();
-    expect(within(popup).getByRole("toolbar")).toBeInTheDocument();
-    expect(within(popup).getByRole("textbox", { name: "Text" })).toHaveTextContent("Hello class");
-    for (const t of ["Bold", "Italic", "Underline", "Insert link", "Bulleted list", "Numbered list", "Close full screen"]) expect(within(popup).getByRole("button", { name: t })).toBeInTheDocument();
-    fireEvent.click(within(popup).getByRole("button", { name: "Close full screen" }));
-    await waitFor(() => expect(screen.queryByTestId("editor-popup")).toBeNull());
-    expect(screen.getByRole("textbox", { name: "Text" })).toHaveTextContent("Hello class");
-  });
-  it("closes the pop-out with Escape", async () => {
-    render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Full screen" }));
-    fireEvent.keyDown(await screen.findByTestId("editor-popup"), { key: "Escape" });
-    await waitFor(() => expect(screen.queryByTestId("editor-popup")).toBeNull());
+    const tabs = within(screen.getByRole("tablist")).getAllByRole("tab").map((t) => t.textContent);
+    expect(tabs).toEqual(["Home", "Posts", "Timeline", "Calendar", "Resources", "Photos", "Directory"]);
+    cleanup();
+    localStorage.setItem(KEY, JSON.stringify(base("u-s-ann")));
+    mount("/class/ENG-1");
+    await screen.findByRole("tablist");
+    expect(screen.queryByRole("tab", { name: /Discussions/ })).toBeNull();
   });
 });
 

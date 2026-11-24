@@ -7,8 +7,8 @@ import { useState, type ComponentType, type CSSProperties } from "react";
 import { z } from "zod";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { AssignmentDialog } from "@/components/portal/AssignmentDialog";
-import { CalendarIcon, DirectoryIcon, DiscussionsIcon, FolderIcon, HomeIcon, PhotosIcon, PostsIcon, TimelineIcon } from "@/components/site/SiteIcons";
-import { CalendarView, ClassPicker, DirectoryView, DiscussionsView, HomeView, InfoView, PageListView, PagesPlaceholder, PageView, PhotosView, PostsView, ResourcesView, TimelineView } from "@/components/site/SiteViews";
+import { CalendarIcon, DirectoryIcon, FolderIcon, HomeIcon, PhotosIcon, PostsIcon, TimelineIcon } from "@/components/site/SiteIcons";
+import { CalendarView, ClassPicker, DirectoryView, HomeView, InfoView, PageListView, PagesPlaceholder, PageView, PhotosView, PostsView, ResourcesView, TimelineView } from "@/components/site/SiteViews";
 import { courseTitle, teacher, today, type Assignment } from "@/lib/sis-data";
 import { staffIds, useMySections, useSchool, useSectionAssignments, useStudentAssignments, type Section } from "@/lib/school-store";
 import { pageHead } from "@/lib/head";
@@ -16,9 +16,11 @@ import { pageHead } from "@/lib/head";
 const TABS: { id: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { id: "home", label: "Home", icon: HomeIcon }, { id: "posts", label: "Posts", icon: PostsIcon }, { id: "timeline", label: "Timeline", icon: TimelineIcon },
   { id: "calendar", label: "Calendar", icon: CalendarIcon }, { id: "resources", label: "Resources", icon: FolderIcon }, { id: "photos", label: "Photos", icon: PhotosIcon },
-  { id: "discussions", label: "Discussions", icon: DiscussionsIcon }, { id: "directory", label: "Directory", icon: DirectoryIcon },
+  { id: "directory", label: "Directory", icon: DirectoryIcon },
 ];
-const TAB_IDS = ["home", "posts", "timeline", "calendar", "resources", "photos", "discussions", "directory", "info", "pages"] as const;
+/** The class website is drawn a little zoomed out so a whole page fits the window. */
+const SITE_ZOOM = 0.8;
+const TAB_IDS = ["home", "posts", "timeline", "calendar", "resources", "photos", "directory", "info", "pages"] as const;
 type Tab = (typeof TAB_IDS)[number];
 
 export const Route = createFileRoute("/class/$classId")({
@@ -65,11 +67,10 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
   else if (tab === "resources") body = <ResourcesView ws={ws} />;
   else if (tab === "directory") body = <DirectoryView c={c} />;
   else if (tab === "photos") body = <PhotosView c={c} />;
-  else if (tab === "discussions") body = <DiscussionsView c={c} canManage={!student} />;
   else body = <PagesPlaceholder what={TABS.find((x) => x.id === tab)?.label ?? "this page"} />;
 
   return (
-    <div className="relative min-h-screen" style={{ ...vars, zoom: 0.9 }}>
+    <div className="relative min-h-screen" style={{ ...vars, zoom: SITE_ZOOM }}>
       {ws.bg === "photo" && ws.photo ? <img src={ws.photo} alt="" width={1600} height={900} className="fixed inset-0 h-full w-full object-cover" />
         : <div className="fixed inset-0 bg-[#eeeeee]" style={ws.bg === "color" ? { background: ws.color } : undefined} />}
       {/* A color or photo gets a soft dark shadow across the top, like the original. */}
@@ -82,7 +83,7 @@ function Site({ c, options }: { c: Section; options: Section[] }) {
         <h1 className={`pb-[8px] pt-[22px] text-[30px] font-light leading-[38px] ${styled ? "text-primary-foreground [text-shadow:0_1px_4px_rgba(0,0,0,.65)]" : "text-foreground"}`}>{c.code}: {courseTitle(c)}</h1>
         <div className="grid grid-cols-1 items-start gap-[11px] md:grid-cols-[minmax(0,1fr)_256px]">
           <div className="min-h-[680px] min-w-0 rounded-[3px] bg-background shadow-[0_1px_3px_rgba(0,0,0,.18)]">
-            <div role="tablist" className={`grid grid-cols-4 border-b border-vc-line px-6 sm:grid-cols-8 ${styled ? "bg-vc-panel" : "bg-background"}`}>{TABS.map(({ id, label, icon: Icon }) => (
+            <div role="tablist" className={`grid grid-cols-4 border-b border-vc-line px-6 sm:grid-cols-7 ${styled ? "bg-vc-panel" : "bg-background"}`}>{TABS.map(({ id, label, icon: Icon }) => (
               <Link key={id} role="tab" aria-selected={active === id} to="/class/$classId" params={{ classId: c.id }} search={{ tab: id === "home" ? undefined : id }}
                 className={`-mb-px flex h-[67px] flex-col items-center justify-center gap-[4px] border-b-[3px] text-[15px] leading-5 ${active === id ? `border-vc-site-blue bg-background text-vc-site-blue` : "border-transparent text-foreground hover:bg-background"}`}>
                 <Icon className="size-[23px]" />{label}</Link>))}</div>

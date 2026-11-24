@@ -2,7 +2,12 @@
 import { addDays, format, isWeekend, startOfDay } from "date-fns";
 import { isOtherClass, type CourseType } from "./course-types";
 
-export const SCHOOL = { name: "Cedar Ridge Academy", short: "CRA", domain: "cedarridge.edu" };
+/** Who the school is. Administrators change this under School Information; the store copies what they saved into SCHOOL. */
+export type SchoolInfo = { name: string; short: string; domain: string; /** Picture as a data URL; empty shows the name only. */ logo: string; head: string; address: string; address2: string; city: string; state: string; postal: string; phone: string; website: string };
+export const SCHOOL_DEFAULT: SchoolInfo = { name: "Cedar Ridge Academy", short: "CRA", domain: "cedarridge.edu", logo: "", head: "", address: "", address2: "", city: "", state: "", postal: "", phone: "", website: "" };
+export const SCHOOL: SchoolInfo = { ...SCHOOL_DEFAULT };
+/** Make SCHOOL show the saved values (anything not saved falls back to the default). */
+export function applySchool(saved?: Partial<SchoolInfo>) { Object.assign(SCHOOL, SCHOOL_DEFAULT, saved ?? {}); }
 
 export type Teacher = { id: string; prefix: string; first: string; last: string; email: string; dept: string; title: string };
 export type Course = {

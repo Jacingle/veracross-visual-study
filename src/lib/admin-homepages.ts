@@ -3,7 +3,7 @@
 // Links point only at screens that exist in this app; add a link here when a new screen is built.
 export type AdminPath =
   | "/admin" | "/admin/queries" | "/admin/users" | "/admin/courses" | "/admin/classes" | "/admin/settings" | "/admin/assignment-types"
-  | "/admin/portals" | "/admin/report-layouts" | "/admin/terms" | "/admin/scheduling" | "/admin/student-schedules" | "/admin/workspaces" | "/admin/messages" | "/admin/purchases";
+  | "/admin/portals" | "/admin/report-layouts" | "/admin/terms" | "/admin/scheduling" | "/admin/student-schedules" | "/admin/workspaces" | "/admin/school" | "/admin/messages" | "/admin/purchases";
 
 /** Veracross groups homepage links by type: Find queries, Add records, Reports and Configuration. */
 export type LinkKind = "find" | "add" | "report" | "config";
@@ -44,7 +44,7 @@ export const SYSTEM_PAGE: Homepage = {
     { title: "Academics", groups: [{ heading: "Configuration", links: [link("Course Setup", "/admin/courses"), link("Classes", "/admin/classes"), link("Assignment Types", "/admin/assignment-types"), link("Report Card Layouts", "/admin/report-layouts")] }] },
     { title: "Portals", groups: [{ heading: "Configuration", links: [link("Portals", "/admin/portals"), link("Portal Settings", "/admin/settings"), link("Backgrounds", "/admin/settings")] }] },
     { title: "Communications & Business", groups: [{ heading: "Messages", links: [link("Send a Message", "/admin/messages")] }, { heading: "Approvals", links: [link("Purchase Approvals", "/admin/purchases")] }] },
-    { title: "General", groups: [{ heading: "Your Workspaces", links: [link("Workspaces", "/admin/workspaces")] }], more: [link("Portal Settings", "/admin/settings"), link("School Years & Terms", "/admin/terms")] },
+    { title: "General", groups: [{ heading: "School", links: [link("School Information", "/admin/school")] }, { heading: "Your Workspaces", links: [link("Workspaces", "/admin/workspaces")] }], more: [link("Portal Settings", "/admin/settings"), link("School Years & Terms", "/admin/terms")] },
   ],
 };
 

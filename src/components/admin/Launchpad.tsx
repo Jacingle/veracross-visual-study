@@ -62,7 +62,7 @@ export function Launchpad({ title, crumbs, actions, recordMenu }: { title: strin
   return (
     <header className="sticky top-0 z-30">
       <div className="flex h-[30px] items-center justify-between bg-ax-top px-4 text-primary-foreground">
-        <span className="text-[15px] font-semibold uppercase tracking-tight">{SCHOOL.name}</span>
+        <span className="flex min-w-0 items-center gap-2 text-[15px] font-semibold uppercase tracking-tight">{SCHOOL.logo && <img src={SCHOOL.logo} alt="" className="h-[22px] w-auto max-w-[90px] object-contain" />}<span className="truncate">{SCHOOL.name}</span></span>
         <span className="flex items-center gap-4 text-[12px]">
           <Link to="/teacher" className="hidden hover:underline md:inline">Faculty Portal</Link>
           <Link to="/student" className="hidden hover:underline md:inline">Student Portal</Link>

@@ -61,6 +61,8 @@ function StudentPaper({ c, sid }: { c: Section; sid: string | undefined }) {
   if (!s) return <ErrorPage title="Page Not Found" message="That student is not in this class." />;
   return <div className="min-h-screen bg-vc-paper"><div className="px-4 pt-3 text-[13px]"><Link to="/teacher/class/$classId" params={{ classId: c.id }} search={{ tab: "gradebook" }} className="text-vc-link-strong hover:underline">← Back to the gradebook</Link></div><PaperGuard><Detail standalone list={list} c={c} student={{ personId: s.id, first: s.first, last: s.last, grade: s.grade }} /></PaperGuard></div>;
 }
+/** The class page is drawn at this width and scaled to fit the window; a larger number draws everything a little smaller. */
+const PAGE_BASE = 1450;
 function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const { tab = "overview", aid, sub, sid, date } = Route.useSearch();
   const { scores, weights, custom } = useSchool();
@@ -74,7 +76,7 @@ function Manager({ c, mine }: { c: Section; mine: Section[] }) {
   const [zoom, setZoom] = useState(1);
   useEffect(() => {
     const host = box.current?.parentElement; if (!host) return;
-    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.min(2.4, Math.max(0.7, w / 1256))); };
+    const fit = () => { const w = host.getBoundingClientRect().width; if (w > 0) setZoom(Math.min(2.1, Math.max(0.6, w / PAGE_BASE))); };
     fit(); const ro = new ResizeObserver(fit); ro.observe(host); return () => ro.disconnect();
   }, []);
   const active = UNDER_GRADEBOOK.includes(tab) ? "gradebook" : tab;

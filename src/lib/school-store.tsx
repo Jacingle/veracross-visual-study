@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
 import { canImpersonate, findLogin, loginBlocked, userExists, type User } from "./auth-rules";
-import { ALL_ASSIGNMENTS, ALL_SECTIONS, EXTRA, MESSAGES, SEED_USERS, studentById, teacherRoster, today, type Assignment, type Category, type Course, type Student } from "./sis-data";
+import { ALL_ASSIGNMENTS, ALL_SECTIONS, applySchool, EXTRA, MESSAGES, SEED_USERS, studentById, teacherRoster, today, type Assignment, type Category, type Course, type SchoolInfo, type Student } from "./sis-data";
 import { classStatus, makeYear, yearStartFor, type ClassStatus } from "./terms";
 import { scoreOf } from "./gradebook";
 import { defaultWeights, weightedAverage } from "./grading";
@@ -99,6 +99,8 @@ type State = {
   assignmentTypes: AssignmentType[];
   /** Student Schedules review: blocks that need a class and the minimum classes per term. */
   scheduleReview?: ReviewSettings;
+  /** School Information saved by an administrator (name, logo, address ...). */
+  school?: Partial<SchoolInfo>;
   /** Axiom workspaces: personal and shared folders of bookmarks and reports. */
   workspaces?: Workspace[];
 };
@@ -167,6 +169,8 @@ export function SchoolStoreProvider({ children }: { children: ReactNode }) {
   const update = useCallback((fn: (s: State) => State) => setS(fn), []);
   // The administrator's assignment-type colors are read by every page through categoryColor().
   useMemo(() => { setTypeColors(s.assignmentTypes); }, [s.assignmentTypes]);
+  // The school name, logo and contact details are read by every portal through SCHOOL.
+  useMemo(() => { applySchool(s.school); }, [s.school]);
   // Admin-created people become lookup-able by every page (directories, rosters, teacher cards).
   useMemo(() => {
     const aideSet = new Set(s.sections.flatMap((c) => c.aideIds ?? []));

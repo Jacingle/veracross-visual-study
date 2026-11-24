@@ -34,7 +34,7 @@ function Login() {
       {src && <img src={src} alt="" width={1920} height={1088} className="fixed inset-0 h-full w-full object-cover" />}
       <div className="relative mx-auto mt-[70px] max-w-[578px] bg-background px-7 pb-6 pt-[86px] text-[15px] shadow-xl">
         <div className="absolute -top-[70px] left-1/2 grid size-[145px] -translate-x-1/2 place-items-center rounded-full bg-background">
-          <img src={crest} alt={`${SCHOOL.name} crest`} width={816} height={816} className="size-[100px] object-contain" />
+          <img src={SCHOOL.logo || crest} alt={`${SCHOOL.name} ${SCHOOL.logo ? "logo" : "crest"}`} width={816} height={816} className="size-[100px] object-contain" />
         </div>
         <h1 className="text-center text-[27px] text-vc-topbar">{SCHOOL.name}</h1>
         <p className="mt-3 text-center">{settings.login.message}</p>

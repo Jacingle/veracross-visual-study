@@ -6,8 +6,8 @@ import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, Link
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { StudentCard } from "@/components/portal/StudentCard";
-import { buildTimeline, canComment, categoryLabel, dayChips, discussionState, monthGrid, padTime12, scheduleLines, visibleDiscussions, withComment, withoutComment, type Discussion, type DiscussionComment, type DiscussionState, type SiteLink } from "@/lib/class-site";
-import { rosterOf, staffIds, useSchool, type Section, type Website } from "@/lib/school-store";
+import { buildTimeline, categoryLabel, dayChips, monthGrid, padTime12, scheduleLines, type SiteLink } from "@/lib/class-site";
+import { rosterOf, staffIds, type Section, type Website } from "@/lib/school-store";
 import { courseTitle, teacher, today, type Assignment } from "@/lib/sis-data";
 import type { SchedulingSet } from "@/lib/scheduling";
 
@@ -228,57 +228,6 @@ export function PhotosView({ c }: { c: Section }) {
       <h3 className="mt-8 text-[18px]">Students <span className="text-[15px] text-muted-foreground">({roster.length})</span></h3>
       <div className="mt-3 grid grid-cols-2 gap-5 sm:grid-cols-4 lg:grid-cols-5">{roster.map((s) => tile(s.id, s.first, s.last))}</div>
       {!roster.length && <p className="py-10 text-center text-[15px] text-muted-foreground">No students are enrolled yet.</p>}
-    </div>
-  );
-}
-
-const STATE_BADGE: Record<DiscussionState, string> = { open: "bg-vc-success", closed: "bg-destructive", draft: "bg-vc-gray", scheduled: "bg-vc-badge" };
-/** Discussions: open and closed topics with threaded comments. Students comment while a topic is open; the teacher also sees drafts, can always comment and can remove comments. */
-export function DiscussionsView({ c, canManage }: { c: Section; canManage: boolean }) {
-  const { user, update } = useSchool();
-  const day = format(new Date(), "yyyy-MM-dd");
-  const list = visibleDiscussions(c.website.discussions ?? [], canManage, day);
-  const [sel, setSel] = useState<string | null>(null);
-  const [txt, setTxt] = useState("");
-  const [reply, setReply] = useState<string | null>(null);
-  const cur = list.find((d) => d.id === sel) ?? list[0];
-  const me = [user?.prefix, user?.preferred || user?.first, user?.last].filter(Boolean).join(" ");
-  const set = (id: string, fn: (d: Discussion) => Discussion) => update((s) => ({ ...s, sections: s.sections.map((x) => (x.id === c.id ? { ...x, website: { ...x.website, discussions: (x.website.discussions ?? []).map((d) => (d.id === id ? fn(d) : d)) } } : x)) }));
-  const post = (parent?: string) => {
-    if (!cur || !txt.trim() || !user) return;
-    set(cur.id, (d) => withComment(d, { id: crypto.randomUUID().slice(0, 8), by: me, byId: user.personId, date: new Date().toISOString(), text: txt.trim(), parent }));
-    setTxt(""); setReply(null);
-  };
-  if (!list.length) return <Empty what="Discussions" />;
-  const state = cur ? discussionState(cur, day) : "open";
-  const allowed = cur ? canComment(cur, day, canManage) : false;
-  const Card = ({ cm, depth }: { cm: DiscussionComment; depth: number }) => (
-    <div className={`mt-4 flex gap-3 ${depth ? "ml-[56px]" : ""}`}>
-      <PersonPhoto personId={cm.byId} fit={{ w: 56, h: 56 }} squareIfMissing alt="" className="size-[56px] shrink-0" />
-      <div className="min-w-0 flex-1 border border-vc-line">
-        <div className="flex items-center justify-between gap-2 bg-vc-site-blue px-3 py-1.5 text-[14px] text-white"><span><b>{cm.by}</b> {format(parseISO(cm.date), "MMM d")}</span>
-          <span className="flex gap-3">{depth === 0 && allowed && <button type="button" onClick={() => { setReply(reply === cm.id ? null : cm.id); setTxt(""); }} className="underline">Reply</button>}
-            {cur && (canManage || cm.byId === user?.personId) && <button type="button" aria-label={`Delete comment by ${cm.by}`} onClick={() => set(cur.id, (d) => withoutComment(d, cm.id))} className="underline">Delete</button>}</span></div>
-        <p className="whitespace-pre-wrap p-3 text-[16px]">{cm.text}</p>
-      </div>
-    </div>);
-  const group = (st: DiscussionState, label: string) => { const items = list.filter((d) => discussionState(d, day) === st); return items.length ? (
-    <div key={st}><div className="bg-vc-panel px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide">{label}</div>
-      {items.map((d) => <button key={d.id} type="button" onClick={() => { setSel(d.id); setReply(null); setTxt(""); }} className={`flex w-full items-center justify-between gap-2 border-b border-vc-line px-4 py-3 text-left ${cur?.id === d.id ? "border-l-4 border-l-vc-site-blue bg-vc-panel" : "bg-background"}`}><span className="text-[16px] font-semibold">{d.title}</span><span className="grid min-w-[28px] place-items-center rounded-full bg-vc-site-blue px-1.5 text-[13px] font-bold text-white" aria-label={`${d.comments.length} comments`}>{d.comments.length}</span></button>)}</div>) : null; };
-  return (
-    <div className="grid min-h-[520px] md:grid-cols-[280px_minmax(0,1fr)]">
-      <div className="border-r border-vc-line">{group("open", "Open")}{canManage && group("scheduled", "Scheduled")}{canManage && group("draft", "Drafts")}{group("closed", "Closed")}</div>
-      {cur && <div className="px-6 pb-10 pt-5">
-        <h2 className="text-[32px] font-light leading-10">{cur.title}</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-3 text-[14px] text-muted-foreground"><span className={`px-2.5 py-0.5 text-[12px] font-semibold uppercase text-white ${STATE_BADGE[state]}`}>{state}</span>{cur.opens && <span>Opens {format(parseISO(cur.opens), "MMM d")}</span>}{cur.closes && <span>Closes {format(parseISO(cur.closes), "MMM d")}</span>}</div>
-        <div className="mt-4 border-b-[3px] border-b-vc-site-blue pb-3 text-[16px] [&_a]:text-vc-site-blue [&_a]:underline [&_ol]:ml-5 [&_ol]:list-decimal [&_ul]:ml-5 [&_ul]:list-disc" dangerouslySetInnerHTML={{ __html: sanitizeHtml(cur.body) }} />
-        {cur.comments.filter((x) => !x.parent).map((cm) => (
-          <div key={cm.id}><Card cm={cm} depth={0} />{cur.comments.filter((r) => r.parent === cm.id).map((r) => <Card key={r.id} cm={r} depth={1} />)}
-            {reply === cm.id && <div className="ml-[56px] mt-3"><textarea aria-label="Reply" autoFocus value={txt} onChange={(e) => setTxt(e.target.value)} className="h-[70px] w-full border border-vc-line p-2 text-[15px]" /><button type="button" onClick={() => post(cm.id)} className="mt-2 h-[32px] border border-vc-line bg-vc-panel px-4 text-[14px] font-semibold">Post reply</button></div>}</div>))}
-        {!cur.comments.length && <p className="mt-6 text-muted-foreground">No comments yet.</p>}
-        {allowed ? <div className="mt-8"><textarea aria-label="Add a comment" placeholder="Add a comment" value={reply ? "" : txt} onChange={(e) => { setReply(null); setTxt(e.target.value); }} className="h-[90px] w-full border border-vc-line p-2 text-[15px]" /><button type="button" onClick={() => post()} className="mt-2 h-[34px] border border-vc-line bg-vc-panel px-4 text-[14px] font-semibold">Post comment</button></div>
-          : <p className="mt-8 border border-vc-line bg-vc-panel px-3 py-2 text-[14px] text-muted-foreground">This discussion is {state === "closed" ? "closed" : "not open yet"}, so comments are turned off.</p>}
-      </div>}
     </div>
   );
 }

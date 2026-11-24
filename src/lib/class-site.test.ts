@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTimeline, canComment, categoryLabel, chipTime, discussionState, monthGrid, padTime12, scheduleLines, visibleDiscussions, weekLabel, withComment, withoutComment, type Discussion } from "./class-site";
+import { buildTimeline, categoryLabel, chipTime, monthGrid, padTime12, scheduleLines, weekLabel } from "./class-site";
 import type { Assignment } from "./sis-data";
 
 const a = (id: string, assigned: string, due: string): Assignment => ({ id, courseId: "c", category: "HOMEWORK", title: id, short: "HW", points: 10, notes: "", assigned: new Date(`${assigned}T00:00:00`), due: new Date(`${due}T00:00:00`) });
@@ -54,35 +54,5 @@ describe("class website helpers", () => {
 
   it("names assignment categories for the home list", () => {
     expect(categoryLabel("QUIZ")).toBe("Quiz");
-  });
-});
-
-describe("class website discussions", () => {
-  const d = (id: string, p: Partial<Discussion> = {}): Discussion => ({ id, title: id, body: "", status: "open", comments: [], ...p });
-  const day = "2026-09-10";
-  it("works out where a discussion stands on a day", () => {
-    expect(discussionState(d("a"), day)).toBe("open");
-    expect(discussionState(d("a", { opens: "2026-09-12" }), day)).toBe("scheduled");
-    expect(discussionState(d("a", { closes: "2026-09-09" }), day)).toBe("closed");
-    expect(discussionState(d("a", { closes: "2026-09-10" }), day)).toBe("open");
-    expect(discussionState(d("a", { status: "draft" }), day)).toBe("draft");
-    expect(discussionState(d("a", { status: "closed" }), day)).toBe("closed");
-  });
-  it("shows students open and closed topics, and the teacher everything", () => {
-    const all = [d("open"), d("later", { opens: "2026-10-01" }), d("draft", { status: "draft" }), d("done", { status: "closed" })];
-    expect(visibleDiscussions(all, false, day).map((x) => x.id)).toEqual(["open", "done"]);
-    expect(visibleDiscussions(all, true, day)).toHaveLength(4);
-    expect(canComment(all[0]!, day, false)).toBe(true);
-    expect(canComment(all[3]!, day, false)).toBe(false);
-    expect(canComment(all[3]!, day, true)).toBe(true);
-  });
-  it("keeps threads one level deep and removes replies with their comment", () => {
-    const c = (id: string, parent?: string) => ({ id, by: "A", byId: "p", date: "2026-09-10T10:00:00Z", text: id, parent });
-    let t = withComment(d("t"), c("top"));
-    t = withComment(t, c("r1", "top"));
-    t = withComment(t, c("r2", "r1"));
-    expect(t.comments.map((x) => [x.id, x.parent])).toEqual([["top", undefined], ["r1", "top"], ["r2", "top"]]);
-    expect(withoutComment(t, "top").comments).toEqual([]);
-    expect(withoutComment(t, "r1").comments.map((x) => x.id)).toEqual(["top", "r2"]);
   });
 });

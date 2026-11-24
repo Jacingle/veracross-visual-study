@@ -1,19 +1,19 @@
 import { Link } from "@tanstack/react-router";
 import { format, parseISO, startOfWeek } from "date-fns";
-import { ArrowRight, Bookmark, BookOpen, ChevronDown, FileText, Cloud, ImageIcon, LayoutGrid, Link2, MessageCircle, Plus, Save, Settings, Star, Trash2, Undo2, Clock, ChevronLeft, ChevronsDown, Pencil, Reply } from "lucide-react";
+import { ArrowRight, Bookmark, BookOpen, ChevronDown, FileText, Cloud, ImageIcon, LayoutGrid, Link2, Plus, Save, Settings, Star, Trash2, Clock, ChevronLeft, Pencil } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ImageCropper } from "@/components/common/ImageCropper";
 import { MailEditor } from "@/components/common/MailEditor";
 import { PersonPhoto } from "@/components/common/PersonPhoto";
 import { PageEditor } from "@/components/teacher/PageEditor";
-import { weekLabel, type Discussion, type DiscussionComment, type ResourceTopic, type SitePost } from "@/lib/class-site";
+import { weekLabel, type ResourceTopic, type SitePost } from "@/lib/class-site";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { useSchool, useSectionAssignments, type Section, type Website } from "@/lib/school-store";
 import { today } from "@/lib/sis-data";
 
-type View = "homepage" | "timeline" | "pages" | "resources" | "discussions";
-const VIEWS: View[] = ["homepage", "timeline", "pages", "resources", "discussions"];
+type View = "homepage" | "timeline" | "pages" | "resources";
+const VIEWS: View[] = ["homepage", "timeline", "pages", "resources"];
 const newId = () => Math.random().toString(36).slice(2, 10);
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 const BAR = "bg-[#4a64a0]";
@@ -28,7 +28,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return <div className="fixed inset-0 z-50 grid place-items-center bg-black/40" role="dialog" aria-label={title}><div className="w-[460px] max-w-[94vw] bg-white shadow-xl"><div className={`flex h-[38px] items-center justify-between ${BAR} px-3 text-[16px] font-bold text-white`}>{title}<button type="button" aria-label="Close" onClick={onClose} className="text-[20px] leading-none">×</button></div>{children}</div></div>;
 }
 
-/** Teacher view of a class website, laid out like Veracross: homepage, timeline, pages, resources and discussions. */
+/** Teacher view of a class website, laid out like Veracross: homepage, timeline, pages and resources. */
 export function WebsiteManager({ c }: { c: Section }) {
   const { update, user } = useSchool();
   const [view, setView] = useState<View>("timeline");
@@ -61,7 +61,6 @@ export function WebsiteManager({ c }: { c: Section }) {
       {view === "timeline" && <Timeline c={c} setSite={setSite} me={me} />}
       {view === "pages" && <Pages c={c} setSite={setSite} onEdit={setEditing} />}
       {view === "resources" && <Resources w={w} setSite={setSite} />}
-      {view === "discussions" && <Discussions w={w} setSite={setSite} me={me} meId={user?.personId ?? ""} />}
       {newPage && (
         <Modal title="New Page" onClose={() => setNewPage(false)}>
           <div className="px-4 pb-4 pt-3"><div className={`${DOT} pb-1 text-[22px] font-light uppercase text-[#444]`}>Enter a page title</div>
@@ -122,15 +121,14 @@ function Timeline({ c, setSite, me }: { c: Section; setSite: SetSite; me: string
     setSite((x) => ({ ...x, posts: [post, ...(x.posts ?? [])] }));
     toast.success(kind === "lesson" ? "Lesson plan saved" : "Post published"); reset();
   };
-  type Ev = { key: string; date: Date; kind: "due" | "assigned" | "post" | "lesson" | "discussion"; title: string };
+  type Ev = { key: string; date: Date; kind: "due" | "assigned" | "post" | "lesson"; title: string };
   const evs: Ev[] = [
     ...list.flatMap((a) => [{ key: `${a.id}-d`, date: a.due, kind: "due" as const, title: a.title }, { key: `${a.id}-a`, date: a.assigned, kind: "assigned" as const, title: a.title }]),
     ...(w.posts ?? []).filter((p) => p.published).map((p) => ({ key: p.id, date: parseISO(p.date), kind: (p.kind === "lesson" ? "lesson" : "post") as "post" | "lesson", title: p.title })),
-    ...(w.discussions ?? []).filter((d) => d.status !== "draft" && d.opens).map((d) => ({ key: d.id, date: parseISO(d.opens!), kind: "discussion" as const, title: d.title })),
   ].sort((a, b) => +b.date - +a.date);
   const weeks = new Map<string, { label: string; items: Ev[] }>();
   for (const e of evs) { const s = startOfWeek(e.date, { weekStartsOn: 0 }); const k = iso(s); const g = weeks.get(k) ?? { label: weekLabel(s), items: [] }; g.items.push(e); weeks.set(k, g); }
-  const KIND = { due: ["Assignment Due", "text-[#2d6aa5]", "bg-[#2d6aa5]", BookOpen], assigned: ["Assignment Assigned", "text-[#2d6aa5]", "bg-[#2d6aa5]", BookOpen], post: ["Full Post", "text-[#3fa34d]", "bg-[#4cb85c]", Bookmark], lesson: ["Lesson Plan", "text-[#3fa34d]", "bg-[#4cb85c]", FileText], discussion: ["Discussion Opened", "text-[#e8a23a]", "bg-[#f0a73c]", MessageCircle] } as const;
+  const KIND = { due: ["Assignment Due", "text-[#2d6aa5]", "bg-[#2d6aa5]", BookOpen], assigned: ["Assignment Assigned", "text-[#2d6aa5]", "bg-[#2d6aa5]", BookOpen], post: ["Full Post", "text-[#3fa34d]", "bg-[#4cb85c]", Bookmark], lesson: ["Lesson Plan", "text-[#3fa34d]", "bg-[#4cb85c]", FileText] } as const;
   const Tile = ({ icon, label, onClick }: { icon: ReactNode; label: string; onClick?: () => void }) => <button type="button" onClick={onClick} className="flex h-[176px] w-[176px] flex-col items-center justify-center gap-4 border border-[#dcdcdc] bg-white text-[19px] font-bold text-black shadow-[0_1px_2px_rgba(0,0,0,.1)] hover:bg-[#fafafa]">{icon}{label}</button>;
   const Back = ({ t }: { t: string }) => <div className="flex items-center gap-8"><button type="button" onClick={reset} className={`${btn} h-[40px] text-[15px]`}><ChevronLeft className="size-4" strokeWidth={3} />Back</button><h3 className="text-[32px] text-black">{t}</h3></div>;
   const Lbl = ({ children }: { children: string }) => <div className="mb-2 mt-6 text-[14px] uppercase text-[#444]">{children}</div>;
@@ -247,60 +245,6 @@ function Resources({ w, setSite }: { w: Website; setSite: SetSite }) {
         </div>))}</div>
       <div className="mt-12 max-w-[610px]"><input aria-label="New topic name" placeholder="My New Topic" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} className={`h-[40px] w-full bg-transparent text-[26px] outline-none placeholder:text-[#bbb] ${DOT}`} />
         <button type="button" onClick={() => { setTopics((l) => [...l, { id: newId(), title: name.trim() || "General", links: [] }]); setName(""); }} className={`${greenBtn} mt-4 h-[38px] text-[20px]`}><Plus className="size-4" strokeWidth={3} />Add Topic</button></div>
-    </div>
-  );
-}
-
-function Discussions({ w, setSite, me, meId }: { w: Website; setSite: SetSite; me: string; meId: string }) {
-  const list = w.discussions ?? [];
-  const [sel, setSel] = useState<string | null>(list[0]?.id ?? null);
-  const [form, setForm] = useState<null | { id?: string }>(null);
-  const [title, setTitle] = useState(""); const [body, setBody] = useState(""); const [opens, setOpens] = useState(""); const [closes, setCloses] = useState("");
-  const [reply, setReply] = useState<string | null>(null); const [txt, setTxt] = useState("");
-  const set = (fn: (d: Discussion[]) => Discussion[]) => setSite((x) => ({ ...x, discussions: fn(x.discussions ?? []) }));
-  const cur = list.find((d) => d.id === sel);
-  const startNew = () => { setForm({}); setTitle(""); setBody(""); setOpens(iso(new Date())); setCloses(""); };
-  const startEdit = (d: Discussion) => { setForm({ id: d.id }); setTitle(d.title); setBody(d.body); setOpens(d.opens ?? ""); setCloses(d.closes ?? ""); };
-  const save = (status: Discussion["status"]) => {
-    if (!title.trim()) { toast.error("Add a title first."); return; }
-    if (form?.id) set((d) => d.map((x) => (x.id === form.id ? { ...x, title: title.trim(), body: sanitizeHtml(body), opens: opens || undefined, closes: closes || undefined, status } : x)));
-    else { const id = newId(); set((d) => [...d, { id, title: title.trim(), body: sanitizeHtml(body), status, opens: opens || undefined, closes: closes || undefined, comments: [] }]); setSel(id); }
-    setForm(null);
-  };
-  const add = (parent?: string) => { if (!cur || !txt.trim()) return; const cm: DiscussionComment = { id: newId(), by: me, byId: meId, date: new Date().toISOString(), text: txt.trim(), parent }; set((d) => d.map((x) => (x.id === cur.id ? { ...x, comments: [...x.comments, cm] } : x))); setTxt(""); setReply(null); };
-  const grp = (st: Discussion["status"], label: string, cls: string) => (
-    <div key={st}><div className={`flex h-[50px] items-center justify-between ${BAR} px-3`}><span className={`px-3 py-1 text-[14px] text-white ${cls}`}>{label}</span><ChevronsDown className="size-5 text-white" /></div>
-      {list.filter((d) => d.status === st).map((d) => (
-        <button key={d.id} type="button" onClick={() => { setSel(d.id); setForm(null); }} className={`flex w-full items-center justify-between border-b border-[#e6e6e6] px-4 py-3 text-left ${sel === d.id ? "border-l-4 border-l-[#e8873a] bg-[#f1f1f1]" : "bg-white"}`}><span><span className="block text-[17px] font-bold text-black">{d.title}</span><span className="text-[13px] text-[#666]">Open: {d.opens ? format(parseISO(d.opens), "MMM d") : "No Date"} - Closed: {d.closes ? format(parseISO(d.closes), "MMM d") : "No Date"}</span></span>
-          <span className="grid size-[34px] place-items-center rounded-full bg-[#2d6aa5] text-[14px] font-bold text-white">{d.comments.length}</span></button>))}</div>);
-  const ordered = (cur?.comments ?? []).filter((x) => !x.parent);
-  const Card = ({ cm, depth }: { cm: DiscussionComment; depth: number }) => (
-    <div className={`mt-6 flex gap-4 ${depth ? "ml-[70px]" : ""}`}><PersonPhoto personId={cm.byId} fit={{ w: 80, h: 80 }} squareIfMissing alt="" className="size-[80px] shrink-0" />
-      <div className="min-w-0 flex-1 border border-[#dcdcdc]"><div className={`flex items-center justify-between ${BAR} px-3 py-2 text-white`}><span><b>{cm.by}</b> {format(parseISO(cm.date), "MMM d")}</span><span className="flex gap-2">{depth === 0 && <button type="button" onClick={() => { setReply(reply === cm.id ? null : cm.id); setTxt(""); }} className={`${btn} h-[28px] text-[14px]`}><Reply className="size-3.5" />reply</button>}<button type="button" onClick={() => set((d) => d.map((x) => (x.id === cur!.id ? { ...x, comments: x.comments.filter((y) => y.id !== cm.id && y.parent !== cm.id) } : x)))} className={`${btn} h-[28px] text-[14px]`}><Trash2 className="size-3.5" />delete</button></span></div>
-        <p className="min-h-[70px] whitespace-pre-wrap p-3 text-[18px]">{cm.text}</p></div></div>);
-  return (
-    <div className="grid min-h-[600px] md:grid-cols-[400px_minmax(0,1fr)]">
-      <div className="border-r border-[#e3e3e3] bg-[#f3f3f3]">
-        <div className="border-b border-[#e3e3e3] bg-white p-3"><button type="button" onClick={startNew} className={greenBtn}><Plus className="size-4" strokeWidth={3} />New<ChevronDown className="size-3" /></button></div>
-        {grp("open", "OPEN", "bg-[#4cb85c]")}{grp("draft", "DRAFTS", "bg-[#8a8a8a]")}{grp("closed", "CLOSED", "bg-[#d9382b]")}
-      </div>
-      <div className="bg-white px-8 pb-14 pt-5">
-        {form ? <div><button type="button" onClick={() => setForm(null)} className={btn}><Undo2 className="size-3.5" />Back</button><h2 className="mt-4 text-[34px] font-light">{form.id ? "Edit Discussion" : "New Discussion"}</h2>
-          <div className="mt-4 text-[13px] uppercase text-[#444]">Title</div><input aria-label="Discussion title" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-[48px] w-full border border-[#d6d6d6] px-3 text-[18px] outline-none focus:border-[#4a90d9]" />
-          <div className="mt-4 text-[13px] uppercase text-[#444]">Description</div><div className="mt-1"><MailEditor key={form.id ?? "new"} label="Discussion description" minHeight={140} initial={body} onChange={(h) => setBody(h)} /></div>
-          <div className="mt-4 flex gap-6"><label className="text-[13px] uppercase text-[#444]">Opens<input type="date" aria-label="Opens" value={opens} onChange={(e) => setOpens(e.target.value)} className="mt-1 block h-[36px] border border-[#d6d6d6] px-2 text-[15px] normal-case" /></label><label className="text-[13px] uppercase text-[#444]">Closes<input type="date" aria-label="Closes" value={closes} onChange={(e) => setCloses(e.target.value)} className="mt-1 block h-[36px] border border-[#d6d6d6] px-2 text-[15px] normal-case" /></label></div>
-          <div className="mt-6 flex gap-3"><button type="button" onClick={() => save("open")} className={greenBtn}>Open Discussion</button><button type="button" onClick={() => save("draft")} className={btn}>Save as Draft</button></div></div>
-        : cur ? <div>
-          <div className="flex justify-end gap-2"><button type="button" onClick={() => startEdit(cur)} className={btn}><Pencil className="size-3.5" />edit</button><button type="button" onClick={() => { set((d) => d.filter((x) => x.id !== cur.id)); setSel(null); }} className={btn}><Trash2 className="size-3.5" />delete</button></div>
-          <h2 className="text-[46px] font-light leading-[54px] text-[#444]">{cur.title}</h2>
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[17px] text-[#666]"><span className={`px-3 py-1 text-[14px] uppercase text-white ${cur.status === "open" ? "bg-[#4cb85c]" : cur.status === "draft" ? "bg-[#8a8a8a]" : "bg-[#d9382b]"}`}>{cur.status}</span><span className="flex items-center gap-1"><Clock className="size-4" />{cur.opens ? format(parseISO(cur.opens), "MMM d") : "No Date"} - {cur.closes ? format(parseISO(cur.closes), "MMM d") : "No Date"}</span><span className="flex items-center gap-1"><MessageCircle className="size-4" />{cur.comments.length} Comments. <button type="button" onClick={() => document.getElementById("disc-new")?.focus()} className="text-vc-site-blue">Add yours now.</button></span>
-            {cur.status !== "open" ? <button type="button" onClick={() => set((d) => d.map((x) => (x.id === cur.id ? { ...x, status: "open" } : x)))} className="text-vc-site-blue underline">Open</button> : <button type="button" onClick={() => set((d) => d.map((x) => (x.id === cur.id ? { ...x, status: "closed" } : x)))} className="text-vc-site-blue underline">Close</button>}</div>
-          <div className="mt-5 border-b-[3px] border-b-[#4a64a0] pb-3 text-[19px] [&_a]:text-vc-site-blue [&_a]:underline" dangerouslySetInnerHTML={{ __html: sanitizeHtml(cur.body) }} />
-          {ordered.map((cm) => <div key={cm.id}><Card cm={cm} depth={0} />{cur.comments.filter((r) => r.parent === cm.id).map((r) => <Card key={r.id} cm={r} depth={1} />)}
-            {reply === cm.id && <div className="ml-[70px] mt-3"><textarea aria-label="Reply" autoFocus value={txt} onChange={(e) => setTxt(e.target.value)} className="h-[80px] w-full border border-[#d6d6d6] p-2 text-[16px]" /><button type="button" onClick={() => add(cm.id)} className={`${btn} mt-2`}>Post reply</button></div>}</div>)}
-          <div className="mt-8"><textarea id="disc-new" aria-label="Add a comment" placeholder="Add a comment" value={reply ? "" : txt} onChange={(e) => { setReply(null); setTxt(e.target.value); }} className="h-[90px] w-full border border-[#d6d6d6] p-2 text-[16px]" /><button type="button" onClick={() => add()} className={`${btn} mt-2`}>Post comment</button></div>
-        </div> : <Empty title="Discussions will appear here" text="Use New to start a discussion for this class." />}
-      </div>
     </div>
   );
 }

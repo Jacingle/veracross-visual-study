@@ -9,8 +9,6 @@ import { sanitizeHtml } from "@/lib/sanitize-html";
 import { staffIds, useSchool, type Section } from "@/lib/school-store";
 
 const MAX_BYTES = 3 * 1024 * 1024;
-/** The page editor is drawn zoomed out so the whole page and the settings panel fit, like the Veracross editor. */
-const ZOOM = 0.72;
 const TILES: [BlockType, string, ReactNode][] = [
   ["header", "Header", <span key="a" className="font-serif text-[26px] font-bold leading-none text-[#3a6ea5]">A</span>],
   ["text", "Text", <AlignLeft key="t" className="size-[22px]" strokeWidth={2.4} />],
@@ -121,7 +119,7 @@ export function PageEditor({ c, name, onBack }: { c: Section; name: string; onBa
   };
 
   return (
-    <div className="fixed inset-0 z-40 overflow-hidden bg-white"><div className="flex flex-col bg-white text-[14px]" style={{ zoom: ZOOM, width: `${100 / ZOOM}%`, height: `${100 / ZOOM}%` }}>
+    <div className="fixed inset-0 z-40 overflow-hidden bg-white"><div className="flex flex-col bg-white text-[14px]" style={{ zoom: 0.82, width: `${100 / 0.82}%`, height: `${100 / 0.82}%` }}>
       <input ref={fileRef} type="file" hidden aria-label="Choose file" />
       <div className="flex h-[58px] shrink-0 items-center gap-3 border-b border-[#e3e3e3] border-t-2 border-t-[#4a64a0] px-3">
         <button type="button" onClick={onBack} className="flex h-[30px] items-center gap-1 border border-[#d4d4d4] bg-white px-3 text-[11px] font-bold uppercase text-[#444] shadow-[0_1px_1px_rgba(0,0,0,.15)]"><ArrowLeft className="size-3" strokeWidth={3} />Pages</button>

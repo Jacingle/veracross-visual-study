@@ -116,24 +116,3 @@ export type BlockType = PageBlock["type"];
 
 export type DiscussionComment = { id: string; by: string; byId: string; date: string; text: string; parent?: string | undefined };
 export type Discussion = { id: string; title: string; body: string; status: "open" | "draft" | "closed"; opens?: string | undefined; closes?: string | undefined; comments: DiscussionComment[] };
-
-export type DiscussionState = "draft" | "scheduled" | "open" | "closed";
-/** Where a discussion stands on a day (yyyy-MM-dd): drafts stay hidden, one that has not opened yet is scheduled, one past its close date is closed. */
-export function discussionState(d: Discussion, day: string): DiscussionState {
-  if (d.status === "draft") return "draft";
-  if (d.status === "closed") return "closed";
-  if (d.opens && d.opens > day) return "scheduled";
-  if (d.closes && d.closes < day) return "closed";
-  return "open";
-}
-/** What a visitor may see: students get open and closed discussions; the teacher also sees drafts and scheduled ones. */
-export const visibleDiscussions = (list: Discussion[], canManage: boolean, day: string) => list.filter((d) => canManage || discussionState(d, day) === "open" || discussionState(d, day) === "closed");
-/** Students can comment only while a discussion is open; the teacher always can. */
-export const canComment = (d: Discussion, day: string, canManage: boolean) => canManage || discussionState(d, day) === "open";
-/** A reply to a reply is filed under the original comment, so threads stay one level deep. */
-export function withComment(d: Discussion, c: DiscussionComment): Discussion {
-  const parent = c.parent ? d.comments.find((x) => x.id === c.parent) : undefined;
-  return { ...d, comments: [...d.comments, { ...c, parent: parent ? (parent.parent ?? parent.id) : undefined }] };
-}
-/** Deleting a comment deletes the replies under it. */
-export const withoutComment = (d: Discussion, id: string): Discussion => ({ ...d, comments: d.comments.filter((c) => c.id !== id && c.parent !== id) });
